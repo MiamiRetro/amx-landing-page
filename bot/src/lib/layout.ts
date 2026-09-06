@@ -18,6 +18,8 @@ export interface Layout {
     name: string;
     /** Only these roles may view the category and its channels. Omit for public. */
     viewRoles?: string[];
+    /** User IDs that can always view the category regardless of role (ops accounts). Merged with OPS_USER_IDS. */
+    viewUsers?: string[];
     channels: Array<{
       name: string;
       type?: "text" | "announcement" | "voice" | "forum";
@@ -48,7 +50,17 @@ function findRole(guild: Guild, name: string): Role | undefined {
   return guild.roles.cache.find((r) => r.name.toLowerCase() === name.toLowerCase());
 }
 
-function buildOverwrites(guild: Guild, viewRoles: string[] | undefined, readOnly: boolean | undefined): OverwriteResolvable[] {
+/** Ops accounts that must see every gated channel, from OPS_USER_IDS (comma-separated). */
+export function opsUserIds(): string[] {
+  return (process.env.OPS_USER_IDS ?? "").split(",").map((s) => s.trim()).filter((s) => /^\d{15,25}$/.test(s));
+}
+
+export function buildOverwrites(
+  guild: Guild,
+  viewRoles: string[] | undefined,
+  readOnly: boolean | undefined,
+  viewUsers: string[] = [],
+): OverwriteResolvable[] {
   const me = guild.members.me;
   const ows: OverwriteResolvable[] = [];
   if (viewRoles && viewRoles.length) {
@@ -57,6 +69,9 @@ function buildOverwrites(guild: Guild, viewRoles: string[] | undefined, readOnly
       const role = findRole(guild, name);
       if (!role) throw new Error(`Role "${name}" does not exist. Add it under roles: in the layout.`);
       ows.push({ id: role.id, allow: [PermissionFlagsBits.ViewChannel] });
+    }
+    for (const id of new Set([...viewUsers, ...opsUserIds()])) {
+      ows.push({ id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] });
     }
     if (me) ows.push({ id: me.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ManageWebhooks, PermissionFlagsBits.ManageMessages] });
   }
@@ -83,7 +98,7 @@ export async function applyLayout(guild: Guild, layout: Layout, dryRun: boolean)
     let category = guild.channels.cache.find(
       (c): c is CategoryChannel => c.type === ChannelType.GuildCategory && c.name.toLowerCase() === cat.name.toLowerCase(),
     );
-    const catOws = buildOverwrites(guild, cat.viewRoles, undefined);
+    const catOws = buildOverwrites(guild, cat.viewRoles, undefined, cat.viewUsers);
     if (!category) {
       changes.push({ action: "create-category", target: cat.name, detail: cat.viewRoles ? `visible to ${cat.viewRoles.join(", ")}` : "public" });
       if (!dryRun) {
@@ -99,7 +114,7 @@ export async function applyLayout(guild: Guild, layout: Layout, dryRun: boolean)
       const existing = guild.channels.cache.find(
         (c): c is NonThreadGuildBasedChannel => !c.isThread() && c.type === type && c.name.toLowerCase() === ch.name.toLowerCase(),
       );
-      const ows = ch.viewRoles || ch.readOnly ? buildOverwrites(guild, ch.viewRoles ?? cat.viewRoles, ch.readOnly) : undefined;
+      const ows = ch.viewRoles || ch.readOnly ? buildOverwrites(guild, ch.viewRoles ?? cat.viewRoles, ch.readOnly, cat.viewUsers) : undefined;
 
       if (!existing) {
         changes.push({ action: "create-channel", target: `${cat.name} / #${ch.name}` });

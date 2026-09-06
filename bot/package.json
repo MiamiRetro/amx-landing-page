@@ -4,16 +4,24 @@
   "private": true,
   "description": "AlphanumetriX Discord multilingual mirror bot and channel manager",
   "type": "module",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "channels": "tsx src/channel-manager.ts",
     "typecheck": "tsc --noEmit",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "bakeoff": "tsx src/bakeoff.ts",
+    "dev": "tsx src/index.ts",
+    "test": "node --import tsx --test test/*.test.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.124.0",
+    "@supabase/supabase-js": "^2.115.0",
     "discord.js": "^14.16.3",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

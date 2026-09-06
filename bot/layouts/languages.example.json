@@ -1,0 +1,34 @@
+{
+  "roles": [
+    { "name": "English", "color": "#5865F2" },
+    { "name": "中文", "color": "#ED4245" },
+    { "name": "한국어", "color": "#57F287" },
+    { "name": "Bahasa Indonesia", "color": "#FEE75C" }
+  ],
+  "categories": [
+    {
+      "name": "中文",
+      "viewRoles": ["中文"],
+      "channels": [
+        { "name": "general-zh", "topic": "AMX 社区聊天（英文频道自动镜像翻译）" },
+        { "name": "signals-zh", "topic": "交易信号（自动镜像翻译）", "readOnly": true }
+      ]
+    },
+    {
+      "name": "한국어",
+      "viewRoles": ["한국어"],
+      "channels": [
+        { "name": "general-ko", "topic": "AMX 커뮤니티 채팅 (영어 채널 자동 미러 번역)" },
+        { "name": "signals-ko", "topic": "트레이딩 시그널 (자동 미러 번역)", "readOnly": true }
+      ]
+    },
+    {
+      "name": "Bahasa Indonesia",
+      "viewRoles": ["Bahasa Indonesia"],
+      "channels": [
+        { "name": "general-id", "topic": "Obrolan komunitas AMX (cermin terjemahan otomatis dari kanal Inggris)" },
+        { "name": "signals-id", "topic": "Sinyal trading (cermin terjemahan otomatis)", "readOnly": true }
+      ]
+    }
+  ]
+}

@@ -29,7 +29,7 @@ Languages at launch: English (source community), Simplified Chinese (`zh`), Kore
 
 **State in Supabase.** We already run Supabase. Four tables (below) hold config, the source-to-mirror message map (needed for edits, deletes, replies and jump links), a translation cache, and the glossary.
 
-**Hosting.** The bot holds a persistent websocket to Discord's gateway, so it needs a long-running process, not Vercel serverless. Recommended: Fly.io or Railway, one small container (~$5 to $10 per month), Docker image, health endpoint, auto-restart. Vercel can host an admin dashboard later if wanted.
+**Hosting.** The bot holds a persistent websocket to Discord's gateway, so it needs a long-running process, not Vercel serverless. Decision: Railway, one small container (~$5 to $10 per month) built from the `bot/` directory, health endpoint, auto-restart. Vercel can host an admin dashboard later if wanted.
 
 ---
 
@@ -167,8 +167,8 @@ Privacy note: message content leaves Discord to a third-party API. Add a line to
 **Phase 0 — Setup (½ day)**
 - Create the Discord application, enable the Message Content and Server Members privileged intents (no approval needed under 100 servers), invite the bot with Manage Webhooks, Manage Channels, Read/Send Messages, Manage Messages, Attach Files, Read Message History.
 - Supabase: apply the schema above.
-- Anthropic API key, Fly.io/Railway project, secrets set.
-- New repository `amx-mirror-bot` (TypeScript, discord.js v14, `@anthropic-ai/sdk`, `@supabase/supabase-js`, Dockerfile). This landing-page repo stays static.
+- Anthropic API key, Railway project, secrets set.
+- Bot code lives in `bot/` in this repo (TypeScript, discord.js v14, `@anthropic-ai/sdk`, `@supabase/supabase-js`, Dockerfile). Railway deploys that directory; it can be split into its own repo later without changes.
 
 **Phase 1 — Core mirror (2 to 3 days)**
 - Gateway listener with per-source-channel FIFO queue.
@@ -211,10 +211,21 @@ Privacy note: message content leaves Discord to a third-party API. Add a line to
 
 ---
 
-## 9. Decisions needed from you
+## 9. Decisions
 
-1. Simplified or Traditional Chinese first (plan assumes Simplified).
-2. Which channels to mirror at launch (plan assumes `#general` plus the signal/chart channels).
-3. Model tier to start on (plan recommends Opus 5 at low effort, then measure).
-4. Whether members may hold more than one language role.
-5. Hosting preference: Fly.io, Railway, or an existing VPS.
+| Question | Decision |
+|---|---|
+| Chinese variant | **Simplified** (`zh`). Traditional can be added later as `zh-TW`. |
+| Channels to mirror | Decided after a server snapshot. The channel manager in `bot/` (`npm run channels -- snapshot`) produces a per-channel activity report; the `channel-manager` Claude agent reads it and recommends a list. |
+| Translation model | Pending the model research (Reddit, GitHub, benchmarks); the plan's cost table is the starting point. |
+| Language roles | **One per member.** Onboarding assigns exactly one; switching replaces it. No double pings. |
+| Hosting | **Railway.** One service from the `bot/` directory (set Root Directory to `bot`), Dockerfile build, `DISCORD_TOKEN`, `DISCORD_GUILD_ID`, `ANTHROPIC_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` as service variables. |
+
+## 10. Channel manager (built)
+
+Lives in `bot/` on this branch. It does two jobs before any mirroring code runs:
+
+- `snapshot` writes a markdown report of every category and channel with visibility, roles, slowmode, and 30-day activity (messages per day, distinct human authors, bot messages, last message). This is the input for choosing which channels to mirror.
+- `apply <layout.json> --dry-run` creates language roles, role-gated categories and twin channels from a JSON layout, idempotently and without ever deleting. `bot/layouts/languages.example.json` is the starting layout for zh, ko and id.
+
+A Claude Code agent definition at `.claude/agents/channel-manager.md` runs these commands and produces the recommendation. It needs `DISCORD_TOKEN` and `DISCORD_GUILD_ID` in the environment.

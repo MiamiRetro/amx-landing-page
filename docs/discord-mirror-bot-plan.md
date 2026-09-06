@@ -144,23 +144,38 @@ Row-level security is on with only the service role allowed; the bot is the sole
 
 ---
 
-## 6. Translation engine choice and cost
+## 6. Translation engine: research findings (6 Sep 2026)
 
-Recommendation: Claude via the Anthropic SDK, with structured JSON output and a cached system prompt. An LLM handles trading slang, tone and the placeholder rules far better than a phrase-based translator, and it is cheaper than DeepL at our volumes (DeepL Pro bills ~$25 per million characters; three targets per message triples that).
+Three research passes were run: community discussion (Reddit, Hacker News), open-weight models (GitHub, Hugging Face, WMT results) and commercial APIs (WMT25 human-evaluation data, vendor pricing). **Reddit could not be read**: this environment's network policy blocks reddit.com, Hacker News pages, Hugging Face and arXiv, so community sentiment below comes only from Hacker News snippets and GitHub issue trackers. Rerun that pass from a machine with open access before treating it as settled.
 
-Rough per-message shape: ~100 uncached input tokens, ~600 cached system-prompt tokens, ~150 output tokens (three translations). Estimates below assume standard cache-read discounts and that roughly a third of messages skip the API (cache hits, emoji-only, etc.).
+### What the evidence says
 
-| Model | ~cost per translated message | 1,000 msgs/day | 10,000 msgs/day |
+**Frontier LLMs beat dedicated MT engines for chat, and are within one statistical cluster of each other.** In WMT25's human evaluation for English→Chinese (recomputed from the organisers' published data), Claude 4 scored 86.9, DeepSeek V3 85.0, GPT-4.1 84.0 and Gemini 2.5 Pro 83.8, all above the human reference at 82.1. On the "social" subset (real social-media posts) Gemini 2.5 Pro led. The anonymised Google/Microsoft/DeepL-class engines ranked so far behind on automatic metrics that they were not selected for human evaluation. Sources: WMT25 findings and the `wmt25-general-mt` data repository.
+
+**Korean and Indonesian have weaker evidence.** WMT25 English→Korean used a human metric whose data was not published; automatic rankings put Gemini 2.5 Pro, GPT-4.1 and Claude 4 at the top in that order. English→Indonesian was automatic-only, with Gemini and GPT leading and Claude mid-table. A 2026 vendor benchmark (Alconost) reports the opposite for Indonesian, with Anthropic models ahead. Treat all three as a tie to be settled by our own test.
+
+**Register matters more than model choice for Korean.** An LREC 2026 paper finds MT-tuned models over-use polite forms compared with what readers prefer. The prompt must say "casual chat register, 반말 unless the source is formal" explicitly. Same logic applies to Indonesian slang (bahasa gaul).
+
+**Open-weight: one credible candidate.** Tencent's Hy-MT2 (May 2026, Apache-2.0, 33 languages including zh, ko, id) self-reports 98% of Gemini 3.1 Pro on FLORES-200 and is served on OpenRouter at $0.074 in / $0.295 out per million tokens, roughly 25 times cheaper than Sonnet 5. Two cautions: its predecessor topped WMT25 on automatic metrics but fell "considerably lower" than Gemini under human evaluation, and its GitHub issues document over-translation of very short inputs (a one-word input expanded into three sentences) and mid-output language drift. Short hype messages and tickers are exactly our traffic. The predecessor HY-MT1.5 is unusable anyway: its licence excludes South Korea. Tower+, NLLB and Aya are non-commercial. TranslateGemma and Xiaomi's MiLMMT have no serverless host and no independent Korean or Indonesian evaluation.
+
+**Community complaints worth designing around.** LLMs occasionally hallucinate or add content (HN, several threads); NMT engines lack context and cannot be told the register. Our placeholder scheme, glossary and structured output address the first; the prompt addresses the second.
+
+### Recommendation
+
+The bot is built model-agnostic: a `TranslationProvider` interface with adapters, and the model is one config value. Pick the launch model by a **blind bake-off** in Phase 1: 200 real messages per language, four candidates, native speakers rate them without knowing which is which.
+
+| Candidate | Why it is in the bake-off | Per-message cost (est.) | 1,000 msgs/day |
 |---|---|---|---|
-| Claude Opus 5 (`claude-opus-5`) — best quality | ~$0.0046 | ~$95/mo | ~$950/mo |
-| Claude Sonnet 5 (`claude-sonnet-5`) | ~$0.0018 | ~$37/mo | ~$370/mo |
-| Claude Haiku 4.5 (`claude-haiku-4-5`) | ~$0.0009 | ~$18/mo | ~$180/mo |
+| Claude Sonnet 5 | Best human-evaluated en→zh score in WMT25; zero-data-retention eligible; one SDK for everything | ~$0.0018 | ~$37/mo |
+| Gemini 3.7 Flash | Led the social/chat subset for zh; top automatic scores for ko and id; cheapest frontier option (promo price to end 2026) | ~$0.0011 | ~$22/mo |
+| GPT-5.x (Terra tier) | Top-cluster on ko/id; reputation for placeholder preservation | ~$0.0024 | ~$48/mo |
+| Hy-MT2-7B via OpenRouter | Open weights, Apache-2.0, cost floor; must prove it handles short slang without over-translating | ~$0.0001 | ~$2/mo |
 
-Suggested default: start on Opus 5 at `effort: "low"` (translation is not a reasoning task) and measure quality on a sample of real messages in each language with native-speaking members. Drop to Sonnet 5 or Haiku 4.5 only if the quality holds; that is a business call, and the model is a single config value. Whichever is chosen, an outage falls back to a retry queue rather than dropping messages, and the message is mirrored untranslated with a small `(translation pending)` note if the queue backs up beyond 60 seconds.
+Cost assumes ~700 input tokens (600 of them a cached system prompt) and ~150 output tokens per message, with a third of messages never reaching the API. List prices as of 6 Sep 2026; several are promotional.
 
-Privacy note: message content leaves Discord to a third-party API. Add a line to the server rules and the pinned notice.
+Default while the bake-off runs: **Claude Sonnet 5** (or Opus 5 if the zh sample shows a gap). Fallback chain on outage: primary → second-place model from the bake-off → mirror untranslated with a "translation pending" note, patched later. If Hy-MT2 wins or ties on the native-speaker ratings, it becomes the primary and a frontier model stays as fallback for messages it flags as low-confidence.
 
----
+Privacy note: message content leaves Discord to a third-party API. Add a line to the server rules and the pinned notice. Anthropic Sonnet/Opus/Haiku and DeepL delete after processing on request; OpenAI keeps 30-day abuse logs unless zero-retention is approved; Gemini paid tier keeps 55 days.
 
 ## 7. Build phases
 
@@ -173,7 +188,8 @@ Privacy note: message content leaves Discord to a third-party API. Add a line to
 **Phase 1 — Core mirror (2 to 3 days)**
 - Gateway listener with per-source-channel FIFO queue.
 - Placeholder tokenizer/detokenizer for all Discord entity types, with unit tests.
-- Translation client: structured output, cached prompt, glossary injection, skip heuristics, cache table.
+- Translation client behind a `TranslationProvider` interface (Anthropic, Gemini, OpenAI, OpenRouter adapters): structured output, cached prompt, glossary injection, skip heuristics, cache table.
+- `bake-off` script: samples N real messages per source channel, translates with every configured provider, writes a blind rating sheet (provider names hidden, revealed by key) for native speakers.
 - Webhook sender with display name/avatar, `allowed_mentions` mirroring, 2,000-character splitting.
 - Loop prevention and message map writes.
 - `/mirror create|link|unlink|status`.
@@ -217,7 +233,7 @@ Privacy note: message content leaves Discord to a third-party API. Add a line to
 |---|---|
 | Chinese variant | **Simplified** (`zh`). Traditional can be added later as `zh-TW`. |
 | Channels to mirror | Decided after a server snapshot. The channel manager in `bot/` (`npm run channels -- snapshot`) produces a per-channel activity report; the `channel-manager` Claude agent reads it and recommends a list. |
-| Translation model | Pending the model research (Reddit, GitHub, benchmarks); the plan's cost table is the starting point. |
+| Translation model | Decided by a blind bake-off in Phase 1 (section 6). Default while it runs: Claude Sonnet 5. |
 | Language roles | **One per member.** Onboarding assigns exactly one; switching replaces it. No double pings. |
 | Hosting | **Railway.** One service from the `bot/` directory (set Root Directory to `bot`), Dockerfile build, `DISCORD_TOKEN`, `DISCORD_GUILD_ID`, `ANTHROPIC_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` as service variables. |
 

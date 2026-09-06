@@ -237,7 +237,26 @@ Privacy note: message content leaves Discord to a third-party API. Add a line to
 | Language roles | **One per member.** Onboarding assigns exactly one; switching replaces it. No double pings. |
 | Hosting | **Railway.** One service from the `bot/` directory (set Root Directory to `bot`), Dockerfile build, `DISCORD_TOKEN`, `DISCORD_GUILD_ID`, `ANTHROPIC_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` as service variables. |
 
-## 10. Channel manager (built)
+## 10. Channel decisions (from the 6 Sep 2026 snapshot)
+
+Server: BLKBöX Trading Floor, 704 members, every channel role-gated (hidden from @everyone).
+
+| Channel | Decision |
+|---|---|
+| #💬・general, #📈・trader-chat, #☎️・help-desk | Mirror, two-way |
+| #⚡・trade-alerts, #📢・announcements, #🟠・bitcoin | Mirror, read-only twins |
+| #🔒・trade-alerts (teaser for unverified members) | Mirror, read-only twins, gated to unverified members of each language |
+| #💹・bot-profits | Not now; dead channel, will be used later. Add when it goes live. |
+| #🐸・memes | Skip in v1 |
+| #👑・vip-chat | Later, if non-English VIPs appear |
+| Forums, voice, tickets, logs, mod-chat, testimonials, beta-testing | Skip |
+| #📍・start-here, setup-guides, trading-strategies | Translate once as static copies, not live mirrors |
+
+Still pending: activity numbers from a rerun with the bot granted Administrator, to confirm volumes and cost.
+
+Related: the old iTranslator bot is being removed so members never see double translations. Language roles must be granted only to members who already hold the Member role, since Discord cannot require two roles at once (Phase 3).
+
+## 11. Channel manager (built)
 
 Lives in `bot/` on this branch. It does two jobs before any mirroring code runs:
 

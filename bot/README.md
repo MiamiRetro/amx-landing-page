@@ -22,7 +22,7 @@ Every channel in a *group* (one per language) is mirrored into the others: a mes
 ### 1. Discord application
 1. <https://discord.com/developers/applications> → your app → **Bot**: enable **Server Members Intent** and **Message Content Intent**.
 2. Invite with (replace `CLIENT_ID`):
-   `https://discord.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot%20applications.commands&permissions=268707856`
+   `https://discord.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot%20applications.commands&permissions=805563408`
 3. Because every channel on the server is role-gated, give the bot's role **Administrator** (Server Settings → Roles → the bot's role) or add it to every role that can see the channels you mirror.
 
 ### 2. Supabase

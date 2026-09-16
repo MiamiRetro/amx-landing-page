@@ -1,5 +1,6 @@
 import {
   ChannelType,
+  OverwriteType,
   PermissionFlagsBits,
   type CategoryChannel,
   type Guild,
@@ -71,9 +72,9 @@ export function buildOverwrites(
       ows.push({ id: role.id, allow: [PermissionFlagsBits.ViewChannel] });
     }
     for (const id of new Set([...viewUsers, ...opsUserIds()])) {
-      ows.push({ id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] });
+      ows.push({ id, type: OverwriteType.Member, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] });
     }
-    if (me) ows.push({ id: me.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ManageWebhooks, PermissionFlagsBits.ManageMessages] });
+    if (me) ows.push({ id: me.id, type: OverwriteType.Member, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ManageWebhooks, PermissionFlagsBits.ManageMessages] });
   }
   if (readOnly) {
     const existing = ows.find((o) => o.id === guild.roles.everyone.id) as { deny?: bigint[] } | undefined;

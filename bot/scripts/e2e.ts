@@ -70,10 +70,11 @@ async function main() {
       check("message_map has 3 rows", rows.length === 3, String(rows.length));
 
       // 2. edit
-      await poster.editMessage(src.id, { content: text + " EDITED" });
+      // the marker is a code span so the translator carries it through verbatim
+      await poster.editMessage(src.id, { content: text + " `EDITED`" });
       const edited = await waitFor(async () => {
         const m = await zh.messages.fetch({ message: mirrors.zh!.id, force: true }).catch(() => null);
-        return m && m.content.endsWith("EDITED") ? m : null;
+        return m && m.content.includes("`EDITED`") ? m : null;
       });
       check("edit propagated to zh", !!edited);
 

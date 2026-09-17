@@ -58,7 +58,11 @@ async function main() {
         check(`mirror appeared in ${lang}`, !!m, m ? m.id : "not found in 25s");
         if (!m) continue;
         check(`${lang}: author name carried`, m.author.username === "E2E Tester", m.author.username);
-        check(`${lang}: avatar carried`, !!m.author.avatar, m.author.avatar ?? "none");
+        // Discord creates a webhook message without the avatar the first time a
+        // webhook uses an avatar URL, then pushes a MESSAGE_UPDATE with it ~150ms
+        // later. Re-fetch until it settles rather than asserting on the first read.
+        const avatar = await waitFor(async () => (await ch.messages.fetch({ message: m.id, force: true })).author.avatar, 5_000);
+        check(`${lang}: avatar carried`, !!avatar, avatar ?? "none after 5s");
         check(`${lang}: url intact`, m.content.includes("https://tradingview.com/x/aB3k9Q"));
         check(`${lang}: ticker intact`, m.content.includes("$BTC"));
         check(`${lang}: markdown intact`, m.content.includes("**bold**") && m.content.includes("`code`"));

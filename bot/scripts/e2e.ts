@@ -72,7 +72,7 @@ async function main() {
       // 2. edit
       await poster.editMessage(src.id, { content: text + " EDITED" });
       const edited = await waitFor(async () => {
-        const m = await zh.messages.fetch(mirrors.zh!.id).catch(() => null);
+        const m = await zh.messages.fetch({ message: mirrors.zh!.id, force: true }).catch(() => null);
         return m && m.content.endsWith("EDITED") ? m : null;
       });
       check("edit propagated to zh", !!edited);
@@ -92,7 +92,7 @@ async function main() {
       // 5. delete original → mirrors gone
       await poster.deleteMessage(src.id);
       const gone = await waitFor(async () => {
-        const m = await zh.messages.fetch(mirrors.zh!.id).catch(() => null);
+        const m = await zh.messages.fetch({ message: mirrors.zh!.id, force: true }).catch(() => null);
         return m ? null : true;
       });
       check("delete propagated to zh", !!gone);
@@ -101,7 +101,7 @@ async function main() {
       const replyMirror = await waitFor(async () => (await latest(ko)).find((m) => m.webhookId && m.content.includes("e2e-reply")) ?? null);
       if (replyMirror) {
         await replyMirror.delete();
-        const origGone = await waitFor(async () => ((await en.messages.fetch(reply.id).catch(() => null)) ? null : true));
+        const origGone = await waitFor(async () => ((await en.messages.fetch({ message: reply.id, force: true }).catch(() => null)) ? null : true));
         check("deleting a mirror deletes the original", !!origGone);
       } else check("reply message mirrored to ko", false);
 

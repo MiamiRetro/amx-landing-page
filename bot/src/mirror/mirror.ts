@@ -16,7 +16,7 @@ import type { GroupIndex } from "./groups.js";
 import { detokenize, hasTranslatableText, splitForDiscord, tokenize } from "./placeholders.js";
 import { KeyedQueue } from "./queue.js";
 import { remapForTarget, renderForward, renderPoll, replyHeader } from "./render.js";
-import { sanitizeUsername, WebhookPool } from "./webhooks.js";
+import { sanitizeUsername, WebhookPool, WEBHOOK_NAME } from "./webhooks.js";
 
 const UPLOAD_LIMIT: Record<number, number> = { 0: 10, 1: 10, 2: 50, 3: 100 };
 const PENDING_NOTE = "\n-# ⏳ translation pending";
@@ -34,6 +34,8 @@ export interface MirrorDeps {
   groups: GroupIndex;
   translator: Translator;
   botUserId: string;
+  /** The bot's application id. Discord stamps it on every message sent through a webhook this bot created. */
+  applicationId: string;
 }
 
 export class Mirror {
@@ -41,10 +43,14 @@ export class Mirror {
   private hooks: WebhookPool;
   private glossaryCache: { at: number; rows: { term: string; note: string | null }[] } | null = null;
   private recent = new Map<string, string[]>();
+  /** webhook id → true if it is one of our mirror webhooks (resolved lazily by name). */
+  private webhookOwnership = new Map<string, boolean>();
+  /** Message ids this bot deleted itself; their delete events are echoes, not new intents. */
+  private selfDeleted = new Set<string>();
   paused = false;
 
   constructor(private d: MirrorDeps) {
-    this.hooks = new WebhookPool(d.guild, d.db);
+    this.hooks = new WebhookPool(d.guild, d.db, (id) => d.groups.addWebhook(id));
   }
 
   get guild() {
@@ -54,7 +60,29 @@ export class Mirror {
   /** Called on messageCreate. Decides whether the message is ours to mirror. */
   onCreate(message: Message) {
     if (!this.accepts(message)) return;
-    void this.queue.run(message.channelId, () => this.mirrorNew(message).catch((e) => log.error("mirror failed", { id: message.id, ...errInfo(e) })));
+    void this.queue.run(message.channelId, async () => {
+      if (await this.isOwnMirrorWebhook(message)) return;
+      await this.mirrorNew(message).catch((e) => log.error("mirror failed", { id: message.id, ...errInfo(e) }));
+    });
+  }
+
+  /**
+   * Second loop-guard layer. A message from a webhook we do not have on record
+   * but that carries our application id came from a webhook this bot created.
+   * Only our "AMX Mirror" webhooks count as ours; anything else (a test poster,
+   * a webhook an admin made through the bot) is mirrored like any other bot.
+   */
+  private async isOwnMirrorWebhook(message: Message): Promise<boolean> {
+    const id = message.webhookId;
+    if (!id || message.applicationId !== this.d.applicationId) return false;
+    if (this.d.groups.isOurWebhook(id)) return true;
+    const known = this.webhookOwnership.get(id);
+    if (known !== undefined) return known;
+    const hook = await message.client.fetchWebhook(id).catch(() => null);
+    const ours = hook?.name === WEBHOOK_NAME;
+    this.webhookOwnership.set(id, ours);
+    if (ours) this.d.groups.addWebhook(id);
+    return ours;
   }
 
   onUpdate(message: Message | PartialMessage) {
@@ -66,6 +94,7 @@ export class Mirror {
   onDelete(message: Message | PartialMessage) {
     const hit = this.d.groups.lookup(message.channelId);
     if (!hit) return;
+    if (this.selfDeleted.delete(message.id)) return;
     void this.queue.run(message.channelId, () => this.mirrorDelete(message.id).catch((e) => log.error("delete failed", { id: message.id, ...errInfo(e) })));
   }
 
@@ -76,6 +105,8 @@ export class Mirror {
     const hit = this.d.groups.lookup(message.channelId);
     if (!hit || hit.group.paused || this.paused) return false;
     if (message.author.id === this.d.botUserId) return false;
+    // Loop guard layer 1: webhook ids we know we own. Layer 2 (application id +
+    // webhook name) runs in isOwnMirrorWebhook before mirroring.
     if (this.d.groups.isOurWebhook(message.webhookId)) return false;
     if (message.type !== MessageType.Default && message.type !== MessageType.Reply) return false;
     return true;
@@ -281,6 +312,8 @@ export class Mirror {
     }
     const rows = await this.d.db.mirrorsOf(sourceId);
     if (rows.length === 0 && !asMirror) return;
+    // Claim the rows first so the delete events our own deletions produce find nothing to do.
+    await this.d.db.deleteMap(sourceId);
 
     for (const r of rows) {
       if (r.mirror_message_id === messageId) continue;
@@ -288,20 +321,23 @@ export class Mirror {
       if (!target) continue;
       try {
         const hook = await this.hooks.ensure(target);
+        this.selfDeleted.add(r.mirror_message_id);
         await hook.deleteMessage(r.mirror_message_id);
       } catch (e) {
-        log.warn("mirror delete failed", { id: r.mirror_message_id, ...errInfo(e) });
+        this.selfDeleted.delete(r.mirror_message_id);
+        if (!/Unknown Message/.test(String(e))) log.warn("mirror delete failed", { id: r.mirror_message_id, ...errInfo(e) });
       }
     }
     if (asMirror && sourceChannel) {
       try {
         const ch = await this.d.guild.channels.fetch(sourceChannel);
+        this.selfDeleted.add(sourceId);
         if (ch?.isTextBased()) await ch.messages.delete(sourceId);
       } catch (e) {
-        log.warn("original delete failed", { id: sourceId, ...errInfo(e) });
+        this.selfDeleted.delete(sourceId);
+        if (!/Unknown Message/.test(String(e))) log.warn("original delete failed", { id: sourceId, ...errInfo(e) });
       }
     }
-    await this.d.db.deleteMap(sourceId);
     log.info("mirror deleted", { id: sourceId, mirrors: rows.length });
   }
 

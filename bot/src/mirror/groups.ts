@@ -32,6 +32,11 @@ export class GroupIndex {
     return !!webhookId && this.webhookIds.has(webhookId);
   }
 
+  /** Called the moment a webhook is created so loop detection never lags the database. */
+  addWebhook(webhookId: string) {
+    this.webhookIds.add(webhookId);
+  }
+
   /** Targets for a source channel: every other member of its group. */
   targetsOf(channelId: string): GroupMember[] {
     const hit = this.byChannel.get(channelId);

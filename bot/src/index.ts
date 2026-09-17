@@ -41,7 +41,7 @@ async function main() {
       await guild.roles.fetch();
       groups = new GroupIndex(db, guildId);
       await groups.reload();
-      mirror = new Mirror({ guild, db, groups, translator, botUserId: c.user.id });
+      mirror = new Mirror({ guild, db, groups, translator, botUserId: c.user.id, applicationId: c.application.id });
       mirror.paused = groups.groups.length > 0 && groups.groups.every((g) => g.paused);
 
       await guild.commands.set(commandDefinitions);

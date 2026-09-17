@@ -1,7 +1,7 @@
 import { WebhookClient, type Guild, type TextChannel, type NewsChannel } from "discord.js";
 import type { Db, GroupMember } from "../db/index.js";
 
-const WEBHOOK_NAME = "AMX Mirror";
+export const WEBHOOK_NAME = "AMX Mirror";
 
 /** Names Discord rejects for webhooks. */
 export function sanitizeUsername(name: string): string {
@@ -17,7 +17,7 @@ export function sanitizeUsername(name: string): string {
 export class WebhookPool {
   private clients = new Map<string, WebhookClient>();
 
-  constructor(private guild: Guild, private db: Db) {}
+  constructor(private guild: Guild, private db: Db, private onCreated?: (webhookId: string) => void) {}
 
   async ensure(member: GroupMember): Promise<WebhookClient> {
     const cached = this.clients.get(member.channel_id);
@@ -34,6 +34,7 @@ export class WebhookPool {
       if (!hook.token) throw new Error(`webhook ${hook.id} has no token`);
       id = hook.id;
       token = hook.token;
+      this.onCreated?.(id);
       await this.db.upsertMember({ ...member, webhook_id: id, webhook_token: token });
       member.webhook_id = id;
       member.webhook_token = token;

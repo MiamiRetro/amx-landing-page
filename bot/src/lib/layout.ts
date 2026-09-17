@@ -61,6 +61,8 @@ export function buildOverwrites(
   viewRoles: string[] | undefined,
   readOnly: boolean | undefined,
   viewUsers: string[] = [],
+  /** Roles the layout will create; in a dry run they do not exist yet, so they are skipped instead of failing. */
+  pendingRoles: Set<string> = new Set(),
 ): OverwriteResolvable[] {
   const me = guild.members.me;
   const ows: OverwriteResolvable[] = [];
@@ -68,7 +70,10 @@ export function buildOverwrites(
     ows.push({ id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] });
     for (const name of viewRoles) {
       const role = findRole(guild, name);
-      if (!role) throw new Error(`Role "${name}" does not exist. Add it under roles: in the layout.`);
+      if (!role) {
+        if (pendingRoles.has(name.toLowerCase())) continue;
+        throw new Error(`Role "${name}" does not exist. Add it under roles: in the layout.`);
+      }
       ows.push({ id: role.id, allow: [PermissionFlagsBits.ViewChannel] });
     }
     for (const id of new Set([...viewUsers, ...opsUserIds()])) {
@@ -86,6 +91,7 @@ export function buildOverwrites(
 
 export async function applyLayout(guild: Guild, layout: Layout, dryRun: boolean): Promise<Change[]> {
   const changes: Change[] = [];
+  const pendingRoles = new Set(dryRun ? (layout.roles ?? []).map((r) => r.name.toLowerCase()) : []);
 
   for (const r of layout.roles ?? []) {
     if (findRole(guild, r.name)) continue;
@@ -99,7 +105,7 @@ export async function applyLayout(guild: Guild, layout: Layout, dryRun: boolean)
     let category = guild.channels.cache.find(
       (c): c is CategoryChannel => c.type === ChannelType.GuildCategory && c.name.toLowerCase() === cat.name.toLowerCase(),
     );
-    const catOws = buildOverwrites(guild, cat.viewRoles, undefined, cat.viewUsers);
+    const catOws = buildOverwrites(guild, cat.viewRoles, undefined, cat.viewUsers, pendingRoles);
     if (!category) {
       changes.push({ action: "create-category", target: cat.name, detail: cat.viewRoles ? `visible to ${cat.viewRoles.join(", ")}` : "public" });
       if (!dryRun) {
@@ -115,7 +121,7 @@ export async function applyLayout(guild: Guild, layout: Layout, dryRun: boolean)
       const existing = guild.channels.cache.find(
         (c): c is NonThreadGuildBasedChannel => !c.isThread() && c.type === type && c.name.toLowerCase() === ch.name.toLowerCase(),
       );
-      const ows = ch.viewRoles || ch.readOnly ? buildOverwrites(guild, ch.viewRoles ?? cat.viewRoles, ch.readOnly, cat.viewUsers) : undefined;
+      const ows = ch.viewRoles || ch.readOnly ? buildOverwrites(guild, ch.viewRoles ?? cat.viewRoles, ch.readOnly, cat.viewUsers, pendingRoles) : undefined;
 
       if (!existing) {
         changes.push({ action: "create-channel", target: `${cat.name} / #${ch.name}` });

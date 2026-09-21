@@ -9,13 +9,14 @@ import { Db } from "../src/db/index.js";
 import { connect } from "../src/lib/client.js";
 import { WEBHOOK_NAME } from "../src/mirror/webhooks.js";
 
-const GROUPS: { name: string; source: string; readOnly: boolean }[] = [
-  { name: "general", source: "💬・general", readOnly: false },
-  { name: "trader-chat", source: "📈・trader-chat", readOnly: false },
-  { name: "help-desk", source: "☎️・help-desk", readOnly: false },
-  { name: "bitcoin", source: "🟠・bitcoin", readOnly: false },
-  { name: "trade-alerts", source: "⚡・trade-alerts", readOnly: true },
-  { name: "announcements", source: "📢・announcements", readOnly: true },
+/** Twins are matched to sources by the emoji prefix they share, inside each language category. */
+const GROUPS: { name: string; source: string; emoji: string; readOnly: boolean }[] = [
+  { name: "general", source: "💬・general", emoji: "💬", readOnly: false },
+  { name: "trader-chat", source: "📈・trader-chat", emoji: "📈", readOnly: false },
+  { name: "help-desk", source: "☎️・help-desk", emoji: "☎️", readOnly: false },
+  { name: "bitcoin", source: "🟠・bitcoin", emoji: "🟠", readOnly: false },
+  { name: "trade-alerts", source: "⚡・trade-alerts", emoji: "⚡", readOnly: true },
+  { name: "announcements", source: "📢・announcements", emoji: "📢", readOnly: true },
 ];
 const CATEGORY: Record<Exclude<Lang, "en">, string> = { zh: "╭───  中文  ───╮", ko: "╭───  한국어  ───╮", id: "╭───  Bahasa Indonesia  ───╮" };
 const ROLE: Record<Exclude<Lang, "en">, string> = { zh: "中文", ko: "한국어", id: "Bahasa Indonesia" };
@@ -58,7 +59,7 @@ async function main() {
       const linked: string[] = [`en=#${source.name}`];
       for (const lang of LANGS) {
         if (lang === "en") continue;
-        const twin = guild.channels.cache.find((c): c is TextChannel => c.type === ChannelType.GuildText && c.name.endsWith(`${g.name}-${lang}`) && c.parentId && guild.channels.cache.get(c.parentId)?.name === CATEGORY[lang]) as TextChannel | undefined;
+        const twin = guild.channels.cache.find((c): c is TextChannel => c.type === ChannelType.GuildText && c.name.startsWith(g.emoji) && !!c.parentId && guild.channels.cache.get(c.parentId)?.name === CATEGORY[lang]) as TextChannel | undefined;
         if (!twin) throw new Error(`twin for ${g.name} ${lang} not found`);
         // ensure the mirror webhook now so the notice can be posted through it and the bot reuses it
         const hooks = await twin.fetchWebhooks();

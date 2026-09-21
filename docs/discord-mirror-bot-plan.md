@@ -235,7 +235,7 @@ Privacy note: message content leaves Discord to a third-party API. Add a line to
 | Channels to mirror | Decided after a server snapshot. The channel manager in `bot/` (`npm run channels -- snapshot`) produces a per-channel activity report; the `channel-manager` Claude agent reads it and recommends a list. |
 | Translation model | **Claude Sonnet 5.** No native speakers are available to rate a bake-off, so the default ships. The provider stays swappable via `TRANSLATION_PROVIDER`; measured live latency 2 to 5 s per message. |
 | Language roles | **One per member.** Onboarding assigns exactly one; switching replaces it. No double pings. |
-| Hosting | **Railway.** One service from the `bot/` directory (set Root Directory to `bot`), Dockerfile build, `DISCORD_TOKEN`, `DISCORD_GUILD_ID`, `ANTHROPIC_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` as service variables. |
+| Hosting | **Railway**, one service from the `bot/` directory, **auto-deploying the working branch `claude/discord-multilingual-mirror-bot-k86ksq`** by the owner's choice (fix-in-production project). Every push goes live within about two minutes, so pushes must be typechecked and tested first. Variables: `DISCORD_TOKEN`, `DISCORD_GUILD_ID`, `ANTHROPIC_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `OPS_USER_IDS`. |
 
 ## 10. Channel decisions (from the 6 Sep 2026 snapshot)
 
@@ -258,7 +258,9 @@ Related: the old iTranslator bot is being removed so members never see double tr
 
 ## 11. Rollout log
 
-**21 Sep 2026, live.** Applied `bot/layouts/languages.json`: roles 中文 / 한국어 / Bahasa Indonesia, three role-gated categories, 18 twin channels. Six groups linked (general, trader-chat, help-desk, bitcoin two-way; trade-alerts, announcements read-only) and translated notices posted in every twin. Bot on Railway (Claude Sonnet 5) picked the groups up automatically. Language roles are bot-managed via `/language`, granted only to holders of Member/Members and swept every 10 minutes. Teaser twins for unverified members deferred to a follow-up. Pinning the notices is pending the bot role receiving Discord's separate Pin Messages permission.
+**21 Sep 2026, live.** Applied `bot/layouts/languages.json`: roles 中文 / 한국어 / Bahasa Indonesia, three role-gated categories, 18 twin channels. Six groups linked (general, trader-chat, help-desk, bitcoin two-way; trade-alerts, announcements read-only) and translated notices posted in every twin. Bot on Railway (Claude Sonnet 5) picked the groups up automatically. Language roles are bot-managed via `/language`, granted only to holders of Member/Members and swept every 10 minutes. Teaser twins for unverified members deferred to a follow-up. Notices pinned once the bot role received Discord's separate Pin Messages permission. Twins renamed to native-language names (emoji kept). Sandbox removed. Personal ops overwrites removed from language categories: the owner monitors through the Moderators and Team roles so "View Server as Role" stays truthful.
+
+**Language picker.** A button message (English, 中文, 한국어, Bahasa Indonesia; English kept so members can revert) posted by the bot. Choices are stored in `language_prefs` and applied immediately for verified members, or automatically once an unverified member gains the Member role. Tested in a hidden `#language-test` channel; destined for `#📍・start-here`. Per-language invite links will feed the same preference table later.
 
 ## 12. Channel manager (built)
 

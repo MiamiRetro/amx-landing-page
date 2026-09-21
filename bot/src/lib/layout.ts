@@ -79,7 +79,12 @@ export function buildOverwrites(
     for (const id of new Set([...viewUsers, ...opsUserIds()])) {
       ows.push({ id, type: OverwriteType.Member, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] });
     }
-    if (me) ows.push({ id: me.id, type: OverwriteType.Member, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ManageWebhooks, PermissionFlagsBits.ManageMessages] });
+    if (me) {
+      const mine = [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ManageWebhooks, PermissionFlagsBits.ManageMessages, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory];
+      // Pin Messages is a separate permission since 2025; the bot can only grant it to itself if its role has it.
+      if (me.permissions.has(PermissionFlagsBits.PinMessages)) mine.push(PermissionFlagsBits.PinMessages);
+      ows.push({ id: me.id, type: OverwriteType.Member, allow: mine });
+    }
   }
   if (readOnly) {
     const existing = ows.find((o) => o.id === guild.roles.everyone.id) as { deny?: bigint[] } | undefined;

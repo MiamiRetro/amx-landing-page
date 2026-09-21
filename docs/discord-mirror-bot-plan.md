@@ -256,7 +256,11 @@ Measured 17 Sep 2026 over 30 days: about 18 messages per day across the six mirr
 
 Related: the old iTranslator bot is being removed so members never see double translations. Language roles must be granted only to members who already hold the Member role, since Discord cannot require two roles at once (Phase 3).
 
-## 11. Channel manager (built)
+## 11. Rollout log
+
+**21 Sep 2026, live.** Applied `bot/layouts/languages.json`: roles 中文 / 한국어 / Bahasa Indonesia, three role-gated categories, 18 twin channels. Six groups linked (general, trader-chat, help-desk, bitcoin two-way; trade-alerts, announcements read-only) and translated notices posted in every twin. Bot on Railway (Claude Sonnet 5) picked the groups up automatically. Language roles are bot-managed via `/language`, granted only to holders of Member/Members and swept every 10 minutes. Teaser twins for unverified members deferred to a follow-up. Pinning the notices is pending the bot role receiving Discord's separate Pin Messages permission.
+
+## 12. Channel manager (built)
 
 Lives in `bot/` on this branch. It does two jobs before any mirroring code runs:
 

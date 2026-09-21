@@ -233,7 +233,7 @@ Privacy note: message content leaves Discord to a third-party API. Add a line to
 |---|---|
 | Chinese variant | **Simplified** (`zh`). Traditional can be added later as `zh-TW`. |
 | Channels to mirror | Decided after a server snapshot. The channel manager in `bot/` (`npm run channels -- snapshot`) produces a per-channel activity report; the `channel-manager` Claude agent reads it and recommends a list. |
-| Translation model | Decided by a blind bake-off in Phase 1 (section 6). Default while it runs: Claude Sonnet 5. |
+| Translation model | **Claude Sonnet 5.** No native speakers are available to rate a bake-off, so the default ships. The provider stays swappable via `TRANSLATION_PROVIDER`; measured live latency 2 to 5 s per message. |
 | Language roles | **One per member.** Onboarding assigns exactly one; switching replaces it. No double pings. |
 | Hosting | **Railway.** One service from the `bot/` directory (set Root Directory to `bot`), Dockerfile build, `DISCORD_TOKEN`, `DISCORD_GUILD_ID`, `ANTHROPIC_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` as service variables. |
 
@@ -252,7 +252,7 @@ Server: BLKBöX Trading Floor, 704 members, every channel role-gated (hidden fro
 | Forums, voice, tickets, logs, mod-chat, testimonials, beta-testing | Skip |
 | #📍・start-here, setup-guides, trading-strategies | Translate once as static copies, not live mirrors |
 
-Still pending: activity numbers from a rerun with the bot granted Administrator, to confirm volumes and cost.
+Measured 17 Sep 2026 over 30 days: about 18 messages per day across the six mirror channels (bitcoin 7.5, general 4.2, trader-chat 3.5, trade-alerts 1.4, help-desk 0.6, announcements 0.5). Translation cost at this volume is roughly $1 to $3 per month on Sonnet 5.
 
 Related: the old iTranslator bot is being removed so members never see double translations. Language roles must be granted only to members who already hold the Member role, since Discord cannot require two roles at once (Phase 3).
 

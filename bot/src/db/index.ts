@@ -130,6 +130,16 @@ export class Db {
     unwrap(await this.sb.from("settings").upsert({ guild_id: guildId, key, value }, { onConflict: "guild_id,key" }), "set setting");
   }
 
+  async getLangPref(guildId: string, userId: string): Promise<Lang | null> {
+    const r = await this.sb.from("language_prefs").select("lang").eq("guild_id", guildId).eq("user_id", userId).maybeSingle();
+    if (r.error) throw new Error(`get lang pref: ${r.error.message}`);
+    return (r.data?.lang as Lang | undefined) ?? null;
+  }
+
+  async setLangPref(guildId: string, userId: string, lang: Lang) {
+    unwrap(await this.sb.from("language_prefs").upsert({ guild_id: guildId, user_id: userId, lang, updated_at: new Date().toISOString() }, { onConflict: "guild_id,user_id" }), "set lang pref");
+  }
+
   async logUsage(row: { provider: string; input_tokens: number; cached_tokens: number; output_tokens: number; segments: number; ms: number; ok: boolean }) {
     const r = await this.sb.from("usage_log").insert(row);
     if (r.error) console.error("usage log failed:", r.error.message);

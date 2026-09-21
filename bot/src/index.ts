@@ -8,6 +8,7 @@ import { GroupIndex } from "./mirror/groups.js";
 import { Mirror } from "./mirror/mirror.js";
 import { Semaphore } from "./mirror/queue.js";
 import { LanguageRoles } from "./roles.js";
+import { handlePickerButton, PICKER_PREFIX } from "./picker.js";
 import { providerFromSpec, Translator } from "./translate/index.js";
 
 async function main() {
@@ -68,8 +69,14 @@ async function main() {
   client.on(Events.MessageDelete, (m) => mirror?.onDelete(m));
   client.on(Events.MessageBulkDelete, (ms) => ms.forEach((m) => mirror?.onDelete(m)));
   client.on(Events.InteractionCreate, (i) => {
-    if (!i.isChatInputCommand() || !mirror || !groups || !roles) return;
+    if (!mirror || !groups || !roles) return;
+    if (i.isButton() && i.customId.startsWith(PICKER_PREFIX)) return void handlePickerButton(i, roles);
+    if (!i.isChatInputCommand()) return;
     void handleCommand(i, { guild: mirror.guild, db, groups, mirror, providerId: primary.id, roles });
+  });
+  client.on(Events.GuildMemberUpdate, (before, after) => {
+    if (!roles || before.roles.cache.size === after.roles.cache.size) return;
+    void roles.applyPending(after).catch((e) => log.warn("apply pending language failed", errInfo(e)));
   });
   client.on(Events.Error, (e) => log.error("client error", errInfo(e)));
   client.on(Events.Warn, (w) => log.warn("client warning", { warning: w }));

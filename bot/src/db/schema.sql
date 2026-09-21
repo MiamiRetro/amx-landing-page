@@ -77,3 +77,13 @@ alter table translation_cache enable row level security;
 alter table glossary enable row level security;
 alter table settings enable row level security;
 alter table usage_log enable row level security;
+
+-- Remembered language choice, applied once the member is verified.
+create table if not exists language_prefs (
+  guild_id text not null,
+  user_id text not null,
+  lang text not null check (lang in ('en','zh','ko','id')),
+  updated_at timestamptz not null default now(),
+  primary key (guild_id, user_id)
+);
+alter table language_prefs enable row level security;

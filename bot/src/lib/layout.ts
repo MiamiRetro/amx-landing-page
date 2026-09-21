@@ -19,8 +19,10 @@ export interface Layout {
     name: string;
     /** Only these roles may view the category and its channels. Omit for public. */
     viewRoles?: string[];
-    /** User IDs that can always view the category regardless of role (ops accounts). Merged with OPS_USER_IDS. */
+    /** User IDs that can always view the category regardless of role. */
     viewUsers?: string[];
+    /** Also grant the OPS_USER_IDS accounts personal access. Off by default: personal overwrites make "View Server as Role" misleading. */
+    opsAccess?: boolean;
     channels: Array<{
       name: string;
       type?: "text" | "announcement" | "voice" | "forum";
@@ -63,6 +65,7 @@ export function buildOverwrites(
   viewUsers: string[] = [],
   /** Roles the layout will create; in a dry run they do not exist yet, so they are skipped instead of failing. */
   pendingRoles: Set<string> = new Set(),
+  includeOps = false,
 ): OverwriteResolvable[] {
   const me = guild.members.me;
   const ows: OverwriteResolvable[] = [];
@@ -76,7 +79,7 @@ export function buildOverwrites(
       }
       ows.push({ id: role.id, allow: [PermissionFlagsBits.ViewChannel] });
     }
-    for (const id of new Set([...viewUsers, ...opsUserIds()])) {
+    for (const id of new Set([...viewUsers, ...(includeOps ? opsUserIds() : [])])) {
       ows.push({ id, type: OverwriteType.Member, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] });
     }
     if (me) {
@@ -110,7 +113,7 @@ export async function applyLayout(guild: Guild, layout: Layout, dryRun: boolean)
     let category = guild.channels.cache.find(
       (c): c is CategoryChannel => c.type === ChannelType.GuildCategory && c.name.toLowerCase() === cat.name.toLowerCase(),
     );
-    const catOws = buildOverwrites(guild, cat.viewRoles, undefined, cat.viewUsers, pendingRoles);
+    const catOws = buildOverwrites(guild, cat.viewRoles, undefined, cat.viewUsers, pendingRoles, cat.opsAccess);
     if (!category) {
       changes.push({ action: "create-category", target: cat.name, detail: cat.viewRoles ? `visible to ${cat.viewRoles.join(", ")}` : "public" });
       if (!dryRun) {
@@ -126,7 +129,7 @@ export async function applyLayout(guild: Guild, layout: Layout, dryRun: boolean)
       const existing = guild.channels.cache.find(
         (c): c is NonThreadGuildBasedChannel => !c.isThread() && c.type === type && c.name.toLowerCase() === ch.name.toLowerCase(),
       );
-      const ows = ch.viewRoles || ch.readOnly ? buildOverwrites(guild, ch.viewRoles ?? cat.viewRoles, ch.readOnly, cat.viewUsers, pendingRoles) : undefined;
+      const ows = ch.viewRoles || ch.readOnly ? buildOverwrites(guild, ch.viewRoles ?? cat.viewRoles, ch.readOnly, cat.viewUsers, pendingRoles, cat.opsAccess) : undefined;
 
       if (!existing) {
         changes.push({ action: "create-channel", target: `${cat.name} / #${ch.name}` });

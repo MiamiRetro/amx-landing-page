@@ -19,8 +19,8 @@ import {
 } from "discord.js";
 import { PICKER_PREFIX } from "./picker.js";
 
-/** Brand: black, white heavy type, BLKBöX green. */
-const GREEN = 0x00d696;
+/** Brand from blkbox.pro: navy, Sora, cyan and emerald accents, white wordmark. */
+const GREEN = 0x22d3ee; // site cyan
 const ASSETS = join(dirname(fileURLToPath(import.meta.url)), "..", "assets", "start-here");
 
 /** Server emoji used on the page. */

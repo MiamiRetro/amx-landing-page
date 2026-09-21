@@ -1,23 +1,20 @@
 <!doctype html><html><head><meta charset="utf-8"><style>
-@font-face{font-family:Inter;src:url(node_modules/@fontsource/inter/files/inter-latin-900-normal.woff2) format("woff2");font-weight:900}
-@font-face{font-family:Inter;src:url(node_modules/@fontsource/inter/files/inter-latin-800-normal.woff2) format("woff2");font-weight:800}
+@font-face{font-family:Sora;src:url(node_modules/@fontsource/sora/files/sora-latin-800-normal.woff2) format("woff2");font-weight:800}
+@font-face{font-family:Sora;src:url(node_modules/@fontsource/sora/files/sora-latin-700-normal.woff2) format("woff2");font-weight:700}
 *{margin:0;box-sizing:border-box}
-body{width:1200px;height:300px;background:#000;overflow:hidden;font-family:Inter,sans-serif;color:#fff;position:relative}
-.grid{position:absolute;inset:-40% -20% -20% -20%;transform:perspective(600px) rotateX(58deg);transform-origin:50% 100%;
- background-image:linear-gradient(rgba(0,214,150,.55) 1px,transparent 1px),linear-gradient(90deg,rgba(0,214,150,.55) 1px,transparent 1px);
- background-size:64px 64px;opacity:.9;mask-image:linear-gradient(to top,rgba(0,0,0,.9) 0%,rgba(0,0,0,.35) 55%,transparent 100%);-webkit-mask-image:linear-gradient(to top,rgba(0,0,0,.9) 0%,rgba(0,0,0,.35) 55%,transparent 100%)}
-.glow{position:absolute;left:-10%;bottom:-60%;width:120%;height:120%;background:radial-gradient(ellipse at 50% 100%,rgba(0,214,150,.42),transparent 62%)}
-.ridge{position:absolute;right:-6%;top:-25%;width:60%;height:120%;background-image:linear-gradient(rgba(0,214,150,.5) 1px,transparent 1px),linear-gradient(90deg,rgba(0,214,150,.5) 1px,transparent 1px);background-size:38px 38px;transform:perspective(500px) rotateX(55deg) rotateZ(-12deg);opacity:.6;mask-image:radial-gradient(ellipse at 60% 40%,#000 20%,transparent 70%);-webkit-mask-image:radial-gradient(ellipse at 60% 40%,#000 20%,transparent 70%)}
-.wrap{position:absolute;left:72px;top:0;height:300px;display:flex;align-items:center;gap:34px}
-.br{font-weight:900;font-size:150px;line-height:1;opacity:.95;transform:translateY(-6px)}
-.txt{display:flex;flex-direction:column;gap:10px}
-.kicker{font-weight:800;font-size:20px;letter-spacing:.32em;color:#00d696;text-transform:uppercase}
-.title{font-weight:900;font-size:82px;line-height:.95;letter-spacing:-.02em;text-transform:uppercase;text-shadow:0 0 40px rgba(0,214,150,.35)}
-.title.sm{font-size:64px}
-.logo{position:absolute;right:64px;top:50%;transform:translateY(-50%);width:120px;height:120px;border:6px solid #fff;display:flex;align-items:center;justify-content:center;flex-direction:column;font-weight:900;font-size:34px;line-height:.92;letter-spacing:-.02em;background:#000}
-.sub{font-weight:800;font-size:22px;color:#cfd3d8;letter-spacing:.02em}
+body{width:1200px;height:300px;background:#050d14;overflow:hidden;font-family:Sora,sans-serif;color:#fff;position:relative}
+.glow1{position:absolute;left:-10%;top:-40%;width:70%;height:180%;background:radial-gradient(48% 50% at 40% 45%,rgba(48,158,168,.30) 0%,rgba(48,158,168,.08) 55%,transparent 100%)}
+.glow2{position:absolute;right:-15%;bottom:-70%;width:80%;height:180%;background:radial-gradient(50% 50% at 60% 50%,rgba(16,185,129,.22) 0%,rgba(16,185,129,.05) 55%,transparent 100%)}
+.grid{position:absolute;inset:0;background-image:linear-gradient(rgba(34,211,238,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(34,211,238,.07) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(70% 90% at 50% 50%,#000 30%,transparent 100%);-webkit-mask-image:radial-gradient(70% 90% at 50% 50%,#000 30%,transparent 100%)}
+.line{position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,#22d3ee,#10b981 55%,transparent)}
+.wrap{position:absolute;left:80px;top:0;height:300px;display:flex;flex-direction:column;justify-content:center;gap:12px}
+.kicker{font-weight:700;font-size:18px;letter-spacing:.3em;color:#22d3ee;text-transform:uppercase}
+.title{font-weight:800;font-size:76px;line-height:1;letter-spacing:-.025em;color:#fff}
+.title.sm{font-size:62px}
+.sub{font-weight:700;font-size:22px;color:#93a4b3}
+.logo{position:absolute;right:72px;top:50%;transform:translateY(-50%);width:150px;height:150px;background:url(logo-white.png) center/contain no-repeat;opacity:.95;filter:drop-shadow(0 0 24px rgba(34,211,238,.25))}
 </style></head><body>
-<div class="glow"></div><div class="grid"></div><div class="ridge"></div>
-<div class="wrap"><div class="br">[</div><div class="txt"><div class="kicker" id="kicker"></div><div class="title" id="title"></div><div class="sub" id="sub"></div></div><div class="br">]</div></div>
-<div class="logo">BLK<span>BöX</span></div>
+<div class="glow1"></div><div class="glow2"></div><div class="grid"></div><div class="line"></div>
+<div class="wrap"><div class="kicker" id="kicker"></div><div class="title" id="title"></div><div class="sub" id="sub"></div></div>
+<div class="logo"></div>
 </body></html>

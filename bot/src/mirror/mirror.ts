@@ -59,6 +59,11 @@ export class Mirror {
 
   /** Called on messageCreate. Decides whether the message is ours to mirror. */
   onCreate(message: Message) {
+    // Our own mirrors still move the channel bookmark, so restarts do not re-scan them.
+    if (message.webhookId && this.d.groups.isOurWebhook(message.webhookId) && this.d.groups.lookup(message.channelId)) {
+      void this.d.db.setLastSeen(message.channelId, message.id).catch(() => {});
+      return;
+    }
     if (!this.accepts(message)) return;
     void this.queue.run(message.channelId, async () => {
       if (await this.isOwnMirrorWebhook(message)) return;
@@ -358,8 +363,11 @@ export class Mirror {
       const missed = await ch.messages.fetch({ after: hit.member.last_seen_message_id, limit: Math.min(limit, 100) }).catch(() => null);
       if (!missed || missed.size === 0) continue;
       const ordered = [...missed.values()].sort((a, b) => Number(BigInt(a.id) - BigInt(b.id)));
-      log.info("backfilling", { channel: channelId, count: ordered.length });
-      for (const m of ordered) this.onCreate(m);
+      const fresh = ordered.filter((m) => !this.d.groups.isOurWebhook(m.webhookId));
+      await this.d.db.setLastSeen(channelId, ordered[ordered.length - 1].id).catch(() => {});
+      if (fresh.length === 0) continue;
+      log.info("backfilling", { channel: channelId, count: fresh.length });
+      for (const m of fresh) this.onCreate(m);
     }
   }
 

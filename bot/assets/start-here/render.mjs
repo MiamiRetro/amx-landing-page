@@ -2,6 +2,7 @@ import { chromium } from "playwright-core";
 import { readFileSync } from "node:fs";
 const exe = process.argv[2];
 const specs = [
+  { file: "hero.png", kicker: "BLKBöX Trading Floor", title: "The crypto trader's<br>command center", sub: "Signals · Bots · Multi-exchange execution · Never miss a move", sm: true },
   { file: "language.png", kicker: "Step 1", title: "Choose your<br>language", sub: "选择语言 · 언어 선택 · Pilih bahasa", sm: true },
   { file: "rules.png", kicker: "Step 2", title: "The rules", sub: "Seven lines. Keep it clean." },
   { file: "start.png", kicker: "Step 3", title: "Get started", sub: "Account · Exchange · Trade" },

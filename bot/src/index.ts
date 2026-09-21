@@ -7,6 +7,7 @@ import { log, setLogLevel, errInfo } from "./log.js";
 import { GroupIndex } from "./mirror/groups.js";
 import { Mirror } from "./mirror/mirror.js";
 import { Semaphore } from "./mirror/queue.js";
+import { LanguageRoles } from "./roles.js";
 import { providerFromSpec, Translator } from "./translate/index.js";
 
 async function main() {
@@ -33,6 +34,7 @@ async function main() {
 
   let mirror: Mirror | null = null;
   let groups: GroupIndex | null = null;
+  let roles: LanguageRoles | null = null;
 
   client.once(Events.ClientReady, async (c) => {
     try {
@@ -44,9 +46,17 @@ async function main() {
       mirror = new Mirror({ guild, db, groups, translator, botUserId: c.user.id, applicationId: c.application.id });
       mirror.paused = groups.groups.length > 0 && groups.groups.every((g) => g.paused);
 
+      roles = new LanguageRoles(guild, db);
+      await roles.load();
+
       await guild.commands.set(commandDefinitions);
       log.info("ready", { guild: guild.name, groups: groups.groups.length, provider: primary.id, fallbacks: fallbacks.map((f) => f.id) });
       await mirror.backfill(config.backfillLimit());
+
+      // Pick up groups linked outside the bot (scripts, another admin) and keep language roles honest.
+      const g = groups, r = roles;
+      setInterval(() => void g.reload().catch((e) => log.warn("group reload failed", errInfo(e))), 60_000).unref();
+      setInterval(() => void r.sweep().catch((e) => log.warn("role sweep failed", errInfo(e))), 10 * 60_000).unref();
     } catch (e) {
       log.error("startup failed", errInfo(e));
       process.exit(1);
@@ -58,8 +68,8 @@ async function main() {
   client.on(Events.MessageDelete, (m) => mirror?.onDelete(m));
   client.on(Events.MessageBulkDelete, (ms) => ms.forEach((m) => mirror?.onDelete(m)));
   client.on(Events.InteractionCreate, (i) => {
-    if (!i.isChatInputCommand() || !mirror || !groups) return;
-    void handleCommand(i, { guild: mirror.guild, db, groups, mirror, providerId: primary.id });
+    if (!i.isChatInputCommand() || !mirror || !groups || !roles) return;
+    void handleCommand(i, { guild: mirror.guild, db, groups, mirror, providerId: primary.id, roles });
   });
   client.on(Events.Error, (e) => log.error("client error", errInfo(e)));
   client.on(Events.Warn, (w) => log.warn("client warning", { warning: w }));

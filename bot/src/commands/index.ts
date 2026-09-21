@@ -12,6 +12,7 @@ import { buildOverwrites } from "../lib/layout.js";
 import { log, errInfo } from "../log.js";
 import type { GroupIndex } from "../mirror/groups.js";
 import type { Mirror } from "../mirror/mirror.js";
+import type { LanguageRoles } from "../roles.js";
 
 const langChoices = LANGS.map((l) => ({ name: `${LANG_NAMES[l]} (${l})`, value: l }));
 
@@ -68,6 +69,11 @@ export const commandDefinitions = [
     )
     .addSubcommand((s) => s.setName("remove").setDescription("Remove a term").addStringOption((o) => o.setName("term").setDescription("Term").setRequired(true)))
     .addSubcommand((s) => s.setName("list").setDescription("List terms")),
+  new SlashCommandBuilder()
+    .setName("language")
+    .setDescription("Choose the language you read the community in / 选择语言 / 언어 선택 / Pilih bahasa")
+    .setDMPermission(false)
+    .addStringOption((o) => o.setName("lang").setDescription("Language").addChoices(...langChoices).setRequired(true)),
 ].map((c) => c.toJSON());
 
 export interface CommandDeps {
@@ -76,13 +82,17 @@ export interface CommandDeps {
   groups: GroupIndex;
   mirror: Mirror;
   providerId: string;
+  roles: LanguageRoles;
 }
 
 export async function handleCommand(i: ChatInputCommandInteraction, d: CommandDeps) {
   if (!i.inGuild() || i.guildId !== d.guild.id) return;
   await i.deferReply({ ephemeral: true });
   try {
-    const text = i.commandName === "mirror" ? await mirrorCommand(i, d) : await glossaryCommand(i, d);
+    const text =
+      i.commandName === "mirror" ? await mirrorCommand(i, d)
+      : i.commandName === "language" ? await languageCommand(i, d)
+      : await glossaryCommand(i, d);
     await i.editReply(text.slice(0, 1900));
   } catch (e) {
     log.error("command failed", { command: i.commandName, sub: i.options.getSubcommand(false), ...errInfo(e) });
@@ -181,6 +191,13 @@ async function mirrorCommand(i: ChatInputCommandInteraction, d: CommandDeps): Pr
     return out.join("\n");
   }
   throw new Error(`unknown subcommand ${sub}`);
+}
+
+async function languageCommand(i: ChatInputCommandInteraction, d: CommandDeps): Promise<string> {
+  const lang = i.options.getString("lang", true);
+  if (!isLang(lang)) throw new Error("unknown language");
+  const member = await d.guild.members.fetch(i.user.id);
+  return d.roles.set(member, lang);
 }
 
 async function glossaryCommand(i: ChatInputCommandInteraction, d: CommandDeps): Promise<string> {

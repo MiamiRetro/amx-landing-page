@@ -33,20 +33,12 @@ async function main() {
     }
     if (!ch) throw new Error(`channel ${name} not found`);
 
-    // banner image from the original page
-    const original = text("📍・start-here");
-    let banner: Buffer | undefined;
-    if (original) {
-      const msgs = await original.messages.fetch({ limit: 50 });
-      const att = msgs.map((m) => [...m.attachments.values()]).flat().find((a) => /links/i.test(a.name) && a.contentType?.startsWith("image/"));
-      if (att) banner = Buffer.from(await (await fetch(att.url)).arrayBuffer());
-    }
     const helpDesk = text("☎️・help-desk");
     const helpDeskUrl = helpDesk ? `https://discord.com/channels/${guild.id}/${helpDesk.id}` : `https://discord.com/channels/${guild.id}`;
 
     const old = (await ch.messages.fetch({ limit: 50 })).filter((m) => m.author.id === me.id);
     for (const m of old.values()) await m.delete().catch(() => {});
-    for (const payload of startHereMessages({ banner, helpDeskUrl })) await ch.send(payload);
+    for (const payload of startHereMessages({ helpDeskUrl })) await ch.send(payload);
     console.log(`posted ${startHereMessages({ helpDeskUrl }).length} messages in #${ch.name}: https://discord.com/channels/${guild.id}/${ch.id}`);
   } finally { await client.destroy(); }
 }

@@ -1,10 +1,10 @@
-import { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, type BaseMessageOptions } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, type BaseMessageOptions } from "discord.js";
 import { pickerMessage } from "./picker.js";
 
 const TEAL = 0x00c9a7;
 const PURPLE = 0x845ef7;
 
-/** Server emoji used on the original start-here page. */
+/** Server emoji used on the start-here page. */
 const E = {
   BLK: "<:BLK:1266575686454480936>",
   YT: "<:YT:1314772706402504754>",
@@ -20,76 +20,59 @@ const link = (label: string, url: string, emoji?: string) => {
 };
 const row = (...buttons: ButtonBuilder[]) => new ActionRowBuilder<ButtonBuilder>().addComponents(...buttons);
 
-/**
- * The rebuilt start-here page: six messages, top to bottom.
- * `banner` is the existing "Official BLKBöX links" image, re-uploaded.
- * `helpDeskUrl` is a jump link to the help-desk channel.
- */
-export function startHereMessages(opts: { banner?: Buffer; helpDeskUrl: string }): BaseMessageOptions[] {
+/** The start-here page: four messages. Short lines, one idea each, buttons do the work. */
+export function startHereMessages(opts: { helpDeskUrl: string }): BaseMessageOptions[] {
   const welcome = new EmbedBuilder()
     .setColor(TEAL)
-    .setTitle("👋  Welcome to the BLKBöX Trading Floor")
-    .setDescription(
-      [
-        "Automated trading bots, live signals and a community of traders. Three steps to get going:",
-        "",
-        "**1 · Pick your language** below. Chat, alerts and announcements will show up in it.",
-        "**2 · Read the rules.** Short, and they keep this place useful.",
-        "**3 · Create your free account** and connect an exchange to start trading with the bots.",
-        "",
-        "-# 欢迎 · 환영합니다 · Selamat datang — 在下方选择你的语言 · 아래에서 언어를 선택하세요 · Pilih bahasamu di bawah",
-      ].join("\n"),
-    );
+    .setTitle("👋  Welcome to BLKBöX")
+    .setDescription(["**1.** Pick your language below", "**2.** Read the rules", "**3.** Create your account and connect an exchange"].join("\n"));
 
   const rules = new EmbedBuilder()
     .setColor(TEAL)
-    .setTitle("📜  Community Rules")
+    .setTitle("📜  Rules")
     .setDescription(
       [
-        "**1. Respect everyone.** Courtesy to all members. No harassment, hate speech or personal attacks.",
-        "**2. No financial advice.** Everything here is education. Do your own research before any trade.",
-        "**3. Use the bots responsibly.** No exploiting, unauthorised sharing or misuse.",
-        "**4. No spam or self-promotion.** Ads and promos belong only in designated channels.",
-        "**5. Protect privacy.** Never share personal data or API keys. No illegal discussion.",
-        "**6. Stay on topic.** Keep each channel to its purpose.",
-        "**7. Moderators have the final say.** Violations can mean warnings, timeouts or bans.",
+        "**Respect everyone.** No harassment or hate.",
+        "**No financial advice.** Education only, do your own research.",
+        "**Use the bots responsibly.** No exploiting or sharing.",
+        "**No spam or self-promo.**",
+        "**Protect privacy.** Never share personal data or API keys.",
+        "**Stay on topic** in each channel.",
+        "**Moderators have the final say.**",
         "",
-        "By using this server you agree to these rules, our Terms of Service and Privacy Policy. **If you don't agree, please leave the community now.**",
+        "-# By using this server you agree to the rules, the Terms of Service and the Privacy Policy.",
       ].join("\n"),
     );
 
-  const getStarted = new EmbedBuilder()
+  const start = new EmbedBuilder()
     .setColor(PURPLE)
-    .setTitle("🚀  Create your BLKBöX account")
-    .setDescription("Your free account logs you into the app where the trading bots run. Setup takes a few minutes.\n\nCurious how the strategies have performed? The historical results are public.")
-    .setURL("https://www.blkbox.pro/");
-  if (opts.banner) getStarted.setImage("attachment://official-links.png");
-
-  const exchanges = new EmbedBuilder()
-    .setColor(PURPLE)
-    .setTitle("🤝  Partnered exchanges")
-    .setDescription("Pick an exchange, open your account through our link, then connect it in the app. These are affiliate links: using them supports the community at no cost to you.")
-    .addFields(
-      { name: `${E.Bitget}  Bitget`, value: "Best choice for COIN-M futures.", inline: true },
-      { name: `${E.Blofin}  Blofin`, value: "🇪🇺 🇺🇸 EU and USA friendly, non-KYC, futures and many altcoins.", inline: true },
-      { name: `${E.Bybit}  Bybit`, value: "Best for Insurance Trading System (ITS).", inline: true },
+    .setTitle("🚀  Get started")
+    .setDescription(
+      [
+        "**Account** — free, takes a few minutes, runs the bots.",
+        "",
+        "**Exchange** — open one through our link, then connect it in the app.",
+        `${E.Bitget} Bitget · COIN-M futures`,
+        `${E.Blofin} Blofin · EU and USA friendly, non-KYC`,
+        `${E.Bybit} Bybit · Insurance Trading System`,
+        "",
+        "-# Exchange links are affiliate links. Using them supports the community at no cost to you.",
+      ].join("\n"),
     );
 
-  const socials = new EmbedBuilder()
+  const community = new EmbedBuilder()
     .setColor(TEAL)
-    .setTitle("📡  Follow BLKBöX")
-    .setDescription("Market breakdowns, bot updates and live streams.")
-    .addFields(
-      { name: `${E.YT}  YouTube`, value: "BLKBöX · Bear Trap TV · Tone Vays", inline: true },
-      { name: `${E.X}  X`, value: "JT · Matt · Tone Vays · BLKBöX", inline: true },
+    .setTitle("📡  Follow · Get help")
+    .setDescription(
+      [
+        `${E.YT} **YouTube** — Baloo's Crypto Jungle · Bear Trap TV · Tone Vays`,
+        `${E.X} **X** — Baloo · Matt · Tone Vays · BLKBöX`,
+        "",
+        "☎️ **Questions** go in help-desk. **Private matters:** open a support ticket below.",
+      ].join("\n"),
     );
 
-  const support = new EmbedBuilder()
-    .setColor(TEAL)
-    .setTitle("🎟️  Need help?")
-    .setDescription("Questions about the bots go in the help-desk channel, where the community and the team answer. For anything private, open a support ticket: it creates a private thread with staff.");
-
-  const messages: BaseMessageOptions[] = [
+  return [
     { embeds: [welcome] },
     pickerMessage(),
     {
@@ -102,18 +85,12 @@ export function startHereMessages(opts: { banner?: Buffer; helpDeskUrl: string }
       ],
     },
     {
-      embeds: [getStarted],
-      files: opts.banner ? [new AttachmentBuilder(opts.banner, { name: "official-links.png" })] : [],
+      embeds: [start],
       components: [
         row(
           link("Create your free account", "https://www.blkbox.pro/", E.BLK),
           link("Strategy performance", "https://momentous-bolt-1cc.notion.site/Bot-Performance-228c030cfd9442d480b0e516363206a1?pvs=4", "🤖"),
         ),
-      ],
-    },
-    {
-      embeds: [exchanges],
-      components: [
         row(
           link("Bitget", "https://partner.bitget.com/bg/G91HYQ", E.Bitget),
           link("Blofin", "https://partner.blofin.com/d/BLKBox", E.Blofin),
@@ -122,30 +99,24 @@ export function startHereMessages(opts: { banner?: Buffer; helpDeskUrl: string }
       ],
     },
     {
-      embeds: [socials],
+      embeds: [community],
       components: [
         row(
-          link("BLKBöX", "https://www.youtube.com/@TheFinancialSummit?Sub_Confirmation=1", E.YT),
+          link("Baloo's Crypto Jungle", "https://www.youtube.com/@TheFinancialSummit?Sub_Confirmation=1", E.YT),
           link("Bear Trap TV", "https://www.youtube.com/channel/UCJG_wbsUX52Rr60FPm7Cnew?Sub_Confirmation=1", E.YT),
           link("Tone Vays", "https://www.youtube.com/@tonevays", E.YT),
         ),
         row(
-          link("JT", "https://x.com/JtBlkbox", E.X),
+          link("Baloo", "https://x.com/JtBlkbox", E.X),
           link("Matt", "https://x.com/AlphanumetriX", E.X),
           link("Tone Vays", "https://x.com/ToneVays", E.X),
           link("BLKBöX", "https://x.com/blkboxbot", E.X),
         ),
-      ],
-    },
-    {
-      embeds: [support],
-      components: [
         row(
-          link("Go to help-desk", opts.helpDeskUrl, "☎️"),
+          link("Help-desk", opts.helpDeskUrl, "☎️"),
           new ButtonBuilder().setStyle(ButtonStyle.Primary).setLabel("Open a Support Ticket").setEmoji("🎟️").setCustomId("placeholder:ticket").setDisabled(true),
         ),
       ],
     },
   ];
-  return messages;
 }

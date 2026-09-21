@@ -8,15 +8,14 @@ export const PICKER_PREFIX = "lang:";
 export function pickerMessage() {
   const embed = new EmbedBuilder()
     .setColor(0x1f4fd8)
-    .setTitle("🌐  Choose your language · 选择语言 · 언어 선택 · Pilih bahasa")
+    .setTitle("🌐  Choose your language")
     .setDescription(
       [
-        "**English** — You're all set. Everything here is in English.",
-        "**中文** — 点击下方按钮，社区频道会以中文显示，你也可以直接用中文发言。",
-        "**한국어** — 아래 버튼을 누르면 커뮤니티 채널이 한국어로 보이고, 한국어로 바로 대화할 수 있어요.",
-        "**Bahasa Indonesia** — Tekan tombol di bawah, kanal komunitas tampil dalam bahasa Indonesia dan kamu bisa langsung ngobrol dalam bahasa Indonesia.",
+        "Chat, alerts and announcements will show in the language you pick.",
         "",
-        "-# You can change this any time with `/language`.",
+        "选择语言 · 언어 선택 · Pilih bahasa",
+        "",
+        "-# Change it any time with `/language`",
       ].join("\n"),
     );
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(

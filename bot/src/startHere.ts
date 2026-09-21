@@ -1,10 +1,27 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, type BaseMessageOptions } from "discord.js";
-import { pickerMessage } from "./picker.js";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import {
+  ActionRowBuilder,
+  AttachmentBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  ContainerBuilder,
+  MediaGalleryBuilder,
+  MediaGalleryItemBuilder,
+  MessageFlags,
+  SeparatorBuilder,
+  SeparatorSpacingSize,
+  TextDisplayBuilder,
+  type MessageCreateOptions,
+} from "discord.js";
+import { PICKER_PREFIX } from "./picker.js";
 
-const TEAL = 0x00c9a7;
-const PURPLE = 0x845ef7;
+/** Brand: black, white heavy type, BLKBöX green. */
+const GREEN = 0x00d696;
+const ASSETS = join(dirname(fileURLToPath(import.meta.url)), "..", "assets", "start-here");
 
-/** Server emoji used on the start-here page. */
+/** Server emoji used on the page. */
 const E = {
   BLK: "<:BLK:1266575686454480936>",
   YT: "<:YT:1314772706402504754>",
@@ -19,104 +36,125 @@ const link = (label: string, url: string, emoji?: string) => {
   return emoji ? b.setEmoji(emoji) : b;
 };
 const row = (...buttons: ButtonBuilder[]) => new ActionRowBuilder<ButtonBuilder>().addComponents(...buttons);
+const text = (s: string) => new TextDisplayBuilder().setContent(s);
+const banner = (file: string) => new MediaGalleryBuilder().addItems(new MediaGalleryItemBuilder().setURL(`attachment://${file}`));
+const divider = () => new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small);
+const asset = (file: string) => new AttachmentBuilder(readFileSync(join(ASSETS, file)), { name: file });
 
-/** The start-here page: four messages. Short lines, one idea each, buttons do the work. */
-export function startHereMessages(opts: { helpDeskUrl: string }): BaseMessageOptions[] {
-  const welcome = new EmbedBuilder()
-    .setColor(TEAL)
-    .setTitle("👋  Welcome to BLKBöX")
-    .setDescription(["**1.** Pick your language below", "**2.** Read the rules", "**3.** Create your account and connect an exchange"].join("\n"));
+/** One branded card per section, built with Discord's layout components. */
+export function startHereMessages(opts: { helpDeskUrl: string }): MessageCreateOptions[] {
+  const V2 = MessageFlags.IsComponentsV2;
 
-  const rules = new EmbedBuilder()
-    .setColor(TEAL)
-    .setTitle("📜  Rules")
-    .setDescription(
-      [
-        "**Respect everyone.** No harassment or hate.",
-        "**No financial advice.** Education only, do your own research.",
-        "**Use the bots responsibly.** No exploiting or sharing.",
-        "**No spam or self-promo.**",
-        "**Protect privacy.** Never share personal data or API keys.",
-        "**Stay on topic** in each channel.",
-        "**Moderators have the final say.**",
-        "",
-        "-# By using this server you agree to the rules, the Terms of Service and the Privacy Policy.",
-      ].join("\n"),
+  const welcome = new ContainerBuilder()
+    .setAccentColor(GREEN)
+    .addMediaGalleryComponents(banner("hero.png"))
+    .addTextDisplayComponents(text("## Welcome to the Trading Floor\nAutomated trading bots, live alerts and a community that never misses a move."))
+    .addSeparatorComponents(divider())
+    .addTextDisplayComponents(text("**1**  Choose your language\n**2**  Read the rules\n**3**  Create your account and connect an exchange"));
+
+  const language = new ContainerBuilder()
+    .setAccentColor(GREEN)
+    .addMediaGalleryComponents(banner("language.png"))
+    .addTextDisplayComponents(text("Chat, alerts and announcements will show in the language you pick. Change it any time with `/language`."))
+    .addActionRowComponents(
+      row(
+        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}en`).setLabel("English").setEmoji("🇬🇧").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}zh`).setLabel("中文").setEmoji("🇨🇳").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}ko`).setLabel("한국어").setEmoji("🇰🇷").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}id`).setLabel("Bahasa Indonesia").setEmoji("🇮🇩").setStyle(ButtonStyle.Secondary),
+      ),
     );
 
-  const start = new EmbedBuilder()
-    .setColor(PURPLE)
-    .setTitle("🚀  Get started")
-    .setDescription(
-      [
-        "**Account** — free, takes a few minutes, runs the bots.",
-        "",
-        "**Exchange** — open one through our link, then connect it in the app.",
-        `${E.Bitget} Bitget · COIN-M futures`,
-        `${E.Blofin} Blofin · EU and USA friendly, non-KYC`,
-        `${E.Bybit} Bybit · Insurance Trading System`,
-        "",
-        "-# Exchange links are affiliate links. Using them supports the community at no cost to you.",
-      ].join("\n"),
+  const rules = new ContainerBuilder()
+    .setAccentColor(GREEN)
+    .addMediaGalleryComponents(banner("rules.png"))
+    .addTextDisplayComponents(
+      text(
+        [
+          "**Respect everyone.**  No harassment, no hate.",
+          "**No financial advice.**  Education only. Do your own research.",
+          "**Use the bots responsibly.**  No exploiting, no sharing.",
+          "**No spam or self-promo.**",
+          "**Protect privacy.**  Never share personal data or API keys.",
+          "**Stay on topic**  in each channel.",
+          "**Moderators have the final say.**",
+        ].join("\n"),
+      ),
+    )
+    .addSeparatorComponents(divider())
+    .addTextDisplayComponents(text("-# By using this server you agree to the rules, the Terms of Service and the Privacy Policy."))
+    .addActionRowComponents(
+      row(
+        link("Terms of Service", "https://momentous-bolt-1cc.notion.site/BLKB-X-Inc-Terms-of-Service-f0567f236cfe43f7b04a47ffa4ed3931?pvs=4", "📄"),
+        link("Privacy Policy", "https://momentous-bolt-1cc.notion.site/BLKB-X-Inc-Privacy-Policy-192b905b2a57802f838ffd7e0210e7b5?pvs=4", "🔒"),
+      ),
     );
 
-  const community = new EmbedBuilder()
-    .setColor(TEAL)
-    .setTitle("📡  Follow · Get help")
-    .setDescription(
-      [
-        `${E.YT} **YouTube** — Baloo's Crypto Jungle · Bear Trap TV · Tone Vays`,
-        `${E.X} **X** — Baloo · Matt · Tone Vays · BLKBöX`,
-        "",
-        "☎️ **Questions** go in help-desk. **Private matters:** open a support ticket below.",
-      ].join("\n"),
+  const start = new ContainerBuilder()
+    .setAccentColor(GREEN)
+    .addMediaGalleryComponents(banner("start.png"))
+    .addTextDisplayComponents(text("### Account\nFree, takes a few minutes, and it's where the bots run."))
+    .addActionRowComponents(
+      row(
+        link("Create your free account", "https://www.blkbox.pro/", E.BLK),
+        link("Strategy performance", "https://momentous-bolt-1cc.notion.site/Bot-Performance-228c030cfd9442d480b0e516363206a1?pvs=4", "🤖"),
+      ),
+    )
+    .addSeparatorComponents(divider())
+    .addTextDisplayComponents(
+      text(
+        [
+          "### Exchange",
+          "Open one through our link, then connect it in the app.",
+          `${E.Bitget}  **Bitget**  ·  COIN-M futures`,
+          `${E.Blofin}  **Blofin**  ·  EU and USA friendly, non-KYC`,
+          `${E.Bybit}  **Bybit**  ·  Insurance Trading System`,
+          "-# Affiliate links. Using them supports the community at no cost to you.",
+        ].join("\n"),
+      ),
+    )
+    .addActionRowComponents(
+      row(
+        link("Bitget", "https://partner.bitget.com/bg/G91HYQ", E.Bitget),
+        link("Blofin", "https://partner.blofin.com/d/BLKBox", E.Blofin),
+        link("Bybit", "https://partner.bybit.com/b/90136", E.Bybit),
+      ),
+    );
+
+  const community = new ContainerBuilder()
+    .setAccentColor(GREEN)
+    .addMediaGalleryComponents(banner("community.png"))
+    .addTextDisplayComponents(text(`${E.YT}  **YouTube**`))
+    .addActionRowComponents(
+      row(
+        link("Baloo's Crypto Jungle", "https://www.youtube.com/@TheFinancialSummit?Sub_Confirmation=1", E.YT),
+        link("Bear Trap TV", "https://www.youtube.com/channel/UCJG_wbsUX52Rr60FPm7Cnew?Sub_Confirmation=1", E.YT),
+        link("Tone Vays", "https://www.youtube.com/@tonevays", E.YT),
+      ),
+    )
+    .addTextDisplayComponents(text(`${E.X}  **X**`))
+    .addActionRowComponents(
+      row(
+        link("Baloo", "https://x.com/JtBlkbox", E.X),
+        link("Matt", "https://x.com/AlphanumetriX", E.X),
+        link("Tone Vays", "https://x.com/ToneVays", E.X),
+        link("BLKBöX", "https://x.com/blkboxbot", E.X),
+      ),
+    )
+    .addSeparatorComponents(divider())
+    .addTextDisplayComponents(text("**Questions?**  Ask in help-desk, the community and the team answer there.\n**Something private?**  Open a support ticket for a private thread with staff."))
+    .addActionRowComponents(
+      row(
+        link("Help-desk", opts.helpDeskUrl, "☎️"),
+        new ButtonBuilder().setStyle(ButtonStyle.Primary).setLabel("Open a Support Ticket").setEmoji("🎟️").setCustomId("placeholder:ticket").setDisabled(true),
+      ),
     );
 
   return [
-    { embeds: [welcome] },
-    pickerMessage(),
-    {
-      embeds: [rules],
-      components: [
-        row(
-          link("Terms of Service", "https://momentous-bolt-1cc.notion.site/BLKB-X-Inc-Terms-of-Service-f0567f236cfe43f7b04a47ffa4ed3931?pvs=4", "📄"),
-          link("Privacy Policy", "https://momentous-bolt-1cc.notion.site/BLKB-X-Inc-Privacy-Policy-192b905b2a57802f838ffd7e0210e7b5?pvs=4", "🔒"),
-        ),
-      ],
-    },
-    {
-      embeds: [start],
-      components: [
-        row(
-          link("Create your free account", "https://www.blkbox.pro/", E.BLK),
-          link("Strategy performance", "https://momentous-bolt-1cc.notion.site/Bot-Performance-228c030cfd9442d480b0e516363206a1?pvs=4", "🤖"),
-        ),
-        row(
-          link("Bitget", "https://partner.bitget.com/bg/G91HYQ", E.Bitget),
-          link("Blofin", "https://partner.blofin.com/d/BLKBox", E.Blofin),
-          link("Bybit", "https://partner.bybit.com/b/90136", E.Bybit),
-        ),
-      ],
-    },
-    {
-      embeds: [community],
-      components: [
-        row(
-          link("Baloo's Crypto Jungle", "https://www.youtube.com/@TheFinancialSummit?Sub_Confirmation=1", E.YT),
-          link("Bear Trap TV", "https://www.youtube.com/channel/UCJG_wbsUX52Rr60FPm7Cnew?Sub_Confirmation=1", E.YT),
-          link("Tone Vays", "https://www.youtube.com/@tonevays", E.YT),
-        ),
-        row(
-          link("Baloo", "https://x.com/JtBlkbox", E.X),
-          link("Matt", "https://x.com/AlphanumetriX", E.X),
-          link("Tone Vays", "https://x.com/ToneVays", E.X),
-          link("BLKBöX", "https://x.com/blkboxbot", E.X),
-        ),
-        row(
-          link("Help-desk", opts.helpDeskUrl, "☎️"),
-          new ButtonBuilder().setStyle(ButtonStyle.Primary).setLabel("Open a Support Ticket").setEmoji("🎟️").setCustomId("placeholder:ticket").setDisabled(true),
-        ),
-      ],
-    },
+    { components: [welcome], files: [asset("hero.png")], flags: V2 },
+    { components: [language], files: [asset("language.png")], flags: V2 },
+    { components: [rules], files: [asset("rules.png")], flags: V2 },
+    { components: [start], files: [asset("start.png")], flags: V2 },
+    { components: [community], files: [asset("community.png")], flags: V2 },
   ];
 }

@@ -7,7 +7,8 @@ import type { TranslateRequest, TranslateResult, TranslationProvider } from "./p
 
 /**
  * Claude adapter. One request returns every target language as structured JSON.
- * The system prompt is cached; only the user turn varies per message.
+ * No prompt caching: at ~18 messages/day the calls are minutes apart, so the
+ * 5-minute cache never hits and each write would cost a 25% premium instead.
  */
 export class AnthropicProvider implements TranslationProvider {
   readonly id: string;
@@ -27,7 +28,6 @@ export class AnthropicProvider implements TranslationProvider {
     const response = await this.client.messages.parse({
       model: this.model,
       max_tokens: 4096,
-      cache_control: { type: "ephemeral" },
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: buildUserPrompt(req) }],
       output_config: {
@@ -54,7 +54,8 @@ export class AnthropicProvider implements TranslationProvider {
     return {
       translations,
       usage: {
-        inputTokens: u.input_tokens,
+        // Cache writes are billed as input (at a premium); count them so cost projections are honest.
+        inputTokens: u.input_tokens + (u.cache_creation_input_tokens ?? 0),
         cachedTokens: u.cache_read_input_tokens ?? 0,
         outputTokens: u.output_tokens,
       },

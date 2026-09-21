@@ -11,7 +11,7 @@
       "channels": [
         { "name": "📢・announcements-zh", "readOnly": true, "topic": "公告（#announcements 的自动翻译镜像）" },
         { "name": "⚡・trade-alerts-zh", "readOnly": true, "topic": "交易提醒（#trade-alerts 的自动翻译镜像）" },
-        { "name": "🟠・bitcoin-zh", "readOnly": true, "topic": "我们对比特币的看法，只读（#bitcoin 的自动翻译镜像）" },
+        { "name": "🟠・bitcoin-zh", "topic": "比特币讨论。与 #bitcoin 双向翻译镜像" },
         { "name": "💬・general-zh", "topic": "自由聊天，任何话题。与 #general 双向翻译镜像" },
         { "name": "📈・trader-chat-zh", "topic": "交易者聊天。与 #trader-chat 双向翻译镜像" },
         { "name": "☎️・help-desk-zh", "topic": "交易机器人相关问题在这里讨论。与 #help-desk 双向翻译镜像" }
@@ -23,7 +23,7 @@
       "channels": [
         { "name": "📢・announcements-ko", "readOnly": true, "topic": "공지사항 (#announcements 자동 번역 미러)" },
         { "name": "⚡・trade-alerts-ko", "readOnly": true, "topic": "트레이드 알림 (#trade-alerts 자동 번역 미러)" },
-        { "name": "🟠・bitcoin-ko", "readOnly": true, "topic": "비트코인에 대한 우리의 생각, 읽기 전용 (#bitcoin 자동 번역 미러)" },
+        { "name": "🟠・bitcoin-ko", "topic": "비트코인 토론. #bitcoin 과 양방향 번역 미러" },
         { "name": "💬・general-ko", "topic": "자유 채팅, 어떤 주제든 환영. #general 과 양방향 번역 미러" },
         { "name": "📈・trader-chat-ko", "topic": "트레이더 채팅. #trader-chat 과 양방향 번역 미러" },
         { "name": "☎️・help-desk-ko", "topic": "트레이딩 봇 관련 질문은 여기서. #help-desk 와 양방향 번역 미러" }
@@ -35,7 +35,7 @@
       "channels": [
         { "name": "📢・announcements-id", "readOnly": true, "topic": "Pengumuman (cermin terjemahan otomatis dari #announcements)" },
         { "name": "⚡・trade-alerts-id", "readOnly": true, "topic": "Sinyal trading (cermin terjemahan otomatis dari #trade-alerts)" },
-        { "name": "🟠・bitcoin-id", "readOnly": true, "topic": "Pandangan kami tentang Bitcoin, hanya-baca (cermin terjemahan otomatis dari #bitcoin)" },
+        { "name": "🟠・bitcoin-id", "topic": "Diskusi Bitcoin. Cermin terjemahan dua arah dengan #bitcoin" },
         { "name": "💬・general-id", "topic": "Obrolan bebas, topik apa saja. Cermin terjemahan dua arah dengan #general" },
         { "name": "📈・trader-chat-id", "topic": "Obrolan trader. Cermin terjemahan dua arah dengan #trader-chat" },
         { "name": "☎️・help-desk-id", "topic": "Pertanyaan seputar bot trading dibahas di sini. Cermin terjemahan dua arah dengan #help-desk" }

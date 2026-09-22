@@ -26,7 +26,10 @@ export async function checkProviders(providers: Iterable<AffiliateProvider>): Pr
       await p.lookup(CANARY);
       out.push({ exchange: p.id, ok: true });
     } catch (e) {
-      out.push({ exchange: p.id, ok: false, error: e instanceof ProviderError ? e.message : e instanceof Error ? e.message : String(e) });
+      // The status alone rarely says why. The exchange puts the reason in the
+      // body, so carry it through to the log.
+      const detail = e instanceof ProviderError && e.body ? `${e.message} body=${e.body.slice(0, 300)}` : e instanceof Error ? e.message : String(e);
+      out.push({ exchange: p.id, ok: false, error: detail });
     }
   }
   return out;

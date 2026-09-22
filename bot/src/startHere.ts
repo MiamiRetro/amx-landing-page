@@ -61,16 +61,18 @@ export function startHereMessages(opts: { helpDeskUrl: string }): MessageCreateO
     .addSeparatorComponents(divider())
     .addTextDisplayComponents(text("**1**  Choose your language\n**2**  Read the rules\n**3**  Create your account and connect an exchange"));
 
+  // Discord only offers four button colours (blurple, grey, green, red) and link buttons are always grey.
+  // Green is the closest to the site emerald, so it marks the actions members take on the page.
   const language = new ContainerBuilder()
     .setAccentColor(GREEN)
     .addMediaGalleryComponents(banner("language.png"))
     .addTextDisplayComponents(text("Chat, alerts and announcements will show in the language you pick. Change it any time with `/language`."))
     .addActionRowComponents(
       row(
-        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}en`).setLabel("English").setEmoji("🇬🇧").setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}zh`).setLabel("中文").setEmoji("🇨🇳").setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}ko`).setLabel("한국어").setEmoji("🇰🇷").setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}id`).setLabel("Bahasa Indonesia").setEmoji("🇮🇩").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}en`).setLabel("English").setEmoji("🇬🇧").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}zh`).setLabel("中文").setEmoji("🇨🇳").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}ko`).setLabel("한국어").setEmoji("🇰🇷").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}id`).setLabel("Bahasa Indonesia").setEmoji("🇮🇩").setStyle(ButtonStyle.Success),
       ),
     );
 
@@ -155,7 +157,7 @@ export function startHereMessages(opts: { helpDeskUrl: string }): MessageCreateO
     .addActionRowComponents(
       row(
         link("Help-desk", opts.helpDeskUrl, "☎️"),
-        new ButtonBuilder().setStyle(ButtonStyle.Primary).setLabel("Open a Support Ticket").setEmoji("🎟️").setCustomId("placeholder:ticket").setDisabled(true),
+        new ButtonBuilder().setStyle(ButtonStyle.Success).setLabel("Open a Support Ticket").setEmoji("🎟️").setCustomId("placeholder:ticket").setDisabled(true),
       ),
     );
 

@@ -1,8 +1,11 @@
 <!doctype html><html><head><meta charset="utf-8"><style>
 @font-face{font-family:Sora;src:url(node_modules/@fontsource/sora/files/sora-latin-800-normal.woff2) format("woff2");font-weight:800}
 @font-face{font-family:Sora;src:url(node_modules/@fontsource/sora/files/sora-latin-700-normal.woff2) format("woff2");font-weight:700}
+@font-face{font-family:Sora;src:url(node_modules/@fontsource/sora/files/sora-latin-600-normal.woff2) format("woff2");font-weight:600}
+@font-face{font-family:Sora;src:url(node_modules/@fontsource/sora/files/sora-latin-500-normal.woff2) format("woff2");font-weight:500}
 *{margin:0;box-sizing:border-box}
 body{width:1200px;height:300px;background:#050d14;overflow:hidden;font-family:Sora,sans-serif;color:#fff;position:relative}
+/* blkbox.pro backdrop: cyan bloom from the top, faint grid, emerald wash low right */
 .glow1{position:absolute;left:-10%;top:-40%;width:70%;height:180%;background:radial-gradient(48% 50% at 40% 45%,rgba(48,158,168,.30) 0%,rgba(48,158,168,.08) 55%,transparent 100%)}
 .glow2{position:absolute;right:-15%;bottom:-70%;width:80%;height:180%;background:radial-gradient(50% 50% at 60% 50%,rgba(16,185,129,.22) 0%,rgba(16,185,129,.05) 55%,transparent 100%)}
 .grid{position:absolute;inset:0;background-image:linear-gradient(rgba(34,211,238,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(34,211,238,.07) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(70% 90% at 50% 50%,#000 30%,transparent 100%);-webkit-mask-image:radial-gradient(70% 90% at 50% 50%,#000 30%,transparent 100%)}
@@ -12,9 +15,33 @@ body{width:1200px;height:300px;background:#050d14;overflow:hidden;font-family:So
 .title{font-weight:800;font-size:76px;line-height:1;letter-spacing:-.025em;color:#fff}
 .title.sm{font-size:62px}
 .sub{font-weight:700;font-size:22px;color:#93a4b3}
-.logo{position:absolute;right:72px;top:50%;transform:translateY(-50%);width:150px;height:150px;background:url(logo-white.png) center/contain no-repeat;opacity:.95;filter:drop-shadow(0 0 24px rgba(34,211,238,.25))}
+/* The site's .logo-glow halo (ai-glow keyframe at 0%): pink, violet, cyan. */
+.logo{position:absolute;right:72px;top:50%;transform:translateY(-50%);width:150px;height:150px;background:url(logo-white.png) center/contain no-repeat;filter:drop-shadow(0 0 6px rgba(255,110,199,.7)) drop-shadow(0 0 14px rgba(123,47,247,.5)) drop-shadow(0 0 26px rgba(0,240,255,.25))}
+
+/* Hero: taller, centred, logo first. */
+body.hero{height:520px}
+body.hero .glow1{left:15%;top:-55%;width:70%;height:130%;background:radial-gradient(50% 50% at 50% 50%,rgba(34,211,238,.26) 0%,rgba(34,211,238,.07) 50%,transparent 100%)}
+body.hero .glow2{right:-20%;bottom:-60%;width:70%;height:120%}
+body.hero .glow3{position:absolute;left:-20%;bottom:-60%;width:70%;height:120%;background:radial-gradient(50% 50% at 50% 50%,rgba(123,47,247,.16) 0%,rgba(123,47,247,.04) 55%,transparent 100%)}
+body.hero .grid{mask-image:radial-gradient(60% 80% at 50% 40%,#000 20%,transparent 100%);-webkit-mask-image:radial-gradient(60% 80% at 50% 40%,#000 20%,transparent 100%)}
+body.hero .wrap{left:0;right:0;top:0;height:520px;align-items:center;text-align:center;gap:14px;padding-top:6px}
+body.hero .logo{position:relative;right:auto;top:auto;transform:none;width:160px;height:160px;margin-bottom:6px}
+/* soft bloom behind the mark so the halo reads at Discord's display size */
+body.hero .bloom{position:absolute;left:50%;top:100px;width:520px;height:340px;transform:translateX(-50%);background:radial-gradient(50% 50% at 50% 50%,rgba(123,47,247,.28) 0%,rgba(255,110,199,.12) 30%,rgba(0,240,255,.08) 55%,transparent 75%);filter:blur(10px)}
+body.hero .kicker{font-size:17px}
+body.hero .title{font-size:64px;line-height:1.04}
+body.hero .title .accent{background:linear-gradient(90deg,#fff,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent}
+body.hero .sub{font-weight:600;font-size:21px;color:#93a4b3}
+
+/* Logo tile for the thumbnail accessory. */
+body.tile{width:512px;height:512px}
+body.tile .glow1{left:-30%;top:-40%;width:160%;height:180%;background:radial-gradient(50% 50% at 50% 50%,rgba(34,211,238,.18) 0%,transparent 60%)}
+body.tile .glow2,body.tile .line,body.tile .wrap{display:none}
+body.tile .grid{background-size:64px 64px;mask-image:radial-gradient(60% 60% at 50% 50%,#000 20%,transparent 100%);-webkit-mask-image:radial-gradient(60% 60% at 50% 50%,#000 20%,transparent 100%)}
+body.tile .bloom{position:absolute;inset:0;background:radial-gradient(45% 45% at 50% 50%,rgba(123,47,247,.34) 0%,rgba(255,110,199,.14) 35%,rgba(0,240,255,.10) 55%,transparent 72%);filter:blur(8px)}
+body.tile .logo{right:auto;left:50%;top:50%;transform:translate(-50%,-50%);width:300px;height:300px;filter:drop-shadow(0 0 10px rgba(255,110,199,.75)) drop-shadow(0 0 26px rgba(123,47,247,.55)) drop-shadow(0 0 48px rgba(0,240,255,.3))}
 </style></head><body>
-<div class="glow1"></div><div class="glow2"></div><div class="grid"></div><div class="line"></div>
-<div class="wrap"><div class="kicker" id="kicker"></div><div class="title" id="title"></div><div class="sub" id="sub"></div></div>
-<div class="logo"></div>
+<div class="glow1"></div><div class="glow2"></div><div class="glow3"></div><div class="grid"></div><div class="bloom"></div><div class="line"></div>
+<div class="wrap"><div class="logo hero-only"></div><div class="kicker" id="kicker"></div><div class="title" id="title"></div><div class="sub" id="sub"></div></div>
+<div class="logo side-only"></div>
 </body></html>

@@ -1,4 +1,4 @@
-import { hmacBase64, query } from "../sign.js";
+import { cred, hmacBase64, query } from "../sign.js";
 import { requestJson } from "./http.js";
 import { ProviderError, type AffiliateLookup, type AffiliateProvider } from "../types.js";
 
@@ -23,9 +23,9 @@ export class BitgetAffiliate implements AffiliateProvider {
   readonly live = true;
   private base = process.env.BITGET_API_BASE ?? "https://api.bitget.com";
   private path = process.env.BITGET_AFFILIATE_PATH ?? "/api/v2/broker/customer-commissions";
-  private key = process.env.BITGET_API_KEY ?? "";
-  private secret = process.env.BITGET_API_SECRET ?? "";
-  private passphrase = process.env.BITGET_API_PASSPHRASE ?? "";
+  private key = cred("BITGET_API_KEY");
+  private secret = cred("BITGET_API_SECRET");
+  private passphrase = cred("BITGET_API_PASSPHRASE");
 
   configured() {
     return Boolean(this.key && this.secret && this.passphrase);

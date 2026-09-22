@@ -1,4 +1,4 @@
-import { hmacHex, query } from "../sign.js";
+import { cred, hmacHex, query } from "../sign.js";
 import { requestJson } from "./http.js";
 import { ProviderError, type AffiliateLookup, type AffiliateProvider } from "../types.js";
 
@@ -29,8 +29,8 @@ export class BybitAffiliate implements AffiliateProvider {
   readonly live = true;
   private base = process.env.BYBIT_API_BASE ?? "https://api.bybit.com";
   private path = process.env.BYBIT_AFFILIATE_PATH ?? "/v5/user/aff-customer-info";
-  private key = process.env.BYBIT_API_KEY ?? "";
-  private secret = process.env.BYBIT_API_SECRET ?? "";
+  private key = cred("BYBIT_API_KEY");
+  private secret = cred("BYBIT_API_SECRET");
 
   configured() {
     return Boolean(this.key && this.secret);

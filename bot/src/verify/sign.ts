@@ -9,3 +9,6 @@ export function query(params: Record<string, string | number | undefined>): stri
   const pairs = Object.entries(params).filter(([, v]) => v !== undefined && v !== "");
   return pairs.map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`).join("&");
 }
+
+/** Env value with surrounding whitespace removed; blank reads as unset. */
+export const cred = (name: string) => (process.env[name] ?? "").trim();

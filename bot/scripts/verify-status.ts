@@ -16,7 +16,7 @@ const providers = buildProviders();
 let live = 0;
 for (const id of EXCHANGES) {
   const p = providers.get(id);
-  const missing = NEEDED[id].filter((n) => !process.env[n]);
+  const missing = NEEDED[id].filter((n) => !(process.env[n] ?? "").trim());
   if (p?.live) {
     live++;
     console.log(`${EXCHANGE_LABELS[id].padEnd(7)} live     checking against the exchange`);

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { hmacHexThenBase64, query } from "../sign.js";
+import { cred, hmacHexThenBase64, query } from "../sign.js";
 import { requestJson } from "./http.js";
 import { ProviderError, type AffiliateLookup, type AffiliateProvider } from "../types.js";
 
@@ -23,9 +23,9 @@ export class BlofinAffiliate implements AffiliateProvider {
   readonly live = true;
   private base = process.env.BLOFIN_API_BASE ?? "https://openapi.blofin.com";
   private path = process.env.BLOFIN_AFFILIATE_PATH ?? "/api/v1/affiliate/invitees";
-  private key = process.env.BLOFIN_API_KEY ?? "";
-  private secret = process.env.BLOFIN_API_SECRET ?? "";
-  private passphrase = process.env.BLOFIN_API_PASSPHRASE ?? "";
+  private key = cred("BLOFIN_API_KEY");
+  private secret = cred("BLOFIN_API_SECRET");
+  private passphrase = cred("BLOFIN_API_PASSPHRASE");
 
   configured() {
     return Boolean(this.key && this.secret && this.passphrase);

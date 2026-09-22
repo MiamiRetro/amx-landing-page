@@ -24,6 +24,7 @@ const ASSETS = join(dirname(fileURLToPath(import.meta.url)), "..", "assets", "st
 /** Server emoji used on the page. */
 const E = {
   BLK: "<:BLK:1266575686454480936>",
+  Glow: "<:BLKglow:1551825660584927232>",
   YT: "<:YT:1314772706402504754>",
   X: "<:X_:1229210993142403072>",
   Bitget: "<:Bitget:1217641587622805555>",
@@ -102,24 +103,33 @@ export function startHereMessages(opts: { helpDeskUrl: string }): MessageCreateO
       text("### 1 \u00b7 Get your command center"),
       text("Market intelligence, proprietary signals, multi-exchange execution and a trade journal, all in one place. No card, no subscription, a couple of minutes to set up."),
     )
-    .addActionRowComponents(row(link("Get your command center", "https://www.blkbox.pro/signup", E.BLK)))
+    .addActionRowComponents(row(link("Claim my command center", "https://www.blkbox.pro/signup", E.Glow)))
     .addSeparatorComponents(divider())
     .addTextDisplayComponents(
-      text("### 2 \u00b7 Open a partner exchange"),
-      text("Sign up through one of the links below so your account lands under ours."),
+      text("### 2 \u00b7 Choose your exchange"),
       text(
         [
-          "**Bitget**",
-          "Best choice for trading COIN-M futures.",
+          "You pay trading fees to an exchange wherever you trade. Sign up through one of our links and the exchange hands us a small share of the fees you are already paying.",
           "",
-          "**Blofin**",
-          "\ud83c\uddea\ud83c\uddfa / \ud83c\uddfa\ud83c\uddf8 EU and USA friendly, \ud83d\udc7b non-KYC, offers futures and many altcoins.",
+          "That share is what keeps this place free. The signals, the bots, the tools and every channel here are paid for by it. It never costs you a cent extra, and we only earn when you trade.",
           "",
-          "**Bybit**",
-          "Best for Insurance Trading System (ITS).",
+          "We trust all three. The only thing that should decide it is where you live.",
         ].join("\n"),
       ),
-      text("-# Affiliate links. We earn a share of the trading fees on your volume, at no extra cost to you."),
+      text(
+        [
+          "**Bitget**  \u00b7  ID check required",
+          "Not available: \ud83c\uddfa\ud83c\uddf8 \ud83c\udde8\ud83c\udde6 \ud83c\uddef\ud83c\uddf5 \ud83c\uddf0\ud83c\uddf7 \ud83c\uddf8\ud83c\uddec \ud83c\udded\ud83c\uddf0 \ud83c\udde8\ud83c\uddf3 \ud83c\udde9\ud83c\uddea \ud83c\uddeb\ud83c\uddf7 \ud83c\udde6\ud83c\uddf9 \ud83c\uddf3\ud83c\uddf1",
+          "",
+          "**Bybit**  \u00b7  ID check required",
+          "Not available: \ud83c\uddfa\ud83c\uddf8 \ud83c\udde8\ud83c\udde6 \ud83c\uddf8\ud83c\uddec \ud83c\udded\ud83c\uddf0 \ud83c\udde8\ud83c\uddf3 \ud83c\udde6\ud83c\uddea \ud83c\uddfa\ud83c\uddff",
+          "",
+          "**Blofin**  \u00b7  no ID check to start",
+          "Not available: \ud83c\uddfa\ud83c\uddf8 \ud83c\udde8\ud83c\udde6 \ud83c\uddee\ud83c\uddf3 \ud83c\uddf8\ud83c\uddec \ud83c\udde8\ud83c\uddf3 \ud83c\udde6\ud83c\uddea \ud83c\uddf7\ud83c\uddf8 \ud83c\uddf9\ud83c\uddf9 \ud83c\uddfb\ud83c\uddea \ud83c\udde7\ud83c\udde9 \ud83c\uddf1\ud83c\udde7 \ud83c\uddf7\ud83c\uddfc \ud83c\uddff\ud83c\uddfc",
+        ].join("\n"),
+      ),
+      text("**Your flag is not listed?** That exchange is open to you. Pick any of the three."),
+      text("-# Sanctioned jurisdictions are blocked on all three. Availability changes, so the exchange's own terms are the last word. Affiliate links."),
     )
     .addActionRowComponents(
       row(

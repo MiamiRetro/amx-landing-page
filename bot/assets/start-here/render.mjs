@@ -8,6 +8,7 @@ const specs = [
   { file: "community.png", w: 1200, h: 300, kicker: "Stay close", title: "Follow &amp; get help", sub: "YouTube · X · Help-desk", sm: true },
   { file: "logo.png", mode: "tile", w: 512, h: 512 },
   { file: "avatar.png", mode: "avatar", w: 512, h: 512, transparent: true },
+  { file: "emoji.png", mode: "emoji", w: 128, h: 128, transparent: true },
 ];
 const browser = await chromium.launch({ executablePath: exe, args: ["--no-sandbox"] });
 const page = await browser.newPage({ viewport: { width: 1200, height: 300 }, deviceScaleFactor: 1 });

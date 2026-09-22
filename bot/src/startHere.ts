@@ -120,7 +120,6 @@ export function startHereMessages(opts: { helpDeskUrl: string }): MessageCreateO
         [
           "**Start here**",
           "\ud83c\uddec\ud83c\udde7 \ud83c\uddea\ud83c\uddfa  Europe and the UK \u2192 Bybit or Blofin",
-          "\ud83c\uddfa\ud83c\uddf8 \ud83c\udde8\ud83c\udde6  United States and Canada \u2192 Blofin, MEXC or Toobit",
           "\ud83c\uddf0\ud83c\uddf7  \ud55c\uad6d \u2192 Bybit, Blofin or MEXC",
           "\ud83c\uddee\ud83c\udde9  Indonesia \u2192 Bybit, Blofin, MEXC or Toobit",
           "\ud83c\uddef\ud83c\uddf5  \u65e5\u672c \u2192 Bybit, Blofin, MEXC or Toobit",
@@ -138,15 +137,16 @@ export function startHereMessages(opts: { helpDeskUrl: string }): MessageCreateO
           "\ud83c\uddec\ud83c\udde7 \ud83c\uddee\ud83c\udde9",
           "",
           "**Blofin**  \u00b7  no ID check, futures open at signup",
-          "\ud83c\uddfa\ud83c\uddf8 \ud83c\udde8\ud83c\udde6 \ud83c\uddec\ud83c\udde7 \ud83c\uddea\ud83c\uddfa \ud83c\uddef\ud83c\uddf5 \ud83c\uddf0\ud83c\uddf7 \ud83c\uddee\ud83c\udde9",
+          "\ud83c\uddec\ud83c\udde7 \ud83c\uddea\ud83c\uddfa \ud83c\uddef\ud83c\uddf5 \ud83c\uddf0\ud83c\uddf7 \ud83c\uddee\ud83c\udde9",
           "",
           "**MEXC**  \u00b7  no ID check, futures open at signup  \u00b7  *coming soon*",
-          "\ud83c\uddfa\ud83c\uddf8 \ud83c\udde8\ud83c\udde6 \ud83c\uddea\ud83c\uddfa \ud83c\uddef\ud83c\uddf5 \ud83c\uddf0\ud83c\uddf7 \ud83c\uddee\ud83c\udde9",
+          "\ud83c\uddea\ud83c\uddfa \ud83c\uddef\ud83c\uddf5 \ud83c\uddf0\ud83c\uddf7 \ud83c\uddee\ud83c\udde9",
           "",
           "**Toobit**  \u00b7  no ID check, futures open at signup  \u00b7  *coming soon*",
-          "\ud83c\uddfa\ud83c\uddf8 \ud83c\udde8\ud83c\udde6 \ud83c\uddea\ud83c\uddfa \ud83c\uddef\ud83c\uddf5 \ud83c\uddf0\ud83c\uddf7 \ud83c\uddee\ud83c\udde9",
+          "\ud83c\uddea\ud83c\uddfa \ud83c\uddef\ud83c\uddf5 \ud83c\uddf0\ud83c\uddf7 \ud83c\uddee\ud83c\udde9",
         ].join("\n"),
       ),
+      text("-# \ud83c\uddfa\ud83c\uddf8 \ud83c\udde8\ud83c\udde6  **United States and Canada:** every exchange above excludes US and Canadian residents in its own terms. We are working on a home for you."),
       text("-# Availability changes, and each exchange's own terms are the last word on who may open an account. Check before you sign up. Affiliate links."),
     )
     .addActionRowComponents(

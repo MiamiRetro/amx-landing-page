@@ -10,11 +10,9 @@ import {
   MediaGalleryBuilder,
   MediaGalleryItemBuilder,
   MessageFlags,
-  SectionBuilder,
   SeparatorBuilder,
   SeparatorSpacingSize,
   TextDisplayBuilder,
-  ThumbnailBuilder,
   type MessageCreateOptions,
 } from "discord.js";
 import { PICKER_PREFIX } from "./picker.js";
@@ -47,19 +45,10 @@ const asset = (file: string) => new AttachmentBuilder(readFileSync(join(ASSETS, 
 export function startHereMessages(opts: { helpDeskUrl: string }): MessageCreateOptions[] {
   const V2 = MessageFlags.IsComponentsV2;
 
+  // Hero image only: the banner already carries the wordmark, headline and tagline.
   const welcome = new ContainerBuilder()
     .setAccentColor(GREEN)
-    .addMediaGalleryComponents(banner("hero.png"))
-    .addSectionComponents(
-      new SectionBuilder()
-        .addTextDisplayComponents(
-          text("## Welcome to the Trading Floor"),
-          text("Automated trading bots, live alerts and a community that never misses a move."),
-        )
-        .setThumbnailAccessory(new ThumbnailBuilder().setURL("attachment://logo.png").setDescription("BLKBöX")),
-    )
-    .addSeparatorComponents(divider())
-    .addTextDisplayComponents(text("**1**  Choose your language\n**2**  Read the rules\n**3**  Create your account and connect an exchange"));
+    .addMediaGalleryComponents(banner("hero.png"));
 
   // Discord only offers four button colours (blurple, grey, green, red) and link buttons are always grey.
   // Green is the closest to the site emerald, so it marks the actions members take on the page.
@@ -162,7 +151,7 @@ export function startHereMessages(opts: { helpDeskUrl: string }): MessageCreateO
     );
 
   return [
-    { components: [welcome], files: [asset("hero.png"), asset("logo.png")], flags: V2 },
+    { components: [welcome], files: [asset("hero.png")], flags: V2 },
     { components: [language], files: [asset("language.png")], flags: V2 },
     { components: [rules], files: [asset("rules.png")], flags: V2 },
     { components: [start], files: [asset("start.png")], flags: V2 },

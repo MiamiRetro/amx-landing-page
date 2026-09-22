@@ -144,3 +144,11 @@ test("a broken exchange is announced once, and so is its recovery", async () => 
   assert.deepEqual(w.diff([{ exchange: "bybit", ok: true }]).map((c) => c.ok), [true], "recovery reported");
   assert.deepEqual(w.diff([{ exchange: "bybit", ok: true }]), [], "healthy, stays quiet");
 });
+
+test("a disabled exchange disappears from the picker entirely", async () => {
+  const { buildProviders } = await import("../src/verify/providers/index.js");
+  process.env.VERIFY_DISABLED = "bybit";
+  const ids = [...buildProviders().keys()];
+  delete process.env.VERIFY_DISABLED;
+  assert.deepEqual(ids, ["bitget", "blofin"], "an unreachable exchange must not be offered");
+});

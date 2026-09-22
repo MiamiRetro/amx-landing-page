@@ -20,6 +20,7 @@ interface BlofinResponse {
 export class BlofinAffiliate implements AffiliateProvider {
   readonly id = "blofin" as const;
   readonly label = "Blofin";
+  readonly live = true;
   private base = process.env.BLOFIN_API_BASE ?? "https://openapi.blofin.com";
   private path = process.env.BLOFIN_AFFILIATE_PATH ?? "/api/v1/affiliate/invitees";
   private key = process.env.BLOFIN_API_KEY ?? "";

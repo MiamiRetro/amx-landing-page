@@ -6,6 +6,7 @@ export type Outcome =
   | "already_member"
   | "already_claimed"
   | "not_referred"
+  | "not_configured"
   | "bad_uid"
   | "rate_limited"
   | "provider_error";
@@ -89,6 +90,12 @@ export class VerifyService {
     }
 
     const provider = this.providers.get(args.exchange);
+    // A stand-in rejects every UID. Saying "we cannot see that UID" would send
+    // a member off to re-open an exchange account over nothing.
+    if (provider && !provider.live) {
+      await record("not_configured");
+      return { ...base, outcome: "not_configured", remaining };
+    }
     if (!provider) {
       await record("provider_error", "no provider configured");
       return { ...base, outcome: "provider_error", error: "no provider configured", remaining };

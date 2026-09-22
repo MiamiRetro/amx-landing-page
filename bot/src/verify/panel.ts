@@ -191,6 +191,16 @@ async function reply(
         components: [signupRow()],
         files: uidGuide(),
       };
+    case "not_configured":
+      return {
+        content: [
+          `## ${label} checks are not switched on yet`,
+          "",
+          "Your UID is fine. We simply cannot check it against ${label} automatically at the moment, so nothing you type here will let you in yet.",
+          "",
+          "Ask in help-desk and a moderator will verify you by hand, or come back once this is live.",
+        ].join("\n").replace("${label}", label),
+      };
     case "provider_error":
     default:
       log.warn("verification provider error", { exchange: res.exchange, error: res.error });

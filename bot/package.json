@@ -9,6 +9,7 @@
   },
   "scripts": {
     "verify:panel": "tsx scripts/post-verify.ts",
+    "verify:status": "tsx scripts/verify-status.ts",
     "verify:probe": "tsx scripts/verify-probe.ts",
     "channels": "tsx src/channel-manager.ts",
     "typecheck": "tsc --noEmit",

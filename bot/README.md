@@ -87,3 +87,64 @@ npm run bakeoff -- run --channel <id> --count 200 \
   --providers anthropic:claude-sonnet-5,gemini:gemini-3.7-flash,openai:gpt-5.6-terra,openrouter:tencent/hy-mt2-7b
 ```
 Writes `bakeoff/<date>/sheet-<lang>.md` (translations shuffled and lettered per row) and `ratings-<lang>.csv` for native speakers. Keep `key.json` away from raters. Then `npm run bakeoff -- score bakeoff/<date>` prints the average per provider and language.
+
+## UID verification
+
+A member presses **Verify my UID**, picks their exchange and pastes the UID in
+one popup. The bot asks that exchange's affiliate API whether the UID registered
+under our link, and grants the membership role if it did.
+
+### Switching it on
+
+Until an exchange has API credentials it runs a stand-in that cannot check
+anything. Members who pick it are told checks are not switched on rather than
+being told their UID is wrong, so a good UID is never treated as a bad one.
+
+Check which exchanges are real:
+
+```
+npm run verify:status
+```
+
+Create one API key per exchange, from the account that owns the affiliate
+programme, with the read or affiliate permission only. Never a trading or
+withdrawal permission: this key only ever answers questions.
+
+| Exchange | Where | Notes |
+|---|---|---|
+| Bybit | affiliates.bybit.com, then Account Settings → API Management on the desktop site | Must be the master UID, and tick **Affiliate** as the only permission |
+| Bitget | Partner/agent portal → API Key Management | Needs the agent or broker permission, and sets a passphrase |
+| Blofin | Profile → API Management | **Read** permission is enough, and sets a passphrase |
+
+Put them in Railway, which redeploys on save:
+
+```
+BYBIT_API_KEY, BYBIT_API_SECRET
+BITGET_API_KEY, BITGET_API_SECRET, BITGET_API_PASSPHRASE
+BLOFIN_API_KEY, BLOFIN_API_SECRET, BLOFIN_API_PASSPHRASE
+```
+
+If an exchange asks for an IP allowlist, Railway egress IPs are not fixed on the
+hobby plans, so leave it open or use a static egress.
+
+### Confirming an exchange really answers
+
+```
+npm run verify:probe -- bybit 6526315384
+```
+
+Run it once with a UID you know is one of your referrals, which must come back
+`referred: true`, and once with a random UID, which must come back
+`referred: false` rather than throwing. If it throws, the endpoint or the
+permission is wrong; override the path without touching code:
+
+```
+BYBIT_AFFILIATE_PATH, BITGET_AFFILIATE_PATH, BLOFIN_AFFILIATE_PATH
+```
+
+### Rules the flow enforces
+
+- Someone who already holds the membership role is turned away before any API call.
+- One UID belongs to one Discord account, so a verified UID cannot be passed around.
+- Five attempts per member per fifteen minutes, so UIDs cannot be guessed at.
+- An exchange outage is reported as an outage, never as a rejection.

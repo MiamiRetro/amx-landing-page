@@ -31,6 +31,7 @@ function provider(id: ExchangeId, behaviour: "yes" | "no" | "throw"): AffiliateP
   return {
     id,
     label: id,
+    live: true,
     configured: () => true,
     async lookup() {
       if (behaviour === "throw") throw new ProviderError("exchange timed out");
@@ -110,6 +111,14 @@ test("an exchange outage is reported as an error, never as a rejection", async (
   const res = await service(db, provider("bybit", "throw")).verify({ userId: "u1", alreadyMember: false, exchange: "bybit", uid: "12345678" });
   assert.equal(res.outcome, "provider_error");
   assert.match(res.error ?? "", /timed out/);
+  assert.equal(rows.length, 0);
+});
+
+test("a stand-in provider reports itself rather than rejecting a good uid", async () => {
+  const { db, rows } = fakeDb();
+  const stand: AffiliateProvider = { ...provider("bybit", "no"), live: false };
+  const res = await service(db, stand).verify({ userId: "u1", alreadyMember: false, exchange: "bybit", uid: "6526315384" });
+  assert.equal(res.outcome, "not_configured", "a real UID must not look rejected while nothing is checking it");
   assert.equal(rows.length, 0);
 });
 

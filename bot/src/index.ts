@@ -56,7 +56,7 @@ async function main() {
 
       const affiliates = buildProviders();
       verify = new VerifyService(db, guildId, affiliates);
-      log.info("uid verification ready", { exchanges: [...affiliates.entries()].map(([id, p]) => `${id}:${p.constructor.name}`) });
+      log.info("uid verification ready", { exchanges: [...affiliates.values()].map((p) => `${p.id}:${p.live ? "live" : "stand-in"}`) });
 
       await guild.commands.set(commandDefinitions);
       log.info("ready", { guild: guild.name, groups: groups.groups.length, provider: primary.id, fallbacks: fallbacks.map((f) => f.id) });

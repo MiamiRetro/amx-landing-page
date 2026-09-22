@@ -29,6 +29,8 @@ export interface AffiliateLookup {
 export interface AffiliateProvider {
   readonly id: ExchangeId;
   readonly label: string;
+  /** False for the stand-in provider, which answers without asking an exchange. */
+  readonly live: boolean;
   /** False when credentials are missing, so the exchange can be hidden from the picker. */
   configured(): boolean;
   /**

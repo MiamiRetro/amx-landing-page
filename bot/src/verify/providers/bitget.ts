@@ -20,6 +20,7 @@ interface BitgetResponse {
 export class BitgetAffiliate implements AffiliateProvider {
   readonly id = "bitget" as const;
   readonly label = "Bitget";
+  readonly live = true;
   private base = process.env.BITGET_API_BASE ?? "https://api.bitget.com";
   private path = process.env.BITGET_AFFILIATE_PATH ?? "/api/v2/broker/customer-commissions";
   private key = process.env.BITGET_API_KEY ?? "";

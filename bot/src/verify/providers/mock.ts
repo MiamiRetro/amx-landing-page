@@ -7,6 +7,7 @@ import type { AffiliateLookup, AffiliateProvider, ExchangeId } from "../types.js
  */
 export class MockAffiliate implements AffiliateProvider {
   readonly label: string;
+  readonly live = false;
   private allow: Set<string>;
 
   constructor(readonly id: ExchangeId, label: string, allow = process.env.VERIFY_MOCK_UIDS ?? "") {

@@ -26,6 +26,7 @@ interface BybitResponse {
 export class BybitAffiliate implements AffiliateProvider {
   readonly id = "bybit" as const;
   readonly label = "Bybit";
+  readonly live = true;
   private base = process.env.BYBIT_API_BASE ?? "https://api.bybit.com";
   private path = process.env.BYBIT_AFFILIATE_PATH ?? "/v5/user/aff-customer-info";
   private key = process.env.BYBIT_API_KEY ?? "";

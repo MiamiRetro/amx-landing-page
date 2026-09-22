@@ -40,6 +40,11 @@ body.tile .glow2,body.tile .line,body.tile .wrap{display:none}
 body.tile .grid{background-size:64px 64px;mask-image:radial-gradient(60% 60% at 50% 50%,#000 20%,transparent 100%);-webkit-mask-image:radial-gradient(60% 60% at 50% 50%,#000 20%,transparent 100%)}
 body.tile .bloom{position:absolute;inset:0;background:radial-gradient(45% 45% at 50% 50%,rgba(123,47,247,.34) 0%,rgba(255,110,199,.14) 35%,rgba(0,240,255,.10) 55%,transparent 72%);filter:blur(8px)}
 body.tile .logo{right:auto;left:50%;top:50%;transform:translate(-50%,-50%);width:300px;height:300px;filter:drop-shadow(0 0 10px rgba(255,110,199,.75)) drop-shadow(0 0 26px rgba(123,47,247,.55)) drop-shadow(0 0 48px rgba(0,240,255,.3))}
+
+/* Bot avatar: the glowing mark on transparency, sized to survive Discord's circle crop. */
+body.avatar{width:512px;height:512px;background:transparent}
+body.avatar .glow1,body.avatar .glow2,body.avatar .glow3,body.avatar .grid,body.avatar .line,body.avatar .wrap,body.avatar .bloom{display:none}
+body.avatar .logo{right:auto;left:50%;top:50%;transform:translate(-50%,-50%);width:300px;height:300px;filter:drop-shadow(0 0 8px rgba(255,110,199,.85)) drop-shadow(0 0 20px rgba(123,47,247,.7)) drop-shadow(0 0 38px rgba(0,240,255,.45))}
 </style></head><body>
 <div class="glow1"></div><div class="glow2"></div><div class="glow3"></div><div class="grid"></div><div class="bloom"></div><div class="line"></div>
 <div class="wrap"><div class="logo hero-only"></div><div class="kicker" id="kicker"></div><div class="title" id="title"></div><div class="sub" id="sub"></div></div>

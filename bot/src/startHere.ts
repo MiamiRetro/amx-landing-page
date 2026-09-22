@@ -93,25 +93,33 @@ export function startHereMessages(opts: { helpDeskUrl: string }): MessageCreateO
   const start = new ContainerBuilder()
     .setAccentColor(GREEN)
     .addMediaGalleryComponents(banner("start.png"))
-    .addTextDisplayComponents(text("### Account\nFree, takes a few minutes, and it's where the bots run."))
-    .addActionRowComponents(
-      row(
-        link("Create your free account", "https://www.blkbox.pro/", E.BLK),
-        link("Strategy performance", "https://momentous-bolt-1cc.notion.site/Bot-Performance-228c030cfd9442d480b0e516363206a1?pvs=4", "🤖"),
-      ),
+    .addTextDisplayComponents(
+      text("## Three steps to full access"),
+      text("Email, exchange, UID. Then the command center and the Trading Floor are yours, free."),
     )
     .addSeparatorComponents(divider())
     .addTextDisplayComponents(
+      text("### 1 \u00b7 Get your command center"),
+      text("Market intelligence, proprietary signals, multi-exchange execution and a trade journal, all in one place. No card, no subscription, a couple of minutes to set up."),
+    )
+    .addActionRowComponents(row(link("Get your command center", "https://www.blkbox.pro/signup", E.BLK)))
+    .addSeparatorComponents(divider())
+    .addTextDisplayComponents(
+      text("### 2 \u00b7 Open a partner exchange"),
+      text("Sign up through one of the links below so your account lands under ours."),
       text(
         [
-          "### Exchange",
-          "Open one through our link, then connect it in the app.",
-          `${E.Bitget}  **Bitget**  ·  COIN-M futures`,
-          `${E.Blofin}  **Blofin**  ·  EU and USA friendly, non-KYC`,
-          `${E.Bybit}  **Bybit**  ·  Insurance Trading System`,
-          "-# Affiliate links. Using them supports the community at no cost to you.",
+          "**Bitget**",
+          "Best choice for trading COIN-M futures.",
+          "",
+          "**Blofin**",
+          "\ud83c\uddea\ud83c\uddfa / \ud83c\uddfa\ud83c\uddf8 EU and USA friendly, \ud83d\udc7b non-KYC, offers futures and many altcoins.",
+          "",
+          "**Bybit**",
+          "Best for Insurance Trading System (ITS).",
         ].join("\n"),
       ),
+      text("-# Affiliate links. We earn a share of the trading fees on your volume, at no extra cost to you."),
     )
     .addActionRowComponents(
       row(
@@ -119,12 +127,19 @@ export function startHereMessages(opts: { helpDeskUrl: string }): MessageCreateO
         link("Blofin", "https://partner.blofin.com/d/BLKBox", E.Blofin),
         link("Bybit", "https://partner.bybit.com/b/90136", E.Bybit),
       ),
-    );
+    )
+    .addSeparatorComponents(divider())
+    .addTextDisplayComponents(
+      text("### 3 \u00b7 Verify your UID and unlock the signals"),
+      text("Drop the UID from your exchange account into the app and it verifies instantly. That is what turns on the AlphanumetriX signals, the trade terminal and the trade journal."),
+      text("-# Bitget, Blofin and Bybit UIDs are all accepted."),
+    )
+    .addActionRowComponents(row(link("Verify my UID", "https://app.blkbox.pro", E.BLK)));
 
   const community = new ContainerBuilder()
     .setAccentColor(GREEN)
     .addMediaGalleryComponents(banner("community.png"))
-    .addTextDisplayComponents(text(`${E.YT}  **YouTube**`))
+    .addTextDisplayComponents(text(`### ${E.YT}  YouTube`))
     .addActionRowComponents(
       row(
         link("Baloo's Crypto Jungle", "https://www.youtube.com/@TheFinancialSummit?Sub_Confirmation=1", E.YT),
@@ -132,7 +147,7 @@ export function startHereMessages(opts: { helpDeskUrl: string }): MessageCreateO
         link("Tone Vays", "https://www.youtube.com/@tonevays", E.YT),
       ),
     )
-    .addTextDisplayComponents(text(`${E.X}  **X**`))
+    .addTextDisplayComponents(text(`### ${E.X}  X`))
     .addActionRowComponents(
       row(
         link("Baloo", "https://x.com/JtBlkbox", E.X),
@@ -142,7 +157,10 @@ export function startHereMessages(opts: { helpDeskUrl: string }): MessageCreateO
       ),
     )
     .addSeparatorComponents(divider())
-    .addTextDisplayComponents(text("**Questions?**  Ask in help-desk, the community and the team answer there.\n**Something private?**  Open a support ticket for a private thread with staff."))
+    .addTextDisplayComponents(
+      text("### Need a hand?"),
+      text("Ask in help-desk, where the community and the team answer. For anything private, open a support ticket and you get a thread with staff only."),
+    )
     .addActionRowComponents(
       row(
         link("Help-desk", opts.helpDeskUrl, "☎️"),

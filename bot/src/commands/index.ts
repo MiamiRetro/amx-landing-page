@@ -13,6 +13,8 @@ import { log, errInfo } from "../log.js";
 import type { GroupIndex } from "../mirror/groups.js";
 import type { Mirror } from "../mirror/mirror.js";
 import type { LanguageRoles } from "../roles.js";
+import type { VerifyService } from "../verify/service.js";
+import { EXCHANGES, EXCHANGE_LABELS, isExchange, ProviderError } from "../verify/types.js";
 
 const langChoices = LANGS.map((l) => ({ name: `${LANG_NAMES[l]} (${l})`, value: l }));
 
@@ -70,6 +72,19 @@ export const commandDefinitions = [
     .addSubcommand((s) => s.setName("remove").setDescription("Remove a term").addStringOption((o) => o.setName("term").setDescription("Term").setRequired(true)))
     .addSubcommand((s) => s.setName("list").setDescription("List terms")),
   new SlashCommandBuilder()
+    .setName("uid")
+    .setDescription("Look up an exchange UID (moderators)")
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+    .setDMPermission(false)
+    .addSubcommand((s) =>
+      s
+        .setName("check")
+        .setDescription("Ask the exchange whether a UID is one of our referrals. Grants nothing.")
+        .addStringOption((o) => o.setName("exchange").setDescription("Exchange").addChoices(...EXCHANGES.map((e) => ({ name: EXCHANGE_LABELS[e], value: e }))).setRequired(true))
+        .addStringOption((o) => o.setName("uid").setDescription("The UID to look up").setRequired(true)),
+    )
+    .addSubcommand((s) => s.setName("status").setDescription("Which exchanges are verifying for real")),
+  new SlashCommandBuilder()
     .setName("language")
     .setDescription("Choose the language you read the community in / 选择语言 / 언어 선택 / Pilih bahasa")
     .setDMPermission(false)
@@ -83,6 +98,7 @@ export interface CommandDeps {
   mirror: Mirror;
   providerId: string;
   roles: LanguageRoles;
+  verify: VerifyService;
 }
 
 export async function handleCommand(i: ChatInputCommandInteraction, d: CommandDeps) {
@@ -91,6 +107,7 @@ export async function handleCommand(i: ChatInputCommandInteraction, d: CommandDe
   try {
     const text =
       i.commandName === "mirror" ? await mirrorCommand(i, d)
+      : i.commandName === "uid" ? await uidCommand(i, d)
       : i.commandName === "language" ? await languageCommand(i, d)
       : await glossaryCommand(i, d);
     await i.editReply(text.slice(0, 1900));
@@ -191,6 +208,42 @@ async function mirrorCommand(i: ChatInputCommandInteraction, d: CommandDeps): Pr
     return out.join("\n");
   }
   throw new Error(`unknown subcommand ${sub}`);
+}
+
+/**
+ * Moderator lookup. Answers the question a member's ticket actually asks:
+ * does this UID sit under our affiliate? It never stores anything and never
+ * grants a role, so it is safe to run on anyone's UID.
+ */
+async function uidCommand(i: ChatInputCommandInteraction, d: CommandDeps): Promise<string> {
+  if (i.options.getSubcommand() === "status") {
+    const lines = EXCHANGES.map((e) => {
+      const p = d.verify.provider(e);
+      return `${EXCHANGE_LABELS[e]}: ${!p ? "not offered" : p.live ? "live" : "stand-in, not checking"}`;
+    });
+    return ["**Verification status**", ...lines].join("\n");
+  }
+
+  const exchange = i.options.getString("exchange", true);
+  const uid = i.options.getString("uid", true).trim().replace(/\s+/g, "");
+  if (!isExchange(exchange)) return "Unknown exchange.";
+  const provider = d.verify.provider(exchange);
+  if (!provider) return `${EXCHANGE_LABELS[exchange]} is not offered right now.`;
+  if (!provider.live) return `${EXCHANGE_LABELS[exchange]} is a stand-in, so it cannot check anything yet.`;
+
+  const started = Date.now();
+  try {
+    const res = await provider.lookup(uid);
+    const detail = res.detail && Object.keys(res.detail).length ? `\n\u0060\u0060\u0060json\n${JSON.stringify(res.detail, null, 2).slice(0, 1200)}\n\u0060\u0060\u0060` : "";
+    return [
+      res.referred ? `\u2705 **${uid}** is one of our ${EXCHANGE_LABELS[exchange]} referrals.` : `\u274c **${uid}** is not under our ${EXCHANGE_LABELS[exchange]} affiliate.`,
+      `-# answered in ${Date.now() - started}ms`,
+      detail,
+    ].join("\n");
+  } catch (e) {
+    const body = e instanceof ProviderError && e.body ? `\n-# ${e.body.slice(0, 300)}` : "";
+    return `\u26a0\ufe0f ${EXCHANGE_LABELS[exchange]} could not answer: ${e instanceof Error ? e.message : String(e)}${body}`;
+  }
 }
 
 async function languageCommand(i: ChatInputCommandInteraction, d: CommandDeps): Promise<string> {

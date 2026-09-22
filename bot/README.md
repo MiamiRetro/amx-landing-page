@@ -142,6 +142,18 @@ permission is wrong; override the path without touching code:
 BYBIT_AFFILIATE_PATH, BITGET_AFFILIATE_PATH, BLOFIN_AFFILIATE_PATH
 ```
 
+### The verify channel disappears once you are in
+
+```
+npm run verify:channel -- --channel "<name>"
+```
+
+Discord applies every role deny, then every role allow. Allowing view on
+@everyone and denying it on the membership role means arrivals see the channel
+and verified members do not, with no per-member overwrites and nothing for the
+bot to tidy up afterwards. Do not allow view on any other role there, because a
+role allow beats the deny.
+
 ### Rules the flow enforces
 
 - Someone who already holds the membership role is turned away before any API call.

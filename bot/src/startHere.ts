@@ -87,7 +87,7 @@ export function startHereMessages(opts: { helpDeskUrl: string }): MessageCreateO
     .addActionRowComponents(
       row(
         link("Terms of Service", "https://momentous-bolt-1cc.notion.site/BLKB-X-Inc-Terms-of-Service-f0567f236cfe43f7b04a47ffa4ed3931?pvs=4", "📄"),
-        link("Privacy Policy", "https://momentous-bolt-1cc.notion.site/BLKB-X-Inc-Privacy-Policy-192b905b2a57802f838ffd7e0210e7b5?pvs=4", "🔒"),
+        link("Privacy Policy", "https://www.blkbox.pro/privacy-policy", "🔒"),
       ),
     );
 
@@ -113,29 +113,50 @@ export function startHereMessages(opts: { helpDeskUrl: string }): MessageCreateO
           "",
           "That share is what keeps this place free. The signals, the bots, the tools and every channel here are paid for by it. It never costs you a cent extra, and we only earn when you trade.",
           "",
-          "We trust all three. The only thing that should decide it is where you live.",
+          "We trust every exchange on this list. The only thing that should decide it is where you live.",
         ].join("\n"),
       ),
       text(
         [
-          "**Bitget**  \u00b7  ID check required",
-          "Not available: \ud83c\uddfa\ud83c\uddf8 \ud83c\udde8\ud83c\udde6 \ud83c\uddef\ud83c\uddf5 \ud83c\uddf0\ud83c\uddf7 \ud83c\uddf8\ud83c\uddec \ud83c\udded\ud83c\uddf0 \ud83c\udde8\ud83c\uddf3 \ud83c\udde9\ud83c\uddea \ud83c\uddeb\ud83c\uddf7 \ud83c\udde6\ud83c\uddf9 \ud83c\uddf3\ud83c\uddf1",
-          "",
-          "**Bybit**  \u00b7  ID check required",
-          "Not available: \ud83c\uddfa\ud83c\uddf8 \ud83c\udde8\ud83c\udde6 \ud83c\uddf8\ud83c\uddec \ud83c\udded\ud83c\uddf0 \ud83c\udde8\ud83c\uddf3 \ud83c\udde6\ud83c\uddea \ud83c\uddfa\ud83c\uddff",
-          "",
-          "**Blofin**  \u00b7  no ID check to start",
-          "Not available: \ud83c\uddfa\ud83c\uddf8 \ud83c\udde8\ud83c\udde6 \ud83c\uddee\ud83c\uddf3 \ud83c\uddf8\ud83c\uddec \ud83c\udde8\ud83c\uddf3 \ud83c\udde6\ud83c\uddea \ud83c\uddf7\ud83c\uddf8 \ud83c\uddf9\ud83c\uddf9 \ud83c\uddfb\ud83c\uddea \ud83c\udde7\ud83c\udde9 \ud83c\uddf1\ud83c\udde7 \ud83c\uddf7\ud83c\uddfc \ud83c\uddff\ud83c\uddfc",
+          "**Start here**",
+          "\ud83c\uddec\ud83c\udde7 \ud83c\uddea\ud83c\uddfa  Europe and the UK \u2192 Bybit or Blofin",
+          "\ud83c\uddfa\ud83c\uddf8 \ud83c\udde8\ud83c\udde6  United States and Canada \u2192 Blofin, MEXC or Toobit",
+          "\ud83c\uddf0\ud83c\uddf7  \ud55c\uad6d \u2192 Bybit, Blofin or MEXC",
+          "\ud83c\uddee\ud83c\udde9  Indonesia \u2192 Bybit, Blofin, MEXC or Toobit",
+          "\ud83c\uddef\ud83c\uddf5  \u65e5\u672c \u2192 Bybit, Blofin, MEXC or Toobit",
+          "\ud83c\udf0d  Anywhere else \u2192 any of them, Bybit is the easiest start",
         ].join("\n"),
       ),
-      text("**Your flag is not listed?** That exchange is open to you. Pick any of the three."),
-      text("-# Sanctioned jurisdictions are blocked on all three. Availability changes, so the exchange's own terms are the last word. Affiliate links."),
+      text(
+        [
+          "**Who can open an account**",
+          "",
+          "**Bybit**  \u00b7  ID check required",
+          "\ud83c\uddec\ud83c\udde7 \ud83c\uddea\ud83c\uddfa \ud83c\uddef\ud83c\uddf5 \ud83c\uddf0\ud83c\uddf7 \ud83c\uddee\ud83c\udde9",
+          "",
+          "**Bitget**  \u00b7  ID check required",
+          "\ud83c\uddec\ud83c\udde7 \ud83c\uddee\ud83c\udde9",
+          "",
+          "**Blofin**  \u00b7  no ID check, futures open at signup",
+          "\ud83c\uddfa\ud83c\uddf8 \ud83c\udde8\ud83c\udde6 \ud83c\uddec\ud83c\udde7 \ud83c\uddea\ud83c\uddfa \ud83c\uddef\ud83c\uddf5 \ud83c\uddf0\ud83c\uddf7 \ud83c\uddee\ud83c\udde9",
+          "",
+          "**MEXC**  \u00b7  no ID check, futures open at signup  \u00b7  *coming soon*",
+          "\ud83c\uddfa\ud83c\uddf8 \ud83c\udde8\ud83c\udde6 \ud83c\uddea\ud83c\uddfa \ud83c\uddef\ud83c\uddf5 \ud83c\uddf0\ud83c\uddf7 \ud83c\uddee\ud83c\udde9",
+          "",
+          "**Toobit**  \u00b7  no ID check, futures open at signup  \u00b7  *coming soon*",
+          "\ud83c\uddfa\ud83c\uddf8 \ud83c\udde8\ud83c\udde6 \ud83c\uddea\ud83c\uddfa \ud83c\uddef\ud83c\uddf5 \ud83c\uddf0\ud83c\uddf7 \ud83c\uddee\ud83c\udde9",
+        ].join("\n"),
+      ),
+      text("-# Availability changes, and each exchange's own terms are the last word on who may open an account. Check before you sign up. Affiliate links."),
     )
     .addActionRowComponents(
       row(
         link("Bitget", "https://partner.bitget.com/bg/G91HYQ", E.Bitget),
         link("Blofin", "https://partner.blofin.com/d/BLKBox", E.Blofin),
         link("Bybit", "https://partner.bybit.com/b/90136", E.Bybit),
+        // Placeholders until the affiliate links exist.
+        new ButtonBuilder().setStyle(ButtonStyle.Secondary).setLabel("MEXC \u00b7 soon").setCustomId("placeholder:mexc").setDisabled(true),
+        new ButtonBuilder().setStyle(ButtonStyle.Secondary).setLabel("Toobit \u00b7 soon").setCustomId("placeholder:toobit").setDisabled(true),
       ),
     )
     .addSeparatorComponents(divider())

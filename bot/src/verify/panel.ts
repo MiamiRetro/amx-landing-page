@@ -1,5 +1,9 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   ActionRowBuilder,
+  AttachmentBuilder,
   ButtonBuilder,
   ButtonStyle,
   LabelBuilder,
@@ -21,6 +25,11 @@ import { EXCHANGE_SIGNUP, isExchange, type ExchangeId } from "./types.js";
 export const VERIFY_BUTTON = "verify:start";
 export const VERIFY_MODAL = "verify:submit";
 const FIELD_EXCHANGE = "exchange";
+const GUIDE = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "assets", "verify", "uid-guide.png");
+
+/** The three-step picture, attached wherever a member might be hunting for their UID. */
+const uidGuide = () => new AttachmentBuilder(readFileSync(GUIDE), { name: "uid-guide.png" });
+
 const FIELD_UID = "uid";
 
 const signupRow = () =>
@@ -46,6 +55,7 @@ export function verifyPanel() {
         new ButtonBuilder().setCustomId(VERIFY_BUTTON).setStyle(ButtonStyle.Success).setLabel("Verify my UID").setEmoji("🔑"),
       ),
     ],
+    files: [uidGuide()],
   };
 }
 
@@ -138,8 +148,9 @@ async function reply(
         content: [
           "That does not look like a UID.",
           "",
-          `A ${label} UID is the account number shown in your profile, usually 7 to 10 digits. It is not your email, your username or an API key.`,
+          `A ${label} UID is the account number shown in your profile, usually 7 to 10 digits. It is not your email, your username or an API key. Here is where to find it.`,
         ].join("\n"),
+        files: [uidGuide()],
       };
     case "rate_limited":
       return { content: "That is a lot of tries in a short time. Wait fifteen minutes and have another go, or ask in help-desk and someone will check it with you." };
@@ -165,6 +176,7 @@ async function reply(
           `Open a fresh account through the button below, then come back and verify that UID. If you think this is a mistake, ask in help-desk and we will look it up with you.`,
         ].join("\n"),
         components: [signupRow()],
+        files: [uidGuide()],
       };
     case "provider_error":
     default:

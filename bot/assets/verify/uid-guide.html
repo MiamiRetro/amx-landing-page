@@ -1,0 +1,90 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+@font-face{font-family:Sora;src:url(node_modules/@fontsource/sora/files/sora-latin-800-normal.woff2) format("woff2");font-weight:800}
+@font-face{font-family:Sora;src:url(node_modules/@fontsource/sora/files/sora-latin-700-normal.woff2) format("woff2");font-weight:700}
+@font-face{font-family:Sora;src:url(node_modules/@fontsource/sora/files/sora-latin-600-normal.woff2) format("woff2");font-weight:600}
+@font-face{font-family:Sora;src:url(node_modules/@fontsource/sora/files/sora-latin-500-normal.woff2) format("woff2");font-weight:500}
+*{margin:0;box-sizing:border-box}
+body{width:1600px;height:672px;background:#050d14;font-family:Sora,sans-serif;color:#fff;position:relative;overflow:hidden}
+.glow1{position:absolute;left:10%;top:-45%;width:80%;height:120%;background:radial-gradient(50% 50% at 50% 50%,rgba(34,211,238,.20) 0%,rgba(34,211,238,.05) 50%,transparent 100%)}
+.glow2{position:absolute;right:-15%;bottom:-60%;width:60%;height:120%;background:radial-gradient(50% 50% at 50% 50%,rgba(16,185,129,.16) 0%,transparent 60%)}
+.grid{position:absolute;inset:0;background-image:linear-gradient(rgba(34,211,238,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(34,211,238,.06) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(70% 90% at 50% 40%,#000 25%,transparent 100%);-webkit-mask-image:radial-gradient(70% 90% at 50% 40%,#000 25%,transparent 100%)}
+.line{position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,#22d3ee,#10b981 55%,transparent)}
+.head{position:relative;text-align:center;padding:44px 0 0}
+.kicker{font-weight:700;font-size:15px;letter-spacing:.3em;color:#22d3ee;text-transform:uppercase}
+h1{font-weight:800;font-size:52px;letter-spacing:-.02em;margin-top:12px}
+.sub{font-weight:600;font-size:19px;color:#93a4b3;margin-top:10px}
+.cards{position:relative;display:flex;gap:28px;padding:38px 64px 0}
+.card{flex:1;height:326px;background:rgba(255,255,255,.035);border:1px solid rgba(34,211,238,.18);border-radius:20px;padding:24px 24px 0;display:flex;flex-direction:column}
+.top{display:flex;align-items:center;gap:14px}
+.num{width:42px;height:42px;flex:none;border-radius:50%;background:linear-gradient(135deg,#22d3ee,#10b981);color:#04202b;font-weight:800;font-size:21px;display:flex;align-items:center;justify-content:center}
+h2{font-weight:700;font-size:23px;letter-spacing:-.01em}
+.body{font-weight:500;font-size:15.5px;line-height:1.5;color:#93a4b3;margin-top:11px;height:70px}
+/* device mock */
+.mock{margin-top:8px;background:#0a1620;border:1px solid rgba(255,255,255,.09);border-top-left-radius:12px;border-top-right-radius:12px;height:170px;position:relative;overflow:hidden}
+.bar{height:34px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;padding:0 12px;gap:8px}
+.dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.18)}
+.nav{margin-left:8px;display:flex;gap:12px;font-size:10.5px;color:#64798c;font-weight:600}
+.av{margin-left:auto;width:19px;height:19px;border-radius:50%;background:rgba(255,255,255,.22)}
+.av.hot{background:#22d3ee;box-shadow:0 0 0 4px rgba(34,211,238,.22)}
+.inner{padding:16px 16px 0}
+.blk{height:9px;border-radius:5px;background:rgba(255,255,255,.10)}
+.btn{margin-top:14px;display:inline-block;padding:8px 20px;border-radius:8px;background:linear-gradient(135deg,#22d3ee,#10b981);color:#04202b;font-weight:700;font-size:12px}
+.pop{position:absolute;right:14px;top:40px;width:238px;background:#0f2130;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:11px;box-shadow:0 18px 40px rgba(0,0,0,.5)}
+.who{display:flex;gap:9px;align-items:center}
+.who .a{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.2)}
+.uid{margin-top:11px;display:flex;align-items:center;justify-content:space-between;padding:9px 11px;border:1.5px solid #22d3ee;border-radius:9px;background:rgba(34,211,238,.10)}
+.uid b{font-size:13.5px;font-weight:700;letter-spacing:.02em}
+.copy{width:17px;height:17px;border:1.5px solid #22d3ee;border-radius:4px;position:relative}
+.copy:after{content:"";position:absolute;left:3px;top:3px;width:13px;height:13px;border:1.5px solid #22d3ee;border-radius:4px;background:#0f2130}
+.row{margin-top:9px;height:8px;border-radius:4px;background:rgba(255,255,255,.09)}
+.tag{margin-top:9px;font-size:11px;font-weight:700;color:#22d3ee;text-align:right}
+.arrow{position:absolute;top:calc(50% + 42px);width:26px;height:26px;border-right:3px solid rgba(34,211,238,.55);border-top:3px solid rgba(34,211,238,.55);transform:rotate(45deg)}
+.foot{position:absolute;left:0;right:0;bottom:30px;text-align:center;font-weight:600;font-size:15px;color:#64798c}
+.foot b{color:#93a4b3}
+</style></head><body>
+<div class="glow1"></div><div class="glow2"></div><div class="grid"></div><div class="line"></div>
+<div class="head">
+  <div class="kicker">Bybit · Bitget · Blofin</div>
+  <h1>How to find your UID</h1>
+  <div class="sub">Three steps, the same on every exchange, on mobile or desktop</div>
+</div>
+<div class="cards">
+  <div class="card">
+    <div class="top"><div class="num">1</div><h2>Log in</h2></div>
+    <div class="body">Open the exchange app or website and sign in to your account.</div>
+    <div class="mock">
+      <div class="bar"><div class="dot"></div><div class="dot"></div><div class="nav"><span>Markets</span><span>Trade</span><span>Earn</span></div><div class="av"></div></div>
+      <div class="inner">
+        <div class="blk" style="width:62%"></div>
+        <div class="blk" style="width:42%;margin-top:9px;opacity:.6"></div>
+        <div class="btn">Log in</div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="top"><div class="num">2</div><h2>Open your profile</h2></div>
+    <div class="body">Tap or click your profile icon in the top-right corner.</div>
+    <div class="mock">
+      <div class="bar"><div class="dot"></div><div class="dot"></div><div class="nav"><span>Markets</span><span>Trade</span><span>Earn</span></div><div class="av hot"></div></div>
+      <div class="inner">
+        <div class="blk" style="width:55%"></div>
+        <div class="blk" style="width:70%;margin-top:9px;opacity:.6"></div>
+        <div class="blk" style="width:36%;margin-top:9px;opacity:.35"></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="top"><div class="num">3</div><h2>Copy your UID</h2></div>
+    <div class="body">Your UID sits at the top of the profile menu. Tap the copy icon, then paste it into the bot.</div>
+    <div class="mock">
+      <div class="bar"><div class="dot"></div><div class="dot"></div><div class="nav"><span>Markets</span><span>Trade</span></div><div class="av hot"></div></div>
+      <div class="pop">
+        <div class="who"><div class="a"></div><div><div class="blk" style="width:82px"></div><div class="blk" style="width:54px;margin-top:5px;opacity:.5"></div></div></div>
+        <div class="uid"><b>UID: 12345678</b><div class="copy"></div></div>
+        <div class="tag">← copy this</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="foot">Your UID is an account <b>number</b>, never a password or an API key.</div>
+</body></html>

@@ -13,6 +13,7 @@ import { providerFromSpec, Translator } from "./translate/index.js";
 import { buildProviders } from "./verify/providers/index.js";
 import { VerifyService } from "./verify/service.js";
 import { handleVerifyButton, handleVerifySubmit, VERIFY_BUTTON, VERIFY_MODAL } from "./verify/panel.js";
+import { checkProviders, HealthWatch } from "./verify/health.js";
 
 async function main() {
   setLogLevel(config.logLevel());
@@ -57,6 +58,27 @@ async function main() {
       const affiliates = buildProviders();
       verify = new VerifyService(db, guildId, affiliates);
       log.info("uid verification ready", { exchanges: [...affiliates.values()].map((p) => `${p.id}:${p.live ? "live" : "stand-in"}`) });
+
+      // Affiliate keys die quietly: Bybit expires an unbound key after 90 days,
+      // and a revoked permission looks the same. Probing a UID that cannot
+      // exist tells us the key still works before a member has to report it.
+      const watch = new HealthWatch();
+      const alertChannelId = process.env.VERIFY_ALERT_CHANNEL_ID?.trim();
+      const runHealth = async () => {
+        const results = await checkProviders(affiliates.values());
+        for (const c of watch.diff(results)) {
+          const text = c.ok
+            ? `✅ ${c.exchange} affiliate checks are working again.`
+            : `⚠️ ${c.exchange} affiliate checks are failing: ${c.error}\nUID verification for ${c.exchange} is down until the API key is fixed.`;
+          c.ok ? log.info("affiliate credentials recovered", { exchange: c.exchange }) : log.error("affiliate credentials failing", { exchange: c.exchange, error: c.error });
+          if (!alertChannelId) continue;
+          const ch = await guild.channels.fetch(alertChannelId).catch(() => null);
+          if (ch?.isTextBased() && "send" in ch) await ch.send(text).catch((e) => log.warn("health alert send failed", errInfo(e)));
+        }
+      };
+      void runHealth().catch((e) => log.warn("affiliate health check failed", errInfo(e)));
+      const healthHours = Number(process.env.VERIFY_HEALTH_HOURS ?? 12);
+      setInterval(() => void runHealth().catch((e) => log.warn("affiliate health check failed", errInfo(e))), healthHours * 3_600_000).unref();
 
       await guild.commands.set(commandDefinitions);
       log.info("ready", { guild: guild.name, groups: groups.groups.length, provider: primary.id, fallbacks: fallbacks.map((f) => f.id) });

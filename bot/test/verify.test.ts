@@ -125,3 +125,22 @@ test("a stand-in provider reports itself rather than rejecting a good uid", asyn
 test("normaliseUid strips spaces anywhere in the string", () => {
   assert.equal(normaliseUid("  12 34\t56  "), "123456");
 });
+
+test("a canary probe separates a working exchange from dead credentials", async () => {
+  const { checkProviders } = await import("../src/verify/health.js");
+  const good: AffiliateProvider = { ...provider("bybit", "no"), id: "bybit" };
+  const dead: AffiliateProvider = { ...provider("bitget", "throw"), id: "bitget" };
+  const standIn: AffiliateProvider = { ...provider("blofin", "no"), id: "blofin", live: false };
+  const res = await checkProviders([good, dead, standIn]);
+  assert.deepEqual(res.map((r) => [r.exchange, r.ok]), [["bybit", true], ["bitget", false]], "stand-ins are not probed");
+  assert.match(res[1].error ?? "", /timed out/);
+});
+
+test("a broken exchange is announced once, and so is its recovery", async () => {
+  const { HealthWatch } = await import("../src/verify/health.js");
+  const w = new HealthWatch();
+  assert.deepEqual(w.diff([{ exchange: "bybit", ok: false, error: "401" }]).map((c) => c.ok), [false], "first failure reported");
+  assert.deepEqual(w.diff([{ exchange: "bybit", ok: false, error: "401" }]), [], "still broken, stays quiet");
+  assert.deepEqual(w.diff([{ exchange: "bybit", ok: true }]).map((c) => c.ok), [true], "recovery reported");
+  assert.deepEqual(w.diff([{ exchange: "bybit", ok: true }]), [], "healthy, stays quiet");
+});

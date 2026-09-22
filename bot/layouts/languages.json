@@ -17,8 +17,7 @@
     {
       "name": "╭───  中文  ───╮",
       "viewRoles": [
-        "中文",
-        "Team - Will Not DM"
+        "中文"
       ],
       "channels": [
         {
@@ -52,8 +51,7 @@
     {
       "name": "╭───  한국어  ───╮",
       "viewRoles": [
-        "한국어",
-        "Team - Will Not DM"
+        "한국어"
       ],
       "channels": [
         {
@@ -87,8 +85,7 @@
     {
       "name": "╭───  Bahasa Indonesia  ───╮",
       "viewRoles": [
-        "Bahasa Indonesia",
-        "Team - Will Not DM"
+        "Bahasa Indonesia"
       ],
       "channels": [
         {

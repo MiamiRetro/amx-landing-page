@@ -13,8 +13,11 @@ import { ProviderError, type AffiliateLookup, type AffiliateProvider } from "../
  * Endpoint and the codes that mean "no" are overridable, because Bybit has
  * renamed affiliate endpoints before.
  */
+// 141024 "no relation with affiliate" is Bybit's answer for a UID that did not
+// register under us. It is a clean no, not an error, and it arrives only once
+// the key has authenticated, so seeing it also proves the credentials work.
 const NOT_OURS = new Set(
-  (process.env.BYBIT_NOT_REFERRED_CODES ?? "131228,181002,10001").split(",").map((s) => s.trim()).filter(Boolean),
+  (process.env.BYBIT_NOT_REFERRED_CODES ?? "141024,131228,181002,10001").split(",").map((s) => s.trim()).filter(Boolean),
 );
 
 interface BybitResponse {

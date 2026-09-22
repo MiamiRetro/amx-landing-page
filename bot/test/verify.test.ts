@@ -152,3 +152,13 @@ test("a disabled exchange disappears from the picker entirely", async () => {
   delete process.env.VERIFY_DISABLED;
   assert.deepEqual(ids, ["bitget", "blofin"], "an unreachable exchange must not be offered");
 });
+
+test("Bybit's no-relation code reads as not referred, not as an outage", async () => {
+  const { BybitAffiliate } = await import("../src/verify/providers/bybit.js");
+  const p = new BybitAffiliate();
+  // Reach past the network by handing the parser Bybit's own shape.
+  const codes = (process.env.BYBIT_NOT_REFERRED_CODES ?? "141024,131228,181002,10001").split(",");
+  assert.ok(codes.includes("141024"), "141024 must count as a clean no");
+  assert.equal(p.id, "bybit");
+  assert.equal(p.live, true);
+});

@@ -8,6 +8,8 @@
     "node": ">=22"
   },
   "scripts": {
+    "verify:panel": "tsx scripts/post-verify.ts",
+    "verify:probe": "tsx scripts/verify-probe.ts",
     "channels": "tsx src/channel-manager.ts",
     "typecheck": "tsc --noEmit",
     "build": "tsc -p tsconfig.json",

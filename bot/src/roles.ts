@@ -38,6 +38,11 @@ export class LanguageRoles {
     if (Date.now() - this.loadedAt > 60_000) await this.load();
   }
 
+  /** The role granted on UID verification: the first configured membership role. */
+  memberRoleId(): string | null {
+    return [...this.memberRoleIds][0] ?? null;
+  }
+
   isVerified(member: GuildMember) {
     return member.roles.cache.some((r) => this.memberRoleIds.has(r.id)) || member.permissions.has(PermissionFlagsBits.Administrator);
   }

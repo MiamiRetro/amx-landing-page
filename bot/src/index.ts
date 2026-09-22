@@ -10,6 +10,9 @@ import { Semaphore } from "./mirror/queue.js";
 import { LanguageRoles } from "./roles.js";
 import { handlePickerButton, PICKER_PREFIX } from "./picker.js";
 import { providerFromSpec, Translator } from "./translate/index.js";
+import { buildProviders } from "./verify/providers/index.js";
+import { VerifyService } from "./verify/service.js";
+import { handleVerifyButton, handleVerifySubmit, VERIFY_BUTTON, VERIFY_MODAL } from "./verify/panel.js";
 
 async function main() {
   setLogLevel(config.logLevel());
@@ -36,6 +39,7 @@ async function main() {
   let mirror: Mirror | null = null;
   let groups: GroupIndex | null = null;
   let roles: LanguageRoles | null = null;
+  let verify: VerifyService | null = null;
 
   client.once(Events.ClientReady, async (c) => {
     try {
@@ -49,6 +53,10 @@ async function main() {
 
       roles = new LanguageRoles(guild, db);
       await roles.load();
+
+      const affiliates = buildProviders();
+      verify = new VerifyService(db, guildId, affiliates);
+      log.info("uid verification ready", { exchanges: [...affiliates.entries()].map(([id, p]) => `${id}:${p.constructor.name}`) });
 
       await guild.commands.set(commandDefinitions);
       log.info("ready", { guild: guild.name, groups: groups.groups.length, provider: primary.id, fallbacks: fallbacks.map((f) => f.id) });
@@ -71,6 +79,15 @@ async function main() {
   client.on(Events.InteractionCreate, (i) => {
     if (!mirror || !groups || !roles) return;
     if (i.isButton() && i.customId.startsWith(PICKER_PREFIX)) return void handlePickerButton(i, roles);
+    if (verify) {
+      const v = verify, r = roles;
+      if (i.isButton() && i.customId === VERIFY_BUTTON) {
+        return void handleVerifyButton(i, { verify: v, roles: r }).catch((e) => log.error("verify button failed", errInfo(e)));
+      }
+      if (i.isModalSubmit() && i.customId === VERIFY_MODAL) {
+        return void handleVerifySubmit(i, { verify: v, roles: r, memberRoleId: r.memberRoleId() }).catch((e) => log.error("verify modal failed", errInfo(e)));
+      }
+    }
     if (!i.isChatInputCommand()) return;
     void handleCommand(i, { guild: mirror.guild, db, groups, mirror, providerId: primary.id, roles });
   });

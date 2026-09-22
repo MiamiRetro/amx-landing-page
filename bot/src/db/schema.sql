@@ -87,3 +87,37 @@ create table if not exists language_prefs (
   primary key (guild_id, user_id)
 );
 alter table language_prefs enable row level security;
+
+-- UID verification -----------------------------------------------------------
+
+-- One row per Discord account. A member who re-verifies overwrites their row.
+create table if not exists verifications (
+  guild_id text not null,
+  discord_user_id text not null,
+  exchange text not null check (exchange in ('bitget','blofin','bybit')),
+  uid text not null,
+  detail jsonb,
+  verified_at timestamptz not null default now(),
+  primary key (guild_id, discord_user_id)
+);
+-- A UID belongs to exactly one Discord account, so a shared UID cannot let a
+-- second person in.
+create unique index if not exists verifications_uid_idx on verifications (exchange, uid);
+
+-- Every attempt, successful or not. Feeds the per-member rate limit that stops
+-- someone guessing at UIDs until one sticks.
+create table if not exists verification_attempts (
+  id bigserial primary key,
+  at timestamptz not null default now(),
+  guild_id text not null,
+  discord_user_id text not null,
+  exchange text not null,
+  uid text not null,
+  outcome text not null,
+  ms int not null default 0,
+  error text
+);
+create index if not exists verification_attempts_user_idx on verification_attempts (guild_id, discord_user_id, at);
+
+alter table verifications enable row level security;
+alter table verification_attempts enable row level security;

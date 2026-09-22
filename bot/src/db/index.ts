@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { config, type Lang } from "../config.js";
+import type { ExchangeId } from "../verify/types.js";
 
 export interface GroupMember {
   channel_id: string;
@@ -16,6 +17,15 @@ export interface Group {
   name: string;
   paused: boolean;
   members: GroupMember[];
+}
+
+export interface Verification {
+  guild_id: string;
+  discord_user_id: string;
+  exchange: ExchangeId;
+  uid: string;
+  detail: Record<string, unknown> | null;
+  verified_at: string;
 }
 
 export interface MapRow {
@@ -138,6 +148,46 @@ export class Db {
 
   async setLangPref(guildId: string, userId: string, lang: Lang) {
     unwrap(await this.sb.from("language_prefs").upsert({ guild_id: guildId, user_id: userId, lang, updated_at: new Date().toISOString() }, { onConflict: "guild_id,user_id" }), "set lang pref");
+  }
+
+  // Verification ------------------------------------------------------------
+
+  async getVerification(guildId: string, userId: string): Promise<Verification | null> {
+    const r = await this.sb.from("verifications").select("*").eq("guild_id", guildId).eq("discord_user_id", userId).maybeSingle();
+    if (r.error) throw new Error(`get verification: ${r.error.message}`);
+    return (r.data as Verification | null) ?? null;
+  }
+
+  /** Who, if anyone, already holds this UID. Used to refuse shared UIDs. */
+  async verificationByUid(exchange: ExchangeId, uid: string): Promise<Verification | null> {
+    const r = await this.sb.from("verifications").select("*").eq("exchange", exchange).eq("uid", uid).maybeSingle();
+    if (r.error) throw new Error(`verification by uid: ${r.error.message}`);
+    return (r.data as Verification | null) ?? null;
+  }
+
+  async saveVerification(v: Omit<Verification, "verified_at">) {
+    unwrap(await this.sb.from("verifications").upsert({ ...v, verified_at: new Date().toISOString() }, { onConflict: "guild_id,discord_user_id" }), "save verification");
+  }
+
+  async removeVerification(guildId: string, userId: string) {
+    unwrap(await this.sb.from("verifications").delete().eq("guild_id", guildId).eq("discord_user_id", userId), "remove verification");
+  }
+
+  async logAttempt(row: { guild_id: string; discord_user_id: string; exchange: string; uid: string; outcome: string; ms: number; error?: string }) {
+    const r = await this.sb.from("verification_attempts").insert(row);
+    if (r.error) console.error("verification attempt log failed:", r.error.message);
+  }
+
+  /** Attempts by this member since `since`, for the rate limit. */
+  async attemptsSince(guildId: string, userId: string, since: Date): Promise<number> {
+    const r = await this.sb
+      .from("verification_attempts")
+      .select("id", { count: "exact", head: true })
+      .eq("guild_id", guildId)
+      .eq("discord_user_id", userId)
+      .gte("at", since.toISOString());
+    if (r.error) throw new Error(`attempts since: ${r.error.message}`);
+    return r.count ?? 0;
   }
 
   async logUsage(row: { provider: string; input_tokens: number; cached_tokens: number; output_tokens: number; segments: number; ms: number; ok: boolean }) {

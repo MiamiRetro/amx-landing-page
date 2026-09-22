@@ -6,7 +6,6 @@
  */
 import { ChannelType, OverwriteType, PermissionFlagsBits, type TextChannel } from "discord.js";
 import { connect } from "../src/lib/client.js";
-import { opsUserIds } from "../src/lib/layout.js";
 import { verifyPanel } from "../src/verify/panel.js";
 
 async function main() {
@@ -23,11 +22,12 @@ async function main() {
       ch = await guild.channels.create({
         name,
         type: ChannelType.GuildText,
-        topic: "Preview of the UID verification panel. Ops only.",
+        topic: "Testing the UID verification panel.",
+        // Open to @everyone: verification is for people who are not members
+        // yet, so the test has to be visible to an account with no roles.
         permissionOverwrites: [
-          { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] },
-          { id: me.id, type: OverwriteType.Member, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ManageMessages, PermissionFlagsBits.ReadMessageHistory] },
-          ...opsUserIds().map((id) => ({ id, type: OverwriteType.Member, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] })),
+          { id: guild.roles.everyone.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory] },
+          { id: me.id, type: OverwriteType.Member, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ManageMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.EmbedLinks, PermissionFlagsBits.AttachFiles] },
         ],
         reason: "verification panel preview",
       });

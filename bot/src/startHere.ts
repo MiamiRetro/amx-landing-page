@@ -103,7 +103,7 @@ export function startHereMessages(opts: { helpDeskUrl: string }): MessageCreateO
       text("### 1 \u00b7 Get your command center"),
       text("Market intelligence, proprietary signals, multi-exchange execution and a trade journal, all in one place. No card, no subscription, a couple of minutes to set up."),
     )
-    .addActionRowComponents(row(link("Claim my command center", "https://www.blkbox.pro/signup", E.Glow)))
+    .addActionRowComponents(row(link("Unlock trading tools", "https://www.blkbox.pro/signup", E.Glow)))
     .addSeparatorComponents(divider())
     .addTextDisplayComponents(
       text("### 2 \u00b7 Choose your exchange"),

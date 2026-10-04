@@ -98,7 +98,7 @@ async function mirrorCommand(i: ChatInputCommandInteraction, d: CommandDeps): Pr
     await d.groups.reload();
     const usage = await d.db.usageToday();
     const lines = [`Provider: \`${d.providerId}\` · ${d.mirror.paused ? "**PAUSED**" : "running"} · queue: ${d.mirror.queue.pending}`];
-    lines.push(`Last 24h: ${usage.requests} translation calls · ${usage.input} in (${usage.cached} cached) · ${usage.output} out tokens`);
+    lines.push(`Last 24h: ${usage.requests} translation calls · ${usage.input + usage.cached + usage.cacheCreation} in (${usage.cached} cache read, ${usage.cacheCreation} cache write) · ${usage.output} out tokens`);
     if (d.groups.groups.length === 0) lines.push("No groups yet. Use `/mirror create` or `/mirror link`.");
     for (const g of d.groups.groups) {
       const members = g.members.map((m) => `${m.lang}: <#${m.channel_id}>${m.webhook_id ? "" : " (no webhook yet)"}`).join(" · ");

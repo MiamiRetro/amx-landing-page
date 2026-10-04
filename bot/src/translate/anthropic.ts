@@ -54,8 +54,11 @@ export class AnthropicProvider implements TranslationProvider {
     return {
       translations,
       usage: {
+        // input_tokens counts only what was neither read from nor written to the
+        // cache; the cache fields carry the rest and bill at different rates.
         inputTokens: u.input_tokens,
         cachedTokens: u.cache_read_input_tokens ?? 0,
+        cacheCreationTokens: u.cache_creation_input_tokens ?? 0,
         outputTokens: u.output_tokens,
       },
     };

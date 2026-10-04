@@ -14,7 +14,14 @@ export interface TranslateRequest {
 export interface TranslateResult {
   /** target lang → translated segments, same length/order as request.segments */
   translations: Partial<Record<Lang, string[]>>;
-  usage: { inputTokens: number; cachedTokens: number; outputTokens: number };
+  /**
+   * Input token counts are disjoint — total input volume is
+   * inputTokens + cachedTokens + cacheCreationTokens — because each bills at a
+   * different rate: fresh input at 1x, a cache write at 1.25x, a cache read at 0.1x.
+   * Providers whose API reports cached tokens as part of one combined prompt total
+   * must subtract them so the three stay disjoint here.
+   */
+  usage: { inputTokens: number; cachedTokens: number; cacheCreationTokens: number; outputTokens: number };
 }
 
 export interface TranslationProvider {

@@ -78,11 +78,18 @@ export class OpenAICompatibleProvider implements TranslationProvider {
       }
       translations[t] = arr as string[];
     }
+    // Unlike Anthropic, chat-completions reports prompt_tokens as the *total*
+    // prompt including the cached part, so subtract to keep the fields disjoint
+    // as TranslateResult requires. These endpoints cache automatically and do
+    // not bill a cache write, hence cacheCreationTokens is always 0.
+    const cachedTokens = data.usage?.prompt_tokens_details?.cached_tokens ?? 0;
+    const promptTokens = data.usage?.prompt_tokens ?? 0;
     return {
       translations,
       usage: {
-        inputTokens: data.usage?.prompt_tokens ?? 0,
-        cachedTokens: data.usage?.prompt_tokens_details?.cached_tokens ?? 0,
+        inputTokens: Math.max(0, promptTokens - cachedTokens),
+        cachedTokens,
+        cacheCreationTokens: 0,
         outputTokens: data.usage?.completion_tokens ?? 0,
       },
     };

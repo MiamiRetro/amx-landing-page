@@ -26,7 +26,7 @@ export interface VerifyResult {
 const MAX_ATTEMPTS = Number(process.env.VERIFY_MAX_ATTEMPTS ?? 5);
 const WINDOW_MIN = Number(process.env.VERIFY_WINDOW_MIN ?? 15);
 /** Exchange UIDs are short numeric or alphanumeric ids; anything else is a typo or a probe. */
-const UID_RE = /^[A-Za-z0-9_-]{4,32}$/;
+export const UID_RE = /^[A-Za-z0-9_-]{4,32}$/;
 
 export function normaliseUid(raw: string): string {
   return raw.trim().replace(/\s+/g, "");

@@ -3,3 +3,4 @@ dist
 .env
 snapshots/*.json
 bakeoff/
+.verify-ui.log

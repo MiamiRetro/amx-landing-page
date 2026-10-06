@@ -12,6 +12,7 @@
     "verify:channel": "tsx scripts/verify-channel.ts",
     "verify:status": "tsx scripts/verify-status.ts",
     "verify:probe": "tsx scripts/verify-probe.ts",
+    "verify:ui": "tsx scripts/verify-ui.ts",
     "channels": "tsx src/channel-manager.ts",
     "typecheck": "tsc --noEmit",
     "build": "tsc -p tsconfig.json",

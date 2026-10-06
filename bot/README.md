@@ -11,7 +11,9 @@ Every channel in a *group* (one per language) is mirrored into the others: a mes
 | `src/index.ts` | Bot runtime: gateway events → mirror, slash commands, `/health` endpoint |
 | `src/mirror/` | Placeholder tokenizer, per-channel FIFO queue, webhook identity, entity remapping, the mirror orchestrator |
 | `src/translate/` | Provider interface, Claude adapter, OpenAI-compatible adapter (OpenAI, Gemini, OpenRouter), cache + validation + fallback |
-| `src/commands/` | `/mirror …` and `/glossary …` |
+| `src/commands/` | `/mirror …`, `/glossary …`, `/uid …` and `/language` |
+| `src/verify/` | UID verification: the popup, the service and its rules, one affiliate provider per exchange, the key-health check |
+| `src/startHere.ts`, `src/picker.ts`, `src/roles.ts` | The start-here cards, the language picker buttons, bot-managed language roles |
 | `src/db/` | Supabase client and `schema.sql` |
 | `src/channel-manager.ts` | Server snapshot and layout apply (see below) |
 | `src/bakeoff.ts` | Blind translation-quality test across providers |
@@ -39,6 +41,10 @@ Create a project (or reuse one), open the SQL editor, paste `src/db/schema.sql`,
 | `TRANSLATION_FALLBACKS` | Comma-separated providers tried when the primary fails |
 | `ANTHROPIC_API_KEY` etc. | Key for each provider you use |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Storage |
+| `BYBIT_*`, `BITGET_*`, `BLOFIN_*` | Affiliate API keys for UID verification (see below) |
+| `VERIFY_ALERT_CHANNEL_ID` | Channel the 12-hourly key-health check posts to when an exchange stops answering. Unset, it only logs |
+| `VERIFY_DISABLED` | Comma-separated exchanges to hide from the picker, e.g. while a key is being replaced |
+| `HEARTBEAT_URL` | Pinged every `HEARTBEAT_MIN` (5) minutes while connected, for an outside monitor such as healthchecks.io to alert on silence |
 
 ### 4. Run locally
 ```sh
@@ -48,7 +54,9 @@ npm run dev
 ```
 
 ### 5. Deploy on Railway
-New project → Deploy from GitHub → this repo. In the service settings set **Root Directory** to `bot`. Railway picks up `railway.json` (Dockerfile build, `/health` check, restart on failure). Add every variable from `.env.example` under Variables. One replica only; the bot must never run twice against the same server.
+Railway project `amx` deploys this repo's `main` branch with **Root Directory** `bot` and **Watch Paths** `/bot/**`, so landing-page and docs commits don't restart the bot. Add every variable from `.env.example` under Variables. One replica only; the bot must never run twice against the same server.
+
+`railway.json` is only read when the service's config-file path points at `/bot/railway.json`. Railway looks for it at the repo root, not under Root Directory, so the health check and restart policy are set in the service settings: health check path `/health`, which answers 503 until the bot is connected to Discord.
 
 ## Operating it
 
@@ -63,6 +71,16 @@ Slash commands (Administrator only):
 | `/mirror status` | Groups, queue depth, translation usage in the last 24h |
 | `/mirror pause` · `resume` | Kill switch |
 | `/glossary add term note` · `remove` · `list` | Terms never translated (brand names, slang to keep) |
+| `/uid check exchange uid` · `/uid status` | Ask an exchange whether a UID is one of our referrals, and which exchanges are live. Grants nothing, stores nothing. Needs Manage Server |
+| `/language` | Anyone: choose the language you read the community in. The bot gives the matching language role |
+
+Pages the bot posts, each re-run replacing its own earlier messages (`--preview` / `--test` posts to a hidden ops channel first):
+
+| Script | Posts |
+|---|---|
+| `npx tsx scripts/post-start-here.ts --channel "📍・start-here"` | The start-here cards: welcome, language, rules, exchanges by country, links |
+| `npx tsx scripts/post-picker.ts --channel "📍・start-here"` | Language picker buttons |
+| `npm run verify:panel -- --channel "✅・verify"` | The **Verify my UID** panel |
 
 Webhooks are created on first use, one per channel, named "AMX Mirror". Deleting a webhook in Discord is safe; the bot recreates it.
 
@@ -141,6 +159,30 @@ permission is wrong; override the path without touching code:
 ```
 BYBIT_AFFILIATE_PATH, BITGET_AFFILIATE_PATH, BLOFIN_AFFILIATE_PATH
 ```
+
+Do both runs for every exchange, the random one included. The Bitget
+provider once read an empty commission list as a match, so a made-up UID
+verified, and only the random-UID run shows that.
+
+### Checking UIDs by hand
+
+```
+railway run npm run verify:ui      # then open http://localhost:8611
+```
+
+A small page that runs pasted UIDs through the same providers the bot uses
+and shows what the bot would decide, with the registration date, KYC level
+and volume for a referral, and whether the UID is already claimed in
+Discord. It records nothing and grants nothing. It answers only localhost
+and Tailscale addresses, so from a phone use the machine's Tailscale IP.
+
+### When a key dies
+
+Every `VERIFY_HEALTH_HOURS` (12) the bot asks each live exchange about a
+UID that cannot exist. A healthy API answers "not ours"; an expired key, a
+revoked permission or a moved endpoint throws. A change either way is posted
+once to `VERIFY_ALERT_CHANNEL_ID`. Hide a broken exchange with
+`VERIFY_DISABLED=bitget` until the key is replaced.
 
 ### The verify channel disappears once you are in
 

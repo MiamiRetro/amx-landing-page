@@ -162,3 +162,38 @@ test("Bybit's no-relation code reads as not referred, not as an outage", async (
   assert.equal(p.id, "bybit");
   assert.equal(p.live, true);
 });
+
+test("Bitget counts a uid as ours only when a returned row carries that uid", async () => {
+  const { bitgetReferred } = await import("../src/verify/providers/bitget.js");
+  assert.equal(bitgetReferred("5401234564", [{ uid: "5401234564", registerTime: "1711000000000" }]), true);
+  assert.equal(bitgetReferred("999999999999", []), false);
+  // customer-commissions answers any uid with this object; it must never read as a referral.
+  assert.equal(bitgetReferred("999999999999", { endId: null, commissionList: [] }), false);
+  // A blank filter returns other customers; someone else's row is not a match.
+  assert.equal(bitgetReferred("999999999999", [{ uid: "5401234564" }]), false);
+});
+
+test("Bitget turns away a non-numeric uid without asking the exchange", async () => {
+  const { BitgetAffiliate } = await import("../src/verify/providers/bitget.js");
+  const saved = { k: process.env.BITGET_API_KEY, s: process.env.BITGET_API_SECRET, p: process.env.BITGET_API_PASSPHRASE };
+  Object.assign(process.env, { BITGET_API_KEY: "k", BITGET_API_SECRET: "s", BITGET_API_PASSPHRASE: "p" });
+  const realFetch = globalThis.fetch;
+  let called = 0;
+  globalThis.fetch = (async () => {
+    called++;
+    return new Response(JSON.stringify({ code: "00000", msg: "success", data: [] }));
+  }) as typeof fetch;
+  try {
+    const p = new BitgetAffiliate();
+    assert.deepEqual((await p.lookup("abc123")).referred, false);
+    assert.equal(called, 0, "a uid Bitget cannot have must not cost a request");
+    assert.equal((await p.lookup("999999999999")).referred, false);
+    assert.equal(called, 1);
+  } finally {
+    globalThis.fetch = realFetch;
+    for (const [k, v] of [["BITGET_API_KEY", saved.k], ["BITGET_API_SECRET", saved.s], ["BITGET_API_PASSPHRASE", saved.p]] as const) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
+  }
+});

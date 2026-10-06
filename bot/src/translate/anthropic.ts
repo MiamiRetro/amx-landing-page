@@ -1,0 +1,70 @@
+import Anthropic from "@anthropic-ai/sdk";
+import { z } from "zod";
+import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+import type { Lang } from "../config.js";
+import { SYSTEM_PROMPT, buildUserPrompt } from "./prompt.js";
+import type { TranslateRequest, TranslateResult, TranslationProvider } from "./provider.js";
+
+/**
+ * Claude adapter. One request returns every target language as structured JSON.
+ * No prompt caching: at ~18 messages/day the calls are minutes apart, so the
+ * 5-minute cache never hits and each write would cost a 25% premium instead.
+ */
+export class AnthropicProvider implements TranslationProvider {
+  readonly id: string;
+  private client: Anthropic;
+
+  constructor(private model = "claude-sonnet-5", client?: Anthropic) {
+    this.id = `anthropic:${model}`;
+    this.client = client ?? new Anthropic();
+  }
+
+  async translate(req: TranslateRequest): Promise<TranslateResult> {
+    const shape: Record<string, z.ZodArray<z.ZodString>> = {};
+    for (const t of req.targets) shape[t] = z.array(z.string());
+    const Schema = z.object(shape);
+
+    const isHaiku = /haiku/i.test(this.model);
+    const response = await this.client.messages.parse({
+      model: this.model,
+      max_tokens: 4096,
+      // The breakpoint goes on the system block, not top level. A top-level
+      // cache_control auto-places it on the *last* cacheable block — the user
+      // turn, which differs on every message — so each call wrote a fresh entry
+      // at 1.25x and nothing was ever read back.
+      system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
+      messages: [{ role: "user", content: buildUserPrompt(req) }],
+      output_config: {
+        format: zodOutputFormat(Schema),
+        ...(isHaiku ? {} : { effort: "low" as const }),
+      },
+    });
+
+    if (response.stop_reason === "refusal") {
+      throw new Error(`translation refused: ${response.stop_details?.explanation ?? "no explanation"}`);
+    }
+    const parsed = response.parsed_output;
+    if (!parsed) throw new Error("translation response did not parse as JSON");
+
+    const translations: Partial<Record<Lang, string[]>> = {};
+    for (const t of req.targets) {
+      const arr = parsed[t];
+      if (!Array.isArray(arr) || arr.length !== req.segments.length) {
+        throw new Error(`translation for ${t} returned ${Array.isArray(arr) ? arr.length : 0} segments, expected ${req.segments.length}`);
+      }
+      translations[t] = arr;
+    }
+    const u = response.usage;
+    return {
+      translations,
+      usage: {
+        // input_tokens counts only what was neither read from nor written to the
+        // cache; the cache fields carry the rest and bill at different rates.
+        inputTokens: u.input_tokens,
+        cachedTokens: u.cache_read_input_tokens ?? 0,
+        cacheCreationTokens: u.cache_creation_input_tokens ?? 0,
+        outputTokens: u.output_tokens,
+      },
+    };
+  }
+}

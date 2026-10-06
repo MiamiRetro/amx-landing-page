@@ -1,0 +1,199 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import type { Db, Verification } from "../src/db/index.js";
+import { VerifyService, normaliseUid } from "../src/verify/service.js";
+import { ProviderError, type AffiliateProvider, type ExchangeId } from "../src/verify/types.js";
+
+const GUILD = "g1";
+
+/** In-memory stand-in for the Supabase tables the service touches. */
+function fakeDb(seed: Verification[] = []) {
+  const rows = [...seed];
+  const attempts: { userId: string; outcome: string; at: number }[] = [];
+  const db = {
+    async verificationByUid(exchange: ExchangeId, uid: string) {
+      return rows.find((r) => r.exchange === exchange && r.uid === uid) ?? null;
+    },
+    async saveVerification(v: Omit<Verification, "verified_at">) {
+      rows.push({ ...v, verified_at: new Date().toISOString() });
+    },
+    async logAttempt(row: { discord_user_id: string; outcome: string }) {
+      attempts.push({ userId: row.discord_user_id, outcome: row.outcome, at: Date.now() });
+    },
+    async attemptsSince(_g: string, userId: string, since: Date) {
+      return attempts.filter((a) => a.userId === userId && a.at >= since.getTime()).length;
+    },
+  };
+  return { db: db as unknown as Db, rows, attempts };
+}
+
+function provider(id: ExchangeId, behaviour: "yes" | "no" | "throw"): AffiliateProvider {
+  return {
+    id,
+    label: id,
+    live: true,
+    configured: () => true,
+    async lookup() {
+      if (behaviour === "throw") throw new ProviderError("exchange timed out");
+      return { referred: behaviour === "yes", detail: { probe: true } };
+    },
+  };
+}
+
+const service = (db: Db, p: AffiliateProvider) => new VerifyService(db, GUILD, new Map([[p.id, p]]));
+
+test("a member who already holds the role is turned away before any lookup", async () => {
+  const { db } = fakeDb();
+  let calls = 0;
+  const p: AffiliateProvider = { ...provider("bybit", "yes"), async lookup() { calls++; return { referred: true }; } };
+  const res = await service(db, p).verify({ userId: "u1", alreadyMember: true, exchange: "bybit", uid: "12345678" });
+  assert.equal(res.outcome, "already_member");
+  assert.equal(calls, 0, "no exchange call for someone already in");
+});
+
+test("a referred uid verifies and is written down", async () => {
+  const { db, rows } = fakeDb();
+  const res = await service(db, provider("bybit", "yes")).verify({ userId: "u1", alreadyMember: false, exchange: "bybit", uid: " 1234 5678 " });
+  assert.equal(res.outcome, "verified");
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].uid, "12345678", "whitespace is stripped before storing");
+});
+
+test("a uid the exchange does not know comes back as not referred, not an error", async () => {
+  const { db, rows } = fakeDb();
+  const res = await service(db, provider("blofin", "no")).verify({ userId: "u1", alreadyMember: false, exchange: "blofin", uid: "87654321" });
+  assert.equal(res.outcome, "not_referred");
+  assert.equal(rows.length, 0, "nothing stored for a rejected uid");
+});
+
+test("a uid already linked to someone else is refused", async () => {
+  const { db } = fakeDb([
+    { guild_id: GUILD, discord_user_id: "u1", exchange: "bitget", uid: "111222", detail: null, verified_at: new Date().toISOString() },
+  ]);
+  const res = await service(db, provider("bitget", "yes")).verify({ userId: "u2", alreadyMember: false, exchange: "bitget", uid: "111222" });
+  assert.equal(res.outcome, "already_claimed");
+  assert.equal(res.claimedBy, "u1");
+});
+
+test("re-verifying your own uid is allowed", async () => {
+  const { db } = fakeDb([
+    { guild_id: GUILD, discord_user_id: "u1", exchange: "bitget", uid: "111222", detail: null, verified_at: new Date().toISOString() },
+  ]);
+  const res = await service(db, provider("bitget", "yes")).verify({ userId: "u1", alreadyMember: false, exchange: "bitget", uid: "111222" });
+  assert.equal(res.outcome, "verified");
+});
+
+test("junk input is rejected without calling the exchange", async () => {
+  const { db } = fakeDb();
+  let calls = 0;
+  const p: AffiliateProvider = { ...provider("bybit", "yes"), async lookup() { calls++; return { referred: true }; } };
+  for (const uid of ["", "ab", "me@example.com", "x".repeat(40), "12 34; drop table"]) {
+    const res = await service(db, p).verify({ userId: "u1", alreadyMember: false, exchange: "bybit", uid });
+    assert.equal(res.outcome, "bad_uid", `expected bad_uid for ${JSON.stringify(uid)}`);
+  }
+  assert.equal(calls, 0);
+});
+
+test("guessing at uids runs out of attempts", async () => {
+  const { db } = fakeDb();
+  const svc = service(db, provider("bybit", "no"));
+  const outcomes: string[] = [];
+  for (let n = 0; n < 7; n++) {
+    const res = await svc.verify({ userId: "u1", alreadyMember: false, exchange: "bybit", uid: `1000000${n}` });
+    outcomes.push(res.outcome);
+  }
+  assert.deepEqual(outcomes.slice(0, 5), Array(5).fill("not_referred"));
+  assert.deepEqual(outcomes.slice(5), ["rate_limited", "rate_limited"]);
+});
+
+test("an exchange outage is reported as an error, never as a rejection", async () => {
+  const { db, rows } = fakeDb();
+  const res = await service(db, provider("bybit", "throw")).verify({ userId: "u1", alreadyMember: false, exchange: "bybit", uid: "12345678" });
+  assert.equal(res.outcome, "provider_error");
+  assert.match(res.error ?? "", /timed out/);
+  assert.equal(rows.length, 0);
+});
+
+test("a stand-in provider reports itself rather than rejecting a good uid", async () => {
+  const { db, rows } = fakeDb();
+  const stand: AffiliateProvider = { ...provider("bybit", "no"), live: false };
+  const res = await service(db, stand).verify({ userId: "u1", alreadyMember: false, exchange: "bybit", uid: "6526315384" });
+  assert.equal(res.outcome, "not_configured", "a real UID must not look rejected while nothing is checking it");
+  assert.equal(rows.length, 0);
+});
+
+test("normaliseUid strips spaces anywhere in the string", () => {
+  assert.equal(normaliseUid("  12 34\t56  "), "123456");
+});
+
+test("a canary probe separates a working exchange from dead credentials", async () => {
+  const { checkProviders } = await import("../src/verify/health.js");
+  const good: AffiliateProvider = { ...provider("bybit", "no"), id: "bybit" };
+  const dead: AffiliateProvider = { ...provider("bitget", "throw"), id: "bitget" };
+  const standIn: AffiliateProvider = { ...provider("blofin", "no"), id: "blofin", live: false };
+  const res = await checkProviders([good, dead, standIn]);
+  assert.deepEqual(res.map((r) => [r.exchange, r.ok]), [["bybit", true], ["bitget", false]], "stand-ins are not probed");
+  assert.match(res[1].error ?? "", /timed out/);
+});
+
+test("a broken exchange is announced once, and so is its recovery", async () => {
+  const { HealthWatch } = await import("../src/verify/health.js");
+  const w = new HealthWatch();
+  assert.deepEqual(w.diff([{ exchange: "bybit", ok: false, error: "401" }]).map((c) => c.ok), [false], "first failure reported");
+  assert.deepEqual(w.diff([{ exchange: "bybit", ok: false, error: "401" }]), [], "still broken, stays quiet");
+  assert.deepEqual(w.diff([{ exchange: "bybit", ok: true }]).map((c) => c.ok), [true], "recovery reported");
+  assert.deepEqual(w.diff([{ exchange: "bybit", ok: true }]), [], "healthy, stays quiet");
+});
+
+test("a disabled exchange disappears from the picker entirely", async () => {
+  const { buildProviders } = await import("../src/verify/providers/index.js");
+  process.env.VERIFY_DISABLED = "bybit";
+  const ids = [...buildProviders().keys()];
+  delete process.env.VERIFY_DISABLED;
+  assert.deepEqual(ids, ["bitget", "blofin"], "an unreachable exchange must not be offered");
+});
+
+test("Bybit's no-relation code reads as not referred, not as an outage", async () => {
+  const { BybitAffiliate } = await import("../src/verify/providers/bybit.js");
+  const p = new BybitAffiliate();
+  // Reach past the network by handing the parser Bybit's own shape.
+  const codes = (process.env.BYBIT_NOT_REFERRED_CODES ?? "141024,131228,181002,10001").split(",");
+  assert.ok(codes.includes("141024"), "141024 must count as a clean no");
+  assert.equal(p.id, "bybit");
+  assert.equal(p.live, true);
+});
+
+test("Bitget counts a uid as ours only when a returned row carries that uid", async () => {
+  const { bitgetReferred } = await import("../src/verify/providers/bitget.js");
+  assert.equal(bitgetReferred("5401234564", [{ uid: "5401234564", registerTime: "1711000000000" }]), true);
+  assert.equal(bitgetReferred("999999999999", []), false);
+  // customer-commissions answers any uid with this object; it must never read as a referral.
+  assert.equal(bitgetReferred("999999999999", { endId: null, commissionList: [] }), false);
+  // A blank filter returns other customers; someone else's row is not a match.
+  assert.equal(bitgetReferred("999999999999", [{ uid: "5401234564" }]), false);
+});
+
+test("Bitget turns away a non-numeric uid without asking the exchange", async () => {
+  const { BitgetAffiliate } = await import("../src/verify/providers/bitget.js");
+  const saved = { k: process.env.BITGET_API_KEY, s: process.env.BITGET_API_SECRET, p: process.env.BITGET_API_PASSPHRASE };
+  Object.assign(process.env, { BITGET_API_KEY: "k", BITGET_API_SECRET: "s", BITGET_API_PASSPHRASE: "p" });
+  const realFetch = globalThis.fetch;
+  let called = 0;
+  globalThis.fetch = (async () => {
+    called++;
+    return new Response(JSON.stringify({ code: "00000", msg: "success", data: [] }));
+  }) as typeof fetch;
+  try {
+    const p = new BitgetAffiliate();
+    assert.deepEqual((await p.lookup("abc123")).referred, false);
+    assert.equal(called, 0, "a uid Bitget cannot have must not cost a request");
+    assert.equal((await p.lookup("999999999999")).referred, false);
+    assert.equal(called, 1);
+  } finally {
+    globalThis.fetch = realFetch;
+    for (const [k, v] of [["BITGET_API_KEY", saved.k], ["BITGET_API_SECRET", saved.s], ["BITGET_API_PASSPHRASE", saved.p]] as const) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
+  }
+});

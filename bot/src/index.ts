@@ -132,6 +132,18 @@ async function main() {
     }
   }).listen(config.port(), () => log.info("health server listening", { port: config.port() }));
 
+  // Dead-man's switch for an outside monitor (e.g. healthchecks.io): ping while
+  // connected, and the monitor alerts when the pings stop. A crash loop, a lost
+  // gateway or a Railway outage are all things the bot cannot report itself.
+  const heartbeatUrl = process.env.HEARTBEAT_URL?.trim();
+  if (heartbeatUrl) {
+    const beat = () => {
+      if (!client.isReady()) return;
+      fetch(heartbeatUrl, { signal: AbortSignal.timeout(10_000) }).catch((e) => log.warn("heartbeat failed", errInfo(e)));
+    };
+    setInterval(beat, Number(process.env.HEARTBEAT_MIN ?? 5) * 60_000).unref();
+  }
+
   const shutdown = async (signal: string) => {
     log.info("shutting down", { signal });
     await client.destroy();

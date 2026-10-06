@@ -61,14 +61,21 @@ create table if not exists usage_log (
   id bigserial primary key,
   at timestamptz not null default now(),
   provider text not null,
+  -- Disjoint input counts, billed at different rates: input_tokens at 1x,
+  -- cache_creation_tokens (cache writes) at 1.25x, cached_tokens (cache reads) at 0.1x.
   input_tokens int not null default 0,
   cached_tokens int not null default 0,
+  cache_creation_tokens int not null default 0,
   output_tokens int not null default 0,
   segments int not null default 0,
   ms int not null default 0,
   ok boolean not null default true
 );
 create index if not exists usage_log_at_idx on usage_log (at);
+-- Migration for databases created before cache_creation_tokens existed. Rows
+-- written before this column landed under-report cost: their cache-write tokens
+-- were never recorded and read back as 0.
+alter table usage_log add column if not exists cache_creation_tokens int not null default 0;
 
 alter table channel_groups enable row level security;
 alter table channel_group_members enable row level security;

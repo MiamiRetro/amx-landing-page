@@ -190,17 +190,24 @@ export class Db {
     return r.count ?? 0;
   }
 
-  async logUsage(row: { provider: string; input_tokens: number; cached_tokens: number; output_tokens: number; segments: number; ms: number; ok: boolean }) {
+  async logUsage(row: { provider: string; input_tokens: number; cached_tokens: number; cache_creation_tokens: number; output_tokens: number; segments: number; ms: number; ok: boolean }) {
     const r = await this.sb.from("usage_log").insert(row);
     if (r.error) console.error("usage log failed:", r.error.message);
   }
 
-  async usageToday(): Promise<{ requests: number; input: number; cached: number; output: number }> {
+  /** `cacheCreation` bills at 1.25x base input and `cached` at 0.1x, so they stay separate. */
+  async usageToday(): Promise<{ requests: number; input: number; cached: number; cacheCreation: number; output: number }> {
     const since = new Date(Date.now() - 86_400_000).toISOString();
-    const rows = unwrap(await this.sb.from("usage_log").select("input_tokens,cached_tokens,output_tokens").gte("at", since), "usage today") as { input_tokens: number; cached_tokens: number; output_tokens: number }[];
+    const rows = unwrap(await this.sb.from("usage_log").select("input_tokens,cached_tokens,cache_creation_tokens,output_tokens").gte("at", since), "usage today") as { input_tokens: number; cached_tokens: number; cache_creation_tokens: number; output_tokens: number }[];
     return rows.reduce(
-      (a, r) => ({ requests: a.requests + 1, input: a.input + r.input_tokens, cached: a.cached + r.cached_tokens, output: a.output + r.output_tokens }),
-      { requests: 0, input: 0, cached: 0, output: 0 },
+      (a, r) => ({
+        requests: a.requests + 1,
+        input: a.input + r.input_tokens,
+        cached: a.cached + r.cached_tokens,
+        cacheCreation: a.cacheCreation + r.cache_creation_tokens,
+        output: a.output + r.output_tokens,
+      }),
+      { requests: 0, input: 0, cached: 0, cacheCreation: 0, output: 0 },
     );
   }
 }

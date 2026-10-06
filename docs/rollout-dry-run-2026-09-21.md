@@ -60,15 +60,36 @@ creations and **zero** deletions or modifications:
    `trade-alerts-*` twin per language, so `/mirror create` must name the
    intended source explicitly or it will bind to whichever resolves first.
 
-3. **Input-token accounting under-reports cost.** `src/translate/anthropic.ts`
-   records `input_tokens` and `cache_read_input_tokens` but never
-   `cache_creation_input_tokens`. The system prompt is sent with
-   `cache_control: ephemeral`, so on every cache write the bulk of the prompt
-   lands in that uncounted field — hence the implausible `in=2` per call in
-   `usage_log`. Cache writes bill at 1.25× base input. Any cost projection
-   built on the current log will be far too low, and `cached=0` on every row
-   suggests the cache is being rewritten rather than hit. Worth fixing before
-   sizing the rollout budget.
+3. **Input-token accounting under-reports cost.** *(fixed; measured 2026-10-04.)*
+   `src/translate/anthropic.ts` recorded `input_tokens` and
+   `cache_read_input_tokens` but never `cache_creation_input_tokens`, so
+   whenever the prompt was written to cache the bulk of it landed in an
+   uncounted field — the `in=2` rows. `usage_log` now has a separate
+   `cache_creation_tokens` column; cache writes bill at 1.25× base input and
+   cache reads at 0.1×, so folding them into `input_tokens` would misstate cost
+   either way. The column is applied to the live database.
+
+   **Measured over all 186 successful Sonnet 5 calls (2026-09-17 → 2026-10-03):
+   zero cache reads. Not one.** The `in=2` rows were a 26-call window on
+   17–21 Sep; the other 160 calls logged a full 1051–1585 input tokens
+   (median ~1180). So real input volume is roughly **1200 tokens per call**,
+   not 2 — use that for the rollout budget, not the old table.
+
+   The root cause of `cached=0` was placement, not TTL: `cache_control` was
+   passed as a *top-level* parameter, which auto-places the breakpoint on the
+   last cacheable block — the per-message user turn. No two requests shared
+   that prefix, so a call either wrote a fresh entry at 1.25× or did not cache
+   at all, and nothing was ever read back. No amount of traffic would have
+   changed that. The marker now sits on the system block, the only part of the
+   prompt that is byte-identical across calls.
+
+   Caveat: the system prompt is ~900–950 tokens, under Sonnet 5's 1024-token
+   minimum cacheable prefix, so the marker is most likely **inert** on the
+   current model — no write, no 1.25× premium, input volume simply reported in
+   full. It starts paying off by itself if the system prompt grows past 1024,
+   or on a model with a lower minimum (Opus 5 is 512). Re-run
+   `scripts/usage.ts` after the next deploy to confirm; it now prints
+   fresh / cache read / cache write plus a billed-equivalent total.
 
 4. **13 channels remain invisible to the bot**, including `👑・vip-chat`
    (`View=✗`). None are in this layout, so this does not block the rollout, but

@@ -28,7 +28,11 @@ export class AnthropicProvider implements TranslationProvider {
     const response = await this.client.messages.parse({
       model: this.model,
       max_tokens: 4096,
-      system: SYSTEM_PROMPT,
+      // The breakpoint goes on the system block, not top level. A top-level
+      // cache_control auto-places it on the *last* cacheable block — the user
+      // turn, which differs on every message — so each call wrote a fresh entry
+      // at 1.25x and nothing was ever read back.
+      system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
       messages: [{ role: "user", content: buildUserPrompt(req) }],
       output_config: {
         format: zodOutputFormat(Schema),
@@ -54,9 +58,11 @@ export class AnthropicProvider implements TranslationProvider {
     return {
       translations,
       usage: {
-        // Cache writes are billed as input (at a premium); count them so cost projections are honest.
-        inputTokens: u.input_tokens + (u.cache_creation_input_tokens ?? 0),
+        // input_tokens counts only what was neither read from nor written to the
+        // cache; the cache fields carry the rest and bill at different rates.
+        inputTokens: u.input_tokens,
         cachedTokens: u.cache_read_input_tokens ?? 0,
+        cacheCreationTokens: u.cache_creation_input_tokens ?? 0,
         outputTokens: u.output_tokens,
       },
     };

@@ -13,7 +13,7 @@ function fake(id: string, impl: (req: TranslateRequest) => Partial<Record<string
       this.calls++;
       const r = impl(req);
       if (r instanceof Error) throw r;
-      return { translations: r as TranslateResult["translations"], usage: { inputTokens: 1, cachedTokens: 0, outputTokens: 1 } };
+      return { translations: r as TranslateResult["translations"], usage: { inputTokens: 1, cachedTokens: 0, cacheCreationTokens: 0, outputTokens: 1 } };
     },
   };
 }

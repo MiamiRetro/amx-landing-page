@@ -6,8 +6,8 @@ of alphanumetrix.com that isn't released yet: nothing public links to it.
 Live: https://amx-landing-page.vercel.app (new page, no custom domain) ·
 https://www.alphanumetrix.com (current Wix store — every CTA on the new page links there)
 
-The Discord bot that shares this repo tracks its own to-dos in
-docs/discord-bot/PROGRESS.md.
+The Discord bot that shares this repo tracks its to-dos in
+docs/discord-bot/translator-PROGRESS.md and verification-PROGRESS.md.
 
 ## Shipped
 - [x] One-page site: hero with count-up stats, About, three product cards (AMX Indicator, Float, BLKBöX bot), Features, FAQ, CTA, footer

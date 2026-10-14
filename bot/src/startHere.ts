@@ -43,7 +43,7 @@ const divider = () => new SeparatorBuilder().setDivider(true).setSpacing(Separat
 const asset = (file: string) => new AttachmentBuilder(readFileSync(join(ASSETS, file)), { name: file });
 
 /** One branded card per section, built with Discord's layout components. */
-export function startHereMessages(opts: { helpDeskUrl: string }): MessageCreateOptions[] {
+export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean }): MessageCreateOptions[] {
   const V2 = MessageFlags.IsComponentsV2;
 
   // Hero image only: the banner already carries the wordmark, headline and tagline.
@@ -56,7 +56,15 @@ export function startHereMessages(opts: { helpDeskUrl: string }): MessageCreateO
   const language = new ContainerBuilder()
     .setAccentColor(GREEN)
     .addMediaGalleryComponents(banner("language.png"))
-    .addTextDisplayComponents(text("Chat, alerts and announcements will show in the language you pick. Change it any time with `/language`."))
+    .addTextDisplayComponents(
+      text(
+        [
+          "Chat, alerts and announcements will show in the language you pick. By picking, you agree to the rules above.",
+          "-# 选择语言即表示同意规则 · 언어를 선택하면 규칙에 동의하게 됩니다 · Dengan memilih, kamu menyetujui aturan",
+          "-# Your choice is final. A moderator can change it if you need.",
+        ].join("\n"),
+      ),
+    )
     .addActionRowComponents(
       row(
         new ButtonBuilder().setCustomId(`${PICKER_PREFIX}en`).setLabel("English").setEmoji("🇬🇧").setStyle(ButtonStyle.Success),
@@ -199,9 +207,18 @@ export function startHereMessages(opts: { helpDeskUrl: string }): MessageCreateO
       ),
     );
 
+  // The picker channel is the front door: welcome, the rules being agreed to, then the buttons.
+  if (opts.picker) {
+    return [
+      { components: [welcome], files: [asset("hero.png")], flags: V2 },
+      { components: [rules], files: [asset("rules.png")], flags: V2 },
+      { components: [language], files: [asset("language.png")], flags: V2 },
+    ];
+  }
+
+  // start-here is only seen after a language is picked, so it drops the picker.
   return [
     { components: [welcome], files: [asset("hero.png")], flags: V2 },
-    { components: [language], files: [asset("language.png")], flags: V2 },
     { components: [rules], files: [asset("rules.png")], flags: V2 },
     { components: [start], files: [asset("start.png")], flags: V2 },
     { components: [community], files: [asset("community.png")], flags: V2 },

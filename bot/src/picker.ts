@@ -11,11 +11,14 @@ export function pickerMessage() {
     .setTitle("🌐  Choose your language")
     .setDescription(
       [
-        "Chat, alerts and announcements will show in the language you pick.",
+        "Pick the language you want the community in. Your channels open straight away.",
+        "By picking, you agree to the server rules.",
         "",
-        "选择语言 · 언어 선택 · Pilih bahasa",
+        "**中文** 选择你的语言。选择即表示你同意服务器规则。",
+        "**한국어** 언어를 선택하세요. 선택하면 서버 규칙에 동의하는 것으로 간주됩니다.",
+        "**Bahasa Indonesia** Pilih bahasamu. Dengan memilih, kamu menyetujui aturan server.",
         "",
-        "-# Change it any time with `/language`",
+        "-# Your choice is final. A moderator can change it later if you need.",
       ].join("\n"),
     );
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -37,7 +40,7 @@ export async function handlePickerButton(i: ButtonInteraction, roles: LanguageRo
   await i.deferReply({ ephemeral: true });
   try {
     const member = await i.guild.members.fetch(i.user.id);
-    await i.editReply(await roles.set(member, lang as Lang));
+    await i.editReply(await roles.pick(member, lang as Lang));
   } catch (e) {
     await i.editReply(`Something went wrong: ${e instanceof Error ? e.message : String(e)}`);
   }

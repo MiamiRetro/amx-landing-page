@@ -115,7 +115,7 @@ async function main() {
   });
   client.on(Events.GuildMemberUpdate, (before, after) => {
     if (!roles || before.roles.cache.size === after.roles.cache.size) return;
-    void roles.applyPending(after).catch((e) => log.warn("apply pending language failed", errInfo(e)));
+    void roles.sync(after).catch((e) => log.warn("language tier sync failed", errInfo(e)));
   });
   client.on(Events.Error, (e) => log.error("client error", errInfo(e)));
   client.on(Events.Warn, (w) => log.warn("client warning", { warning: w }));

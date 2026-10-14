@@ -4,30 +4,70 @@ import type { Db } from "./db/index.js";
 import { log, errInfo } from "./log.js";
 
 /**
- * Language roles are owned by the bot. A member may hold exactly one, and only
- * while they hold a membership role. Discord cannot express "verified AND
- * language" in channel permissions, so this is what keeps the language
- * categories members-only.
+ * Onboarding runs on two bot-owned roles per language:
+ *
+ *   picked a language (accepted the rules)  →  the language role, e.g. "中文"
+ *   verified a UID as well                  →  the language member role, e.g. "中文 Member"
+ *
+ * A member holds exactly one of the eight. Discord cannot express "verified AND
+ * 中文" in channel permissions, so the bot keeps the pair honest instead: the
+ * membership role (Member/Members) decides the tier, the language decides which
+ * of the pair. Every channel then needs one allow per tier, the verify channel
+ * hides itself once the swap happens, and the picker hides behind any of them.
+ *
+ * The choice is final for the member. Only a moderator can move someone to
+ * another language, with `/language`.
  */
-const REPLY: Record<Lang, { done: string; pending: string; notReady: string }> = {
-  en: { done: "Done. You're on the English channels.", pending: "Done. You're on the English channels.", notReady: "English is always available." },
-  zh: { done: "好了，你现在可以看到中文频道了。", pending: "已记住你的选择。完成会员验证后，中文频道会自动对你开放。", notReady: "中文频道还没准备好。" },
-  ko: { done: "완료! 이제 한국어 채널이 보여요.", pending: "선택을 저장했어요. 멤버 인증이 끝나면 한국어 채널이 자동으로 열립니다.", notReady: "한국어 채널이 아직 준비되지 않았어요." },
-  id: { done: "Beres. Kanal Bahasa Indonesia sekarang terbuka untukmu.", pending: "Pilihanmu disimpan. Begitu verifikasi member selesai, kanal Bahasa Indonesia otomatis terbuka.", notReady: "Kanal Bahasa Indonesia belum siap." },
+export interface LangRolePair {
+  base: string;
+  member: string;
+}
+
+/** Role names the layout creates. Settings `role:<lang>` / `mrole:<lang>` override them by id. */
+export const LANG_ROLE_NAMES: Record<Lang, { base: string; member: string }> = {
+  en: { base: "English", member: "English Member" },
+  zh: { base: "中文", member: "中文 Member" },
+  ko: { base: "한국어", member: "한국어 Member" },
+  id: { base: "Bahasa Indonesia", member: "Bahasa Indonesia Member" },
+};
+
+const REPLY: Record<Lang, { base: string; member: string; locked: string }> = {
+  en: {
+    base: "Welcome. Your English channels are open. Verify your exchange UID in ✅・verify to unlock the full Trading Floor.",
+    member: "Welcome back. Your English channels are open.",
+    locked: "Your language is already set. Ask a moderator in help-desk if you need it changed.",
+  },
+  zh: {
+    base: "欢迎！中文频道已经为你开放。在 ✅・验证 中验证你的交易所 UID，即可解锁完整的交易大厅。",
+    member: "欢迎回来，中文频道已经为你开放。",
+    locked: "你的语言已经设置好了。如需更改，请在帮助台联系管理员。",
+  },
+  ko: {
+    base: "환영합니다! 한국어 채널이 열렸어요. ✅・인증 채널에서 거래소 UID를 인증하면 트레이딩 플로어 전체가 열립니다.",
+    member: "다시 오신 걸 환영해요. 한국어 채널이 열렸어요.",
+    locked: "언어가 이미 설정되어 있어요. 변경이 필요하면 도움말 채널에서 운영진에게 문의해 주세요.",
+  },
+  id: {
+    base: "Selamat datang! Kanal Bahasa Indonesia sudah terbuka. Verifikasi UID exchange kamu di ✅・verifikasi untuk membuka seluruh Trading Floor.",
+    member: "Selamat datang kembali. Kanal Bahasa Indonesia sudah terbuka.",
+    locked: "Bahasamu sudah diatur. Minta moderator di kanal bantuan kalau perlu diganti.",
+  },
 };
 
 export class LanguageRoles {
-  private roleIds = new Map<Lang, string>();
+  private pairs = new Map<Lang, LangRolePair>();
   private memberRoleIds = new Set<string>();
   private loadedAt = 0;
 
   constructor(private guild: Guild, private db: Db) {}
 
   async load() {
-    this.roleIds.clear();
+    this.pairs.clear();
+    const byName = (name: string) => this.guild.roles.cache.find((r) => r.name === name)?.id;
     for (const lang of LANGS) {
-      const id = await this.db.getSetting(this.guild.id, `role:${lang}`);
-      if (id && this.guild.roles.cache.has(id)) this.roleIds.set(lang, id);
+      const base = (await this.db.getSetting(this.guild.id, `role:${lang}`)) ?? byName(LANG_ROLE_NAMES[lang].base);
+      const member = (await this.db.getSetting(this.guild.id, `mrole:${lang}`)) ?? byName(LANG_ROLE_NAMES[lang].member);
+      if (base && member && this.guild.roles.cache.has(base) && this.guild.roles.cache.has(member)) this.pairs.set(lang, { base, member });
     }
     const names = ((await this.db.getSetting(this.guild.id, "member_roles")) ?? "Member,Members").split(",").map((s) => s.trim().toLowerCase());
     this.memberRoleIds = new Set(this.guild.roles.cache.filter((r) => names.includes(r.name.toLowerCase())).map((r) => r.id));
@@ -47,64 +87,85 @@ export class LanguageRoles {
     return member.roles.cache.some((r) => this.memberRoleIds.has(r.id)) || member.permissions.has(PermissionFlagsBits.Administrator);
   }
 
+  /** Holds a membership role itself, ignoring Administrator. Admins are not moved between tiers. */
+  private holdsMembership(member: GuildMember) {
+    return member.roles.cache.some((r) => this.memberRoleIds.has(r.id));
+  }
+
   langOf(member: GuildMember): Lang | null {
-    for (const [lang, id] of this.roleIds) if (member.roles.cache.has(id)) return lang;
+    for (const [lang, p] of this.pairs) if (member.roles.cache.has(p.base) || member.roles.cache.has(p.member)) return lang;
     return null;
   }
 
+  /** Every language role id, both tiers. The picker channel denies view to all of them. */
+  allRoleIds(): string[] {
+    return [...this.pairs.values()].flatMap((p) => [p.base, p.member]);
+  }
+
   /**
-   * Records the member's language choice and applies the role if they are
-   * verified. Unverified members keep the preference; `applyPending` grants
-   * the role once they are. Returns a confirmation in the chosen language.
+   * The member's own pick from the picker. Refused once they have a language,
+   * so the choice cannot be changed without a moderator.
    */
-  async set(member: GuildMember, lang: Lang): Promise<string> {
+  async pick(member: GuildMember, lang: Lang): Promise<string> {
     await this.ensureLoaded();
+    if (!this.pairs.has(lang)) return "This language is not available yet.";
+    const current = this.langOf(member);
+    if (current) return REPLY[current].locked;
     await this.db.setLangPref(this.guild.id, member.id, lang);
-    if (lang !== "en" && !this.roleIds.has(lang)) return REPLY[lang].notReady;
-    const verified = this.isVerified(member);
-    if (verified || lang === "en") await this.apply(member, lang);
-    return verified || lang === "en" ? REPLY[lang].done : REPLY[lang].pending;
+    await this.apply(member, lang);
+    log.info("language picked", { user: member.id, lang });
+    return this.holdsMembership(member) ? REPLY[lang].member : REPLY[lang].base;
   }
 
-  /** Puts the member on exactly the roles their language implies. */
-  private async apply(member: GuildMember, lang: Lang) {
-    const want = lang === "en" ? undefined : this.roleIds.get(lang);
-    const remove = [...this.roleIds.values()].filter((id) => member.roles.cache.has(id) && id !== want);
-    if (remove.length) await member.roles.remove(remove, "language change");
-    if (want && !member.roles.cache.has(want)) await member.roles.add(want, "language choice");
-  }
-
-  /** Called when a member's roles change: grant a remembered language once they become verified. */
-  async applyPending(member: GuildMember) {
+  /** A moderator moving a member to another language. */
+  async assign(member: GuildMember, lang: Lang): Promise<string> {
     await this.ensureLoaded();
-    if (!this.isVerified(member) || this.langOf(member)) return;
-    const pref = await this.db.getLangPref(this.guild.id, member.id).catch(() => null);
-    if (pref && pref !== "en" && this.roleIds.has(pref)) {
-      await this.apply(member, pref);
-      log.info("applied remembered language", { user: member.id, lang: pref });
-    }
+    if (!this.pairs.has(lang)) return "That language has no roles set up yet.";
+    await this.db.setLangPref(this.guild.id, member.id, lang);
+    await this.apply(member, lang);
+    return `${member.displayName} is now on ${LANG_ROLE_NAMES[lang].base}${this.holdsMembership(member) ? " (verified)" : ""}.`;
   }
 
-  /** Removes language roles from anyone who is no longer a verified member. */
+  /** Puts the member on exactly one language role: the pair for `lang`, at the tier their membership implies. */
+  private async apply(member: GuildMember, lang: Lang) {
+    const pair = this.pairs.get(lang);
+    if (!pair) return;
+    const want = this.holdsMembership(member) ? pair.member : pair.base;
+    const remove = this.allRoleIds().filter((id) => id !== want && member.roles.cache.has(id));
+    if (remove.length) await member.roles.remove(remove, "language tier");
+    if (!member.roles.cache.has(want)) await member.roles.add(want, "language tier");
+  }
+
+  /**
+   * Moves a member to the right tier of their language after their roles
+   * change: verification (or a moderator granting Member) swaps "中文" for
+   * "中文 Member", losing membership swaps it back.
+   */
+  async sync(member: GuildMember): Promise<boolean> {
+    await this.ensureLoaded();
+    const lang = this.langOf(member);
+    if (!lang) return false;
+    const pair = this.pairs.get(lang)!;
+    const want = this.holdsMembership(member) ? pair.member : pair.base;
+    const stray = this.allRoleIds().some((id) => id !== want && member.roles.cache.has(id));
+    if (!member.roles.cache.has(want) || stray) {
+      await this.apply(member, lang);
+      log.info("language tier synced", { user: member.id, lang, tier: want === pair.member ? "member" : "base" });
+      return true;
+    }
+    return false;
+  }
+
+  /** Re-checks everyone holding a language role. Catches changes made while the bot was offline. */
   async sweep() {
     await this.ensureLoaded();
-    if (this.roleIds.size === 0 || this.memberRoleIds.size === 0) return;
-    let removed = 0;
-    // grant remembered choices to anyone verified since the last sweep
-    for (const roleId of this.memberRoleIds) {
-      const role = this.guild.roles.cache.get(roleId);
-      if (!role) continue;
-      for (const member of role.members.values()) if (!this.langOf(member)) await this.applyPending(member).catch(() => {});
+    if (this.pairs.size === 0) return;
+    const members = await this.guild.members.fetch();
+    let fixed = 0;
+    for (const m of members.values()) {
+      if (m.user.bot || !this.langOf(m)) continue;
+      if (await this.sync(m).catch((e) => (log.warn("language sweep failed", { user: m.id, ...errInfo(e) }), false))) fixed++;
     }
-    for (const [lang, id] of this.roleIds) {
-      const role = this.guild.roles.cache.get(id);
-      if (!role) continue;
-      for (const member of role.members.values()) {
-        if (this.isVerified(member)) continue;
-        await member.roles.remove(id, "membership lapsed").catch((e) => log.warn("role sweep failed", { user: member.id, lang, ...errInfo(e) }));
-        removed++;
-      }
-    }
-    if (removed) log.info("language roles removed from unverified members", { removed });
+    if (fixed) log.info("language sweep fixed members", { fixed });
   }
 }

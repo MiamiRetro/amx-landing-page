@@ -17,6 +17,7 @@ import {
   type ModalSubmitInteraction,
   type TextChannel,
 } from "discord.js";
+import type { Lang } from "../config.js";
 import { log, errInfo } from "../log.js";
 import type { LanguageRoles } from "../roles.js";
 import type { VerifyService } from "./service.js";
@@ -52,28 +53,91 @@ const signupRow = () =>
     new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel("Bybit").setURL(EXCHANGE_SIGNUP.bybit),
   );
 
-/** The message that carries the verify button. */
-export function verifyPanel() {
-  return {
-    content: [
-      "## Verify your exchange UID",
+type PanelText = { title: string; body: string[]; bitcoin: string[]; button: string; note: string };
+
+/** Panel copy per language. The popup and the replies after it are still English. */
+const PANEL: Record<Lang, PanelText> = {
+  en: {
+    title: "Verify your exchange UID",
+    body: [
       "The Trading Floor opens once we can see that your exchange account was opened through one of our links.",
       "",
       "Press the button, pick your exchange and paste your UID. It takes a second and nothing else is asked of you.",
+    ],
+    bitcoin: [
+      "Bitcoin chat is for verified members.",
       "",
-      "-# Your UID is an account number, not a password. Never share an API key or a password with anyone here.",
-    ].join("\n"),
+      "Verify your exchange UID below and this channel opens, along with the full alerts, trader chat and the rest of the Trading Floor.",
+    ],
+    button: "Verify my UID",
+    note: "Your UID is an account number, not a password. Never share an API key or a password with anyone here.",
+  },
+  zh: {
+    title: "验证你的交易所 UID",
+    body: [
+      "只要确认你的交易所账户是通过我们的链接注册的，交易大厅就会为你开放。",
+      "",
+      "点击下方按钮，选择交易所并粘贴你的 UID，一秒钟就能完成，不需要提供其他任何信息。",
+    ],
+    bitcoin: [
+      "比特币频道仅对已验证会员开放。",
+      "",
+      "在下方验证你的交易所 UID，即可解锁本频道，以及完整的交易提醒、交易者聊天和交易大厅的其他频道。",
+    ],
+    button: "验证我的 UID",
+    note: "UID 是账户编号，不是密码。永远不要向任何人透露 API 密钥或密码。",
+  },
+  ko: {
+    title: "거래소 UID 인증",
+    body: [
+      "거래소 계정이 저희 링크를 통해 개설된 것이 확인되면 트레이딩 플로어가 열립니다.",
+      "",
+      "버튼을 누르고 거래소를 선택한 뒤 UID를 붙여 넣으세요. 몇 초면 끝나고, 다른 정보는 요구하지 않아요.",
+    ],
+    bitcoin: [
+      "비트코인 채널은 인증된 멤버 전용입니다.",
+      "",
+      "아래에서 거래소 UID를 인증하면 이 채널과 함께 전체 매매신호, 트레이더 채팅 등 트레이딩 플로어 전체가 열립니다.",
+    ],
+    button: "내 UID 인증하기",
+    note: "UID는 계정 번호이지 비밀번호가 아닙니다. API 키나 비밀번호는 절대 누구에게도 알려주지 마세요.",
+  },
+  id: {
+    title: "Verifikasi UID exchange kamu",
+    body: [
+      "Trading Floor terbuka setelah kami bisa melihat akun exchange kamu dibuat lewat salah satu link kami.",
+      "",
+      "Tekan tombolnya, pilih exchange dan tempel UID kamu. Cuma sedetik dan tidak ada data lain yang diminta.",
+    ],
+    bitcoin: [
+      "Kanal Bitcoin khusus untuk member terverifikasi.",
+      "",
+      "Verifikasi UID exchange kamu di bawah, dan kanal ini terbuka bersama sinyal trading lengkap, obrolan trader, dan seluruh Trading Floor.",
+    ],
+    button: "Verifikasi UID saya",
+    note: "UID adalah nomor akun, bukan kata sandi. Jangan pernah bagikan API key atau kata sandi ke siapa pun di sini.",
+  },
+};
+
+/**
+ * The message that carries the verify button. `bitcoin` is the same button
+ * behind a "verified members only" lead-in, for the locked bitcoin channel.
+ */
+export function verifyPanel(lang: Lang = "en", variant: "verify" | "bitcoin" = "verify") {
+  const t = PANEL[lang];
+  return {
+    content: [`## ${variant === "bitcoin" ? "🔒 " : ""}${t.title}`, ...(variant === "bitcoin" ? t.bitcoin : t.body), "", `-# ${t.note}`].join("\n"),
     components: [
       new ActionRowBuilder<ButtonBuilder>().addComponents(
-        new ButtonBuilder().setCustomId(VERIFY_BUTTON).setStyle(ButtonStyle.Success).setLabel("Verify my UID").setEmoji("🔑"),
+        new ButtonBuilder().setCustomId(VERIFY_BUTTON).setStyle(ButtonStyle.Success).setLabel(t.button).setEmoji("🔑"),
       ),
     ],
     files: uidGuide(),
   };
 }
 
-export async function postVerifyPanel(channel: TextChannel) {
-  return channel.send(verifyPanel());
+export async function postVerifyPanel(channel: TextChannel, lang: Lang = "en", variant: "verify" | "bitcoin" = "verify") {
+  return channel.send(verifyPanel(lang, variant));
 }
 
 /** The popup: exchange picker plus the UID field, in one modal. */
@@ -143,14 +207,16 @@ async function reply(
   switch (res.outcome) {
     case "verified": {
       if (deps.memberRoleId) await member.roles.add(deps.memberRoleId, `UID verified on ${res.exchange}`).catch((e) => log.error("grant member role failed", errInfo(e)));
-      // A language chosen before verifying has been waiting for this.
-      await deps.roles.applyPending(member).catch((e) => log.warn("apply pending language failed", errInfo(e)));
+      // Swap the language role for its member twin so the full channels open
+      // and this verify channel disappears. GuildMemberUpdate would get there
+      // too; doing it here means the reply is true the moment it is read.
+      await member.fetch(true).then((m) => deps.roles.sync(m)).catch((e) => log.warn("language tier sync failed", errInfo(e)));
       return {
         content: [
           `## You're in`,
           `Your ${label} UID checked out. The Trading Floor is open to you now.`,
           "",
-          "Pick your language in start-here if you have not yet, and say hello in general.",
+          "Say hello in general.",
         ].join("\n"),
       };
     }

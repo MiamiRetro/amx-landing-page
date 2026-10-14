@@ -86,8 +86,10 @@ export const commandDefinitions = [
     .addSubcommand((s) => s.setName("status").setDescription("Which exchanges are verifying for real")),
   new SlashCommandBuilder()
     .setName("language")
-    .setDescription("Choose the language you read the community in / 选择语言 / 언어 선택 / Pilih bahasa")
+    .setDescription("Move a member to another language (members pick once, in the picker)")
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles)
     .setDMPermission(false)
+    .addUserOption((o) => o.setName("member").setDescription("Who to move").setRequired(true))
     .addStringOption((o) => o.setName("lang").setDescription("Language").addChoices(...langChoices).setRequired(true)),
 ].map((c) => c.toJSON());
 
@@ -249,8 +251,8 @@ async function uidCommand(i: ChatInputCommandInteraction, d: CommandDeps): Promi
 async function languageCommand(i: ChatInputCommandInteraction, d: CommandDeps): Promise<string> {
   const lang = i.options.getString("lang", true);
   if (!isLang(lang)) throw new Error("unknown language");
-  const member = await d.guild.members.fetch(i.user.id);
-  return d.roles.set(member, lang);
+  const member = await d.guild.members.fetch(i.options.getUser("member", true).id);
+  return d.roles.assign(member, lang);
 }
 
 async function glossaryCommand(i: ChatInputCommandInteraction, d: CommandDeps): Promise<string> {

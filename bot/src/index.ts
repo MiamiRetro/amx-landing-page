@@ -99,6 +99,8 @@ async function main() {
   client.on(Events.MessageDelete, (m) => mirror?.onDelete(m));
   client.on(Events.MessageBulkDelete, (ms) => ms.forEach((m) => mirror?.onDelete(m)));
   client.on(Events.InteractionCreate, (i) => {
+    // The bot sits in more than one server (a test server too); each running copy serves only its own.
+    if (i.guildId !== guildId) return;
     if (!mirror || !groups || !roles || !verify) return;
     if (i.isButton() && i.customId.startsWith(PICKER_PREFIX)) return void handlePickerButton(i, roles);
     if (verify) {
@@ -114,6 +116,7 @@ async function main() {
     void handleCommand(i, { guild: mirror.guild, db, groups, mirror, providerId: primary.id, roles, verify });
   });
   client.on(Events.GuildMemberUpdate, (before, after) => {
+    if (after.guild.id !== guildId) return;
     if (!roles || before.roles.cache.size === after.roles.cache.size) return;
     void roles.applyPending(after).catch((e) => log.warn("apply pending language failed", errInfo(e)));
   });

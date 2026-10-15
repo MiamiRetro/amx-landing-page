@@ -107,7 +107,9 @@ export class VerifyService {
         await record("not_referred");
         return { ...base, outcome: "not_referred", remaining };
       }
-      await this.db.saveVerification({
+      // The same person may already hold this UID from another server sharing
+      // the database (the test server); one row per UID, so keep theirs.
+      if (!held) await this.db.saveVerification({
         guild_id: this.guildId,
         discord_user_id: args.userId,
         exchange: args.exchange,

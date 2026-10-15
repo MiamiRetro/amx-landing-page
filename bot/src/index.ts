@@ -94,6 +94,18 @@ async function main() {
       const g = groups, r = roles;
       setInterval(() => void g.reload().catch((e) => log.warn("group reload failed", errInfo(e))), 60_000).unref();
       setInterval(() => void r.sweep().catch((e) => log.warn("role sweep failed", errInfo(e))), 10 * 60_000).unref();
+
+      // Forum edits and deletes reach the translated copies once a day.
+      const m = mirror;
+      const forumSync = async () => {
+        const last = Number((await db.getSetting(guildId, "forum_sync:last_run")) ?? 0);
+        if (Date.now() - last < 86_400_000) return;
+        const started = Date.now();
+        await m.syncForums(last || started - 86_400_000);
+        await db.setSetting(guildId, "forum_sync:last_run", String(started));
+      };
+      void forumSync().catch((e) => log.warn("forum sync failed", errInfo(e)));
+      setInterval(() => void forumSync().catch((e) => log.warn("forum sync failed", errInfo(e))), 3_600_000).unref();
     } catch (e) {
       log.error("startup failed", errInfo(e));
       process.exit(1);

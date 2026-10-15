@@ -27,6 +27,9 @@ create table if not exists message_map (
   mirror_message_id text not null,
   lang text not null,
   created_at timestamptz not null default now(),
+  -- forum mirrors only: thread of the original and of the copy
+  source_thread_id text,
+  target_thread_id text,
   primary key (source_message_id, target_channel_id)
 );
 create index if not exists message_map_mirror_idx on message_map (mirror_message_id);

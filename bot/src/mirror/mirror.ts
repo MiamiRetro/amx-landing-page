@@ -351,14 +351,90 @@ export class Mirror {
           threadId ??= sent.channel_id;
           ids.push(sent.id);
         }
-        if (isPost) rows.push({ source_message_id: message.id, source_channel_id: forumId, target_channel_id: d.member.channel_id, mirror_message_id: threadId!, lang: d.member.lang });
-        else rows.push(...ids.map((id) => ({ source_message_id: message.id, source_channel_id: forumId, target_channel_id: d.member.channel_id, mirror_message_id: id, lang: d.member.lang })));
+        const where = { source_thread_id: thread.id, target_thread_id: threadId! };
+        if (isPost) rows.push({ source_message_id: message.id, source_channel_id: forumId, target_channel_id: d.member.channel_id, mirror_message_id: threadId!, lang: d.member.lang, ...where });
+        else rows.push(...ids.map((id) => ({ source_message_id: message.id, source_channel_id: forumId, target_channel_id: d.member.channel_id, mirror_message_id: id, lang: d.member.lang, ...where })));
       } catch (e) {
         log.error("forum mirror failed", { id: message.id, target: d.member.channel_id, ...errInfo(e) });
       }
     }
     await this.d.db.insertMap(rows);
     log.info("forum mirrored", { id: message.id, post: isPost, from: hit.member.lang, targets: rows.length, translated });
+  }
+
+  /**
+   * Once a day: forum posts and replies edited since the last sync are
+   * re-translated into every copy (a post's title too), and ones deleted take
+   * their copies with them. Forums are reference material, so a day's lag is
+   * fine and saves translating every typo fix.
+   */
+  async syncForums(since: number): Promise<{ edited: number; deleted: number }> {
+    const rows = await this.d.db.forumRows();
+    const bySource = new Map<string, MapRow[]>();
+    for (const r of rows) bySource.set(r.source_message_id, [...(bySource.get(r.source_message_id) ?? []), r]);
+    let edited = 0, deleted = 0;
+
+    for (const [sourceId, copies] of bySource) {
+      const threadId = copies[0].source_thread_id!;
+      const isPost = sourceId === threadId;
+      const thread = (await this.d.guild.channels.fetch(threadId).catch(() => null)) as ThreadChannel | null;
+      const original = thread ? await thread.messages.fetch(sourceId).catch(() => null) : null;
+
+      if (!original) {
+        for (const c of copies) {
+          try {
+            if (isPost) {
+              const t = await this.d.guild.channels.fetch(c.target_thread_id!).catch(() => null);
+              await t?.delete("original forum post deleted");
+            } else {
+              const target = this.d.groups.lookup(c.target_channel_id)?.member;
+              if (target) await (await this.hooks.ensure(target)).deleteMessage(c.mirror_message_id, c.target_thread_id!);
+            }
+          } catch (e) {
+            if (!/Unknown (Message|Channel)/.test(String(e))) log.warn("forum delete sync failed", { id: c.mirror_message_id, ...errInfo(e) });
+          }
+        }
+        await this.d.db.deleteMap(sourceId);
+        deleted++;
+        continue;
+      }
+      if (!original.editedTimestamp || original.editedTimestamp < since) continue;
+
+      const hit = this.d.groups.lookup(copies[0].source_channel_id);
+      if (!hit) continue;
+      const segments = collectSegments(original);
+      const translatable = segments.filter((s) => hasTranslatableText(s.tokenized));
+      const title = isPost ? tokenize(thread!.name) : null;
+      const asks = title ? [{ tokenized: title.text, entities: title.entities }, ...translatable] : translatable;
+      const langs = [...new Set(copies.map((c) => c.lang))].filter((l) => l !== hit.member.lang);
+      let translations: Record<Lang, string[]> | null = null;
+      let translated = true;
+      if (asks.length && langs.length) {
+        const r = await this.d.translator.translate(asks.map((s) => s.tokenized), asks.map((s) => s.entities), hit.member.lang, langs, await this.glossary());
+        translations = r.translations;
+        translated = r.translated;
+      }
+      const body = translations && title ? (Object.fromEntries(Object.entries(translations).map(([l, a]) => [l, a.slice(1)])) as Record<Lang, string[]>) : translations;
+      for (const c of copies) {
+        const target = this.d.groups.lookup(c.target_channel_id)?.member;
+        if (!target) continue;
+        try {
+          const built = await this.build(original, hit.member.lang, target, segments, translatable, body, translated);
+          const hook = await this.hooks.ensure(target);
+          await hook.editMessage(isPost ? c.target_thread_id! : c.mirror_message_id, { content: built.content ?? "", embeds: built.embeds, allowedMentions: built.allowedMentions, threadId: c.target_thread_id! });
+          if (title) {
+            const name = detokenize(translations && c.lang !== hit.member.lang ? translations[c.lang]?.[0] ?? title.text : title.text, title.entities).slice(0, 100);
+            const t = (await this.d.guild.channels.fetch(c.target_thread_id!).catch(() => null)) as ThreadChannel | null;
+            if (t && t.name !== name) await t.setName(name, "original forum post renamed");
+          }
+        } catch (e) {
+          log.warn("forum edit sync failed", { id: c.mirror_message_id, ...errInfo(e) });
+        }
+      }
+      edited++;
+    }
+    log.info("forum sync", { edited, deleted, tracked: bySource.size });
+    return { edited, deleted };
   }
 
   // ---------- edit ----------

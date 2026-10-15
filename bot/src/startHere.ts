@@ -42,6 +42,18 @@ const banner = (file: string) => new MediaGalleryBuilder().addItems(new MediaGal
 const divider = () => new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small);
 const asset = (file: string) => new AttachmentBuilder(readFileSync(join(ASSETS, file)), { name: file });
 
+const TERMS_URL = "https://momentous-bolt-1cc.notion.site/BLKB-X-Inc-Terms-of-Service-f0567f236cfe43f7b04a47ffa4ed3931?pvs=4";
+const PRIVACY_URL = "https://www.blkbox.pro/privacy-policy";
+const RULES = [
+  "**Respect everyone.**  No harassment, no hate.",
+  "**No financial advice.**  Education only. Do your own research.",
+  "**Use the bots responsibly.**  No exploiting, no sharing.",
+  "**No spam or self-promo.**",
+  "**Protect privacy.**  Never share personal data or API keys.",
+  "**Stay on topic**  in each channel.",
+  "**Moderators have the final say.**",
+].join("\n");
+
 /** One branded card per section, built with Discord's layout components. */
 export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean }): MessageCreateOptions[] {
   const V2 = MessageFlags.IsComponentsV2;
@@ -59,7 +71,7 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean 
     .addTextDisplayComponents(
       text(
         [
-          "Chat, alerts and announcements will show in the language you pick. By picking, you agree to the rules above.",
+          "Pick your language to enter. Chat, alerts and announcements will show in that language.",
           "-# 选择语言即表示同意规则 · 언어를 선택하면 규칙에 동의하게 됩니다 · Dengan memilih, kamu menyetujui aturan",
           "-# Your choice is final. A moderator can change it if you need.",
         ].join("\n"),
@@ -77,25 +89,13 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean 
   const rules = new ContainerBuilder()
     .setAccentColor(GREEN)
     .addMediaGalleryComponents(banner("rules.png"))
-    .addTextDisplayComponents(
-      text(
-        [
-          "**Respect everyone.**  No harassment, no hate.",
-          "**No financial advice.**  Education only. Do your own research.",
-          "**Use the bots responsibly.**  No exploiting, no sharing.",
-          "**No spam or self-promo.**",
-          "**Protect privacy.**  Never share personal data or API keys.",
-          "**Stay on topic**  in each channel.",
-          "**Moderators have the final say.**",
-        ].join("\n"),
-      ),
-    )
+    .addTextDisplayComponents(text(RULES))
     .addSeparatorComponents(divider())
     .addTextDisplayComponents(text("-# By using this server you agree to the rules, the Terms of Service and the Privacy Policy."))
     .addActionRowComponents(
       row(
-        link("Terms of Service", "https://momentous-bolt-1cc.notion.site/BLKB-X-Inc-Terms-of-Service-f0567f236cfe43f7b04a47ffa4ed3931?pvs=4", "📄"),
-        link("Privacy Policy", "https://www.blkbox.pro/privacy-policy", "🔒"),
+        link("Terms of Service", TERMS_URL, "📄"),
+        link("Privacy Policy", PRIVACY_URL, "🔒"),
       ),
     );
 
@@ -207,11 +207,35 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean 
       ),
     );
 
-  // The picker channel is the front door: welcome, the rules being agreed to, then the buttons.
+  // The picker channel is the front door and the only thing a newcomer sees:
+  // the rules with the terms they accept by entering, then the language buttons.
   if (opts.picker) {
+    const terms = new ContainerBuilder()
+      .setAccentColor(GREEN)
+      .addMediaGalleryComponents(banner("rules.png"))
+      .addTextDisplayComponents(text(RULES))
+      .addSeparatorComponents(divider())
+      .addTextDisplayComponents(
+        text(
+          [
+            "### Before you enter",
+            "**Entering this server means you accept its terms.**",
+            "**Nobody here is responsible for your funds.** You decide what you trade, and the risk is yours alone.",
+            "**Nothing in this server is financial advice.** Alerts, bots, calls and chat are education and opinion.",
+            "**Read the full Terms of Service before you enter.**",
+          ].join("\n"),
+        ),
+        text(
+          [
+            "-# 中文 进入本服务器即表示接受其条款。任何人都不对你的资金负责，这里的内容都不构成投资建议。进入前请阅读完整的服务条款。",
+            "-# 한국어 서버에 입장하면 이용약관에 동의하는 것입니다. 누구도 여러분의 자금에 책임지지 않으며, 이 서버의 어떤 내용도 투자 조언이 아닙니다. 입장 전에 전체 이용약관을 읽어 주세요.",
+            "-# Bahasa Indonesia Masuk ke server ini berarti kamu menerima ketentuannya. Tidak ada yang bertanggung jawab atas dana kamu, dan tidak ada isi server ini yang merupakan nasihat keuangan. Baca Ketentuan Layanan lengkap sebelum masuk.",
+          ].join("\n"),
+        ),
+      )
+      .addActionRowComponents(row(link("Terms of Service", TERMS_URL, "📄"), link("Privacy Policy", PRIVACY_URL, "🔒")));
     return [
-      { components: [welcome], files: [asset("hero.png")], flags: V2 },
-      { components: [rules], files: [asset("rules.png")], flags: V2 },
+      { components: [terms], files: [asset("rules.png")], flags: V2 },
       { components: [language], files: [asset("language.png")], flags: V2 },
     ];
   }

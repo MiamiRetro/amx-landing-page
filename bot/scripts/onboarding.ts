@@ -27,7 +27,7 @@ import {
 import { LANGS, type Lang } from "../src/config.js";
 import { Db } from "../src/db/index.js";
 import { connect } from "../src/lib/client.js";
-import { pickerMessage } from "../src/picker.js";
+import { startHereMessages } from "../src/startHere.js";
 import { LANG_ROLE_NAMES } from "../src/roles.js";
 import { verifyPanel } from "../src/verify/panel.js";
 
@@ -146,7 +146,7 @@ const REPLACED_ROLE_NAMES = ["Member", "Members", "New Member", "Muted Member"];
 
 const BOT_ALLOW = [P.ViewChannel, P.SendMessages, P.ReadMessageHistory, P.ManageMessages, P.ManageWebhooks, P.EmbedLinks, P.AttachFiles];
 
-const STEPS = ["roles", "members", "channels", "perms", "mirror", "panels"] as const;
+const STEPS = ["roles", "members", "channels", "perms", "mirror", "panels", "rules"] as const;
 type Step = (typeof STEPS)[number];
 
 interface Ctx {
@@ -358,7 +358,34 @@ async function stepPanels(ctx: Ctx) {
     const old = (await ch.messages.fetch({ limit: 50 })).filter((m) => m.author.id === me.id);
     for (const m of old.values()) await m.delete().catch(() => {});
     const lang = s.lang === "all" ? "en" : s.lang;
-    await ch.send(s.panel === "picker" ? pickerMessage() : verifyPanel(lang, s.panel));
+    if (s.panel === "picker") {
+      const help = guild.channels.cache.find((c) => c.name === "☎️・help-desk");
+      for (const msg of startHereMessages({ picker: true, helpDeskUrl: `https://discord.com/channels/${guild.id}/${help?.id ?? ""}` })) await ch.send(msg);
+    } else await ch.send(verifyPanel(lang, s.panel));
+  }
+}
+
+/**
+ * Community servers must name a rules channel, and Discord shows it to
+ * everyone, member list and all. The picker already carries the rules, so it
+ * becomes the rules channel and the old one is hidden from everyone but staff.
+ */
+async function stepRules(ctx: Ctx) {
+  const { guild } = ctx;
+  if (!guild.features.includes("COMMUNITY")) { log("  not a Community server, nothing to do"); return; }
+  const picker = findChannel(guild, SPECS[0]);
+  if (!picker) { log("  ! picker channel missing"); return; }
+  const old = guild.rulesChannelId && guild.rulesChannelId !== picker.id ? guild.channels.cache.get(guild.rulesChannelId) : undefined;
+  if (guild.rulesChannelId !== picker.id) {
+    log(`  rules channel: #${old?.name ?? "none"} → #${picker.name}`);
+    if (ctx.apply) await guild.setRulesChannel(picker.id, "onboarding: the picker carries the rules");
+  }
+  if (old && "permissionOverwrites" in old) {
+    const everyone = old.permissionOverwrites.cache.get(guild.roles.everyone.id);
+    if (!everyone?.deny.has(P.ViewChannel) || old.permissionOverwrites.cache.some((o) => o.id !== guild.roles.everyone.id && o.allow.has(P.ViewChannel))) {
+      log(`  hide #${old.name} from everyone but staff`);
+      if (ctx.apply) await old.permissionOverwrites.set([{ id: guild.roles.everyone.id, deny: [P.ViewChannel] }], "onboarding: rules live in the picker now");
+    }
   }
 }
 
@@ -406,14 +433,14 @@ async function main() {
   };
   try {
     log(apply ? "APPLYING" : "DRY RUN (add --apply to make these changes)");
-    const run: Record<Step, (c: Ctx) => Promise<void>> = { roles: stepRoles, members: stepMembers, channels: stepChannels, perms: stepPerms, mirror: stepMirror, panels: stepPanels };
+    const run: Record<Step, (c: Ctx) => Promise<void>> = { roles: stepRoles, members: stepMembers, channels: stepChannels, perms: stepPerms, mirror: stepMirror, panels: stepPanels, rules: stepRules };
     for (const step of STEPS) {
       if (only && step !== only) continue;
       log(`\n== ${step}`);
       await run[step](ctx);
       if (apply) await guild.roles.fetch();
     }
-    if (apply && (!only || only === "perms")) await audit(ctx);
+    if (apply && (!only || only === "perms" || only === "rules")) await audit(ctx);
   } finally {
     await client.destroy();
   }

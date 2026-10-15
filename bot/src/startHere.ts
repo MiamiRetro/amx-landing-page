@@ -16,6 +16,8 @@ import {
   type MessageCreateOptions,
 } from "discord.js";
 import { PICKER_PREFIX } from "./picker.js";
+import type { Lang } from "./config.js";
+import { guideText } from "./i18n/guide.js";
 
 /** Brand from blkbox.pro: navy, Sora, cyan and emerald accents, white wordmark. */
 const GREEN = 0x22d3ee; // site cyan
@@ -59,8 +61,9 @@ const RULES = [
  * `translateEmoji` is the server's :translate: emoji markup (`<:translate:id>`),
  * shown on the language card when the server has it.
  */
-export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean; translateEmoji?: string }): MessageCreateOptions[] {
+export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean; translateEmoji?: string; lang?: Lang }): MessageCreateOptions[] {
   const V2 = MessageFlags.IsComponentsV2;
+  const t = guideText(opts.lang ?? "en");
 
   // Hero image only: the banner already carries the wordmark, headline and tagline.
   const welcome = new ContainerBuilder()
@@ -102,13 +105,13 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean;
   const rules = new ContainerBuilder()
     .setAccentColor(GREEN)
     .addMediaGalleryComponents(banner("rules.png"))
-    .addTextDisplayComponents(text(RULES))
+    .addTextDisplayComponents(text(t.rules))
     .addSeparatorComponents(divider())
-    .addTextDisplayComponents(text("-# By using this server you agree to the rules, the Terms of Service and the Privacy Policy."))
+    .addTextDisplayComponents(text(t.agreeNote))
     .addActionRowComponents(
       row(
-        link("Terms of Service", TERMS_URL, "📄"),
-        link("Privacy Policy", PRIVACY_URL, "🔒"),
+        link(t.termsButton, TERMS_URL, "📄"),
+        link(t.privacyButton, PRIVACY_URL, "🔒"),
       ),
     );
 
@@ -116,59 +119,59 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean;
     .setAccentColor(GREEN)
     .addMediaGalleryComponents(banner("start.png"))
     .addTextDisplayComponents(
-      text("## Three steps to full access"),
-      text("Email, exchange, UID. Then the command center and the Trading Floor are yours, free."),
+      text(t.stepsTitle),
+      text(t.stepsIntro),
     )
     .addSeparatorComponents(divider())
     .addTextDisplayComponents(
-      text("### 1 \u00b7 Get your command center"),
-      text("Market intelligence, proprietary signals, multi-exchange execution and a trade journal, all in one place. No card, no subscription, a couple of minutes to set up."),
+      text(t.step1Title),
+      text(t.step1Body),
     )
-    .addActionRowComponents(row(link("Unlock trading tools", "https://www.blkbox.pro/signup", E.Glow)))
+    .addActionRowComponents(row(link(t.step1Button, "https://www.blkbox.pro/signup", E.Glow)))
     .addSeparatorComponents(divider())
     .addTextDisplayComponents(
-      text("### 2 \u00b7 Choose your exchange"),
+      text(t.step2Title),
       text(
         [
-          "You pay trading fees to an exchange wherever you trade. Sign up through one of our links and the exchange hands us a small share of the fees you are already paying.",
+          t.step2Why1,
           "",
-          "That share is what keeps this place free. The signals, the bots, the tools and every channel here are paid for by it. It never costs you a cent extra, and we only earn when you trade.",
+          t.step2Why2,
           "",
-          "We trust every exchange on this list. The only thing that should decide it is where you live.",
+          t.step2Why3,
         ].join("\n"),
       ),
       text(
         [
-          "**Start here**",
-          "\ud83c\uddec\ud83c\udde7 \ud83c\uddea\ud83c\uddfa  Europe and the UK \u2192 Bybit or Blofin",
-          "\ud83c\uddf0\ud83c\uddf7  \ud55c\uad6d \u2192 Bybit, Blofin or MEXC",
-          "\ud83c\uddee\ud83c\udde9  Indonesia \u2192 Bybit, Blofin, MEXC or Toobit",
-          "\ud83c\uddef\ud83c\uddf5  \u65e5\u672c \u2192 Bybit, Blofin, MEXC or Toobit",
-          "\ud83c\udf0d  Anywhere else \u2192 any of them, Bybit is the easiest start",
+          t.startHereTitle,
+          t.regionEurope,
+          t.regionKorea,
+          t.regionIndonesia,
+          t.regionJapan,
+          t.regionElse,
         ].join("\n"),
       ),
       text(
         [
-          "**Who can open an account**",
+          t.whoTitle,
           "",
-          "**Bybit**  \u00b7  ID check required",
+          t.whoBybit,
           "\ud83c\uddec\ud83c\udde7 \ud83c\uddea\ud83c\uddfa \ud83c\uddef\ud83c\uddf5 \ud83c\uddf0\ud83c\uddf7 \ud83c\uddee\ud83c\udde9",
           "",
-          "**Bitget**  \u00b7  ID check required",
+          t.whoBitget,
           "\ud83c\uddec\ud83c\udde7 \ud83c\uddee\ud83c\udde9",
           "",
-          "**Blofin**  \u00b7  no ID check, futures open at signup",
+          t.whoBlofin,
           "\ud83c\uddec\ud83c\udde7 \ud83c\uddea\ud83c\uddfa \ud83c\uddef\ud83c\uddf5 \ud83c\uddf0\ud83c\uddf7 \ud83c\uddee\ud83c\udde9",
           "",
-          "**MEXC**  \u00b7  no ID check, futures open at signup  \u00b7  *coming soon*",
+          t.whoMexc,
           "\ud83c\uddea\ud83c\uddfa \ud83c\uddef\ud83c\uddf5 \ud83c\uddf0\ud83c\uddf7 \ud83c\uddee\ud83c\udde9",
           "",
-          "**Toobit**  \u00b7  no ID check, futures open at signup  \u00b7  *coming soon*",
+          t.whoToobit,
           "\ud83c\uddea\ud83c\uddfa \ud83c\uddef\ud83c\uddf5 \ud83c\uddf0\ud83c\uddf7 \ud83c\uddee\ud83c\udde9",
         ].join("\n"),
       ),
-      text("-# \ud83c\uddfa\ud83c\uddf8 \ud83c\udde8\ud83c\udde6  **United States and Canada:** every exchange above excludes US and Canadian residents in its own terms. We are working on a home for you."),
-      text("-# Availability changes, and each exchange's own terms are the last word on who may open an account. Check before you sign up. Affiliate links."),
+      text(t.usCanada),
+      text(t.availability),
     )
     .addActionRowComponents(
       row(
@@ -176,17 +179,17 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean;
         link("Blofin", "https://partner.blofin.com/d/BLKBox", E.Blofin),
         link("Bybit", "https://partner.bybit.com/b/90136", E.Bybit),
         // Placeholders until the affiliate links exist.
-        new ButtonBuilder().setStyle(ButtonStyle.Secondary).setLabel("MEXC \u00b7 soon").setCustomId("placeholder:mexc").setDisabled(true),
-        new ButtonBuilder().setStyle(ButtonStyle.Secondary).setLabel("Toobit \u00b7 soon").setCustomId("placeholder:toobit").setDisabled(true),
+        new ButtonBuilder().setStyle(ButtonStyle.Secondary).setLabel(t.mexcSoon).setCustomId("placeholder:mexc").setDisabled(true),
+        new ButtonBuilder().setStyle(ButtonStyle.Secondary).setLabel(t.toobitSoon).setCustomId("placeholder:toobit").setDisabled(true),
       ),
     )
     .addSeparatorComponents(divider())
     .addTextDisplayComponents(
-      text("### 3 \u00b7 Verify your UID and unlock the signals"),
-      text("Drop the UID from your exchange account into the app and it verifies instantly. That is what turns on the AlphanumetriX signals, the trade terminal and the trade journal."),
-      text("-# Bitget, Blofin and Bybit UIDs are all accepted."),
+      text(t.step3Title),
+      text(t.step3Body),
+      text(t.step3Note),
     )
-    .addActionRowComponents(row(link("Verify my UID", "https://app.blkbox.pro", E.BLK)));
+    .addActionRowComponents(row(link(t.step3Button, "https://app.blkbox.pro", E.BLK)));
 
   const community = new ContainerBuilder()
     .setAccentColor(GREEN)
@@ -210,13 +213,13 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean;
     )
     .addSeparatorComponents(divider())
     .addTextDisplayComponents(
-      text("### Need a hand?"),
-      text("Ask in help-desk, where the community and the team answer. For anything private, open a support ticket and you get a thread with staff only."),
+      text(t.helpTitle),
+      text(t.helpBody),
     )
     .addActionRowComponents(
       row(
-        link("Help-desk", opts.helpDeskUrl, "☎️"),
-        new ButtonBuilder().setStyle(ButtonStyle.Success).setLabel("Open a Support Ticket").setEmoji("🎟️").setCustomId("placeholder:ticket").setDisabled(true),
+        link(t.helpButton, opts.helpDeskUrl, "☎️"),
+        new ButtonBuilder().setStyle(ButtonStyle.Success).setLabel(t.ticketButton).setEmoji("🎟️").setCustomId("placeholder:ticket").setDisabled(true),
       ),
     );
 

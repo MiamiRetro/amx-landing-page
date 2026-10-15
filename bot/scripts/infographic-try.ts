@@ -43,7 +43,7 @@ h1{font-size:44px;margin:0 0 8px}p.s{color:#555;font-size:22px;margin:0 0 32px}
 .n{width:44px;height:44px;border-radius:50%;background:#0a7;color:#fff;font:700 24px/44px Helvetica;text-align:center;flex:none}
 h3{margin:0 0 6px;font-size:26px}.st p{margin:0;font-size:20px;color:#444}.f{margin-top:28px;color:#777;font-size:18px}
 </style></head><body><h1>Connect your exchange to BLKBöX</h1><p class="s">Set up in under five minutes</p>
-<div class="st"><div class="n">1</div><div><h3>Create an API key</h3><p>Open your exchange settings and create a new read-only API key.</p></div></div>
+<div class="st"><div class="n">1</div><div><h3>Create an API key</h3><p>Open your exchange settings and create a new API key.</p></div></div>
 <div class="st"><div class="n">2</div><div><h3>Paste it into BLKBöX</h3><p>Go to Settings → Exchanges and paste the key and secret.</p></div></div>
 <div class="st"><div class="n">3</div><div><h3>Verify your UID</h3><p>Run /verify in Discord to unlock the trading floor.</p></div></div>
 <p class="f">Need help? Ask in #help-desk</p></body></html>`;

@@ -11,6 +11,7 @@ import { Funnel, InviteTracker } from "./funnel.js";
 import { LanguageRoles } from "./roles.js";
 import { handlePickerButton, PICKER_PREFIX } from "./picker.js";
 import { providerFromSpec, Translator } from "./translate/index.js";
+import { InfographicLocalizer, infographicsEnabled } from "./infographic/index.js";
 import { buildProviders } from "./verify/providers/index.js";
 import { VerifyService } from "./verify/service.js";
 import { handleVerifyButton, handleVerifySubmit, VERIFY_BUTTON, VERIFY_MODAL } from "./verify/panel.js";
@@ -34,6 +35,9 @@ async function main() {
     timeoutMs: config.translationTimeoutSec() * 1000,
   });
 
+  const infographics = infographicsEnabled() ? new InfographicLocalizer({ translator }) : undefined;
+  if (infographics) log.info("infographic translation enabled");
+
   const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildInvites],
     partials: [Partials.Message, Partials.Channel],
@@ -54,7 +58,7 @@ async function main() {
       await guild.roles.fetch();
       groups = new GroupIndex(db, guildId);
       await groups.reload();
-      mirror = new Mirror({ guild, db, groups, translator, botUserId: c.user.id, applicationId: c.application.id });
+      mirror = new Mirror({ guild, db, groups, translator, botUserId: c.user.id, applicationId: c.application.id, infographics });
       mirror.paused = groups.groups.length > 0 && groups.groups.every((g) => g.paused);
 
       roles = new LanguageRoles(guild, db, funnel);

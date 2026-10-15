@@ -13,6 +13,7 @@ import type { Lang } from "../config.js";
 import type { Db, GroupMember, MapRow } from "../db/index.js";
 import { log, errInfo } from "../log.js";
 import type { Translator } from "../translate/index.js";
+import { chooseFiles, type InfographicLocalizer } from "../infographic/index.js";
 import type { GroupIndex } from "./groups.js";
 import { detokenize, hasTranslatableText, splitForDiscord, tokenize } from "./placeholders.js";
 import { KeyedQueue } from "./queue.js";
@@ -37,6 +38,8 @@ export interface MirrorDeps {
   botUserId: string;
   /** The bot's application id. Discord stamps it on every message sent through a webhook this bot created. */
   applicationId: string;
+  /** Set when INFOGRAPHIC_TRANSLATION=1: re-renders tutorial infographics per language. */
+  infographics?: InfographicLocalizer;
 }
 
 export class Mirror {
@@ -331,9 +334,16 @@ export class Mirror {
       : translations;
 
     const files = await this.collectFiles(message);
+    let localized: Map<Lang, Map<number, Buffer>> | undefined;
+    if (this.d.infographics && files.length) {
+      localized = await this.d.infographics
+        .localize(hit.group.name, files, hit.member.lang, targetLangs, await this.glossary())
+        .catch((e) => { log.warn("infographic pass failed, using originals", { id: message.id, ...errInfo(e) }); return undefined; });
+    }
     const rows: MapRow[] = [];
     for (const d of dests) {
       try {
+        const destFiles = chooseFiles(files, localized?.get(d.member.lang));
         const built = await this.build(message, hit.member.lang, d.member, segments, translatable, bodyTranslations, translated);
         const hook = await this.hooks.ensure(d.member);
         const chunks = built.content ? splitForDiscord(built.content) : [undefined];
@@ -341,7 +351,7 @@ export class Mirror {
         const ids: string[] = [];
         for (let i = 0; i < chunks.length; i++) {
           const last = i === chunks.length - 1;
-          const opts: WebhookMessageCreateOptions = { ...built, content: chunks[i], embeds: last ? built.embeds : undefined, files: last && files.length ? files : undefined };
+          const opts: WebhookMessageCreateOptions = { ...built, content: chunks[i], embeds: last ? built.embeds : undefined, files: last && destFiles.length ? destFiles : undefined };
           if (threadId) opts.threadId = threadId;
           else {
             const t = title && translations && d.member.lang !== hit.member.lang ? translations[d.member.lang]?.[0] ?? title.text : title?.text ?? thread.name;

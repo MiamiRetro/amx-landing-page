@@ -55,7 +55,11 @@ const RULES = [
 ].join("\n");
 
 /** One branded card per section, built with Discord's layout components. */
-export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean }): MessageCreateOptions[] {
+/**
+ * `translateEmoji` is the server's :translate: emoji markup (`<:translate:id>`),
+ * shown on the language card when the server has it.
+ */
+export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean; translateEmoji?: string }): MessageCreateOptions[] {
   const V2 = MessageFlags.IsComponentsV2;
 
   // Hero image only: the banner already carries the wordmark, headline and tagline.
@@ -71,7 +75,8 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean 
     .addTextDisplayComponents(
       text(
         [
-          "Pick your language to enter. Chat, alerts and announcements will show in that language.",
+          `### ${opts.translateEmoji ? opts.translateEmoji + "  " : ""}Pick your language to enter`,
+          "Chat, alerts and announcements will show in that language.",
           "-# 选择语言即表示同意规则 · 언어를 선택하면 규칙에 동의하게 됩니다 · Dengan memilih, kamu menyetujui aturan",
           "-# Your choice is final. A moderator can change it if you need.",
         ].join("\n"),

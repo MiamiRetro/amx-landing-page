@@ -24,6 +24,8 @@ import {
   type OverwriteResolvable,
   type TextChannel,
 } from "discord.js";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { LANGS, type Lang } from "../src/config.js";
 import { Db } from "../src/db/index.js";
 import { connect } from "../src/lib/client.js";
@@ -145,6 +147,8 @@ const CATEGORY_SPECS: { name: string; lang: Lang; tier: Tier }[] = [
 const REPLACED_ROLE_NAMES = ["Member", "Members", "New Member", "Muted Member"];
 
 const BOT_ALLOW = [P.ViewChannel, P.SendMessages, P.ReadMessageHistory, P.ManageMessages, P.ManageWebhooks, P.EmbedLinks, P.AttachFiles];
+
+const TRANSLATE_PNG = join(dirname(fileURLToPath(import.meta.url)), "..", "assets", "emoji", "translate.png");
 
 const STEPS = ["roles", "members", "channels", "perms", "mirror", "panels", "rules"] as const;
 type Step = (typeof STEPS)[number];
@@ -360,7 +364,10 @@ async function stepPanels(ctx: Ctx) {
     const lang = s.lang === "all" ? "en" : s.lang;
     if (s.panel === "picker") {
       const help = guild.channels.cache.find((c) => c.name === "☎️・help-desk");
-      for (const msg of startHereMessages({ picker: true, helpDeskUrl: `https://discord.com/channels/${guild.id}/${help?.id ?? ""}` })) await ch.send(msg);
+      const emojis = await guild.emojis.fetch();
+      let tr = emojis.find((e) => e.name === "translate");
+      if (!tr) tr = await guild.emojis.create({ attachment: TRANSLATE_PNG, name: "translate", reason: "onboarding: language picker icon" });
+      for (const msg of startHereMessages({ picker: true, translateEmoji: tr.toString(), helpDeskUrl: `https://discord.com/channels/${guild.id}/${help?.id ?? ""}` })) await ch.send(msg);
     } else await ch.send(verifyPanel(lang, s.panel));
   }
 }

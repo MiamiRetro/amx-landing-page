@@ -13,6 +13,8 @@ import { startHereMessages } from "../src/startHere.js";
 import { Db } from "../src/db/index.js";
 
 const LIVE = "935681399095169035";
+/** SEED_ONLY="#a,#b" limits the mock chat to those channels (cards, clearing and forums are skipped). */
+const ONLY = process.env.SEED_ONLY?.split(",").map((s) => s.trim().replace(/^#/, ""));
 const HOOK = "Mock chat";
 
 type Line = [who: string, text: string];
@@ -61,6 +63,21 @@ const CHAT: Record<string, Line[]> = {
     ["Tone", "Weekly still above the 50 SMA. Nothing on the higher timeframe says the trend is over."],
     ["Marta", "ETF flows were positive 4 days straight too"],
     ["Sam R.", "what's everyone's DCA schedule? I do every Monday"],
+  ],
+  "🪙・crypto": [
+    ["Kenji", "ETH/BTC bounced right off 0.036. Watching SOL and LINK for the rotation."],
+    ["Priya", "alt season talk again 😅 I'll believe it when ETH/BTC breaks 0.04"],
+    ["Sam R.", "anyone holding anything outside the top 20?"],
+  ],
+  "📊・stocks": [
+    ["Marta", "NVDA earnings after close Wednesday. IV is pricing a 9% move."],
+    ["dylanb", "COIN and MSTR basically trade as leveraged BTC at this point"],
+    ["Priya", "SPX still holding the 50 day, no reason to fight it"],
+  ],
+  "🛢️・commodities": [
+    ["Tone", "Gold at a new all-time high again. Central banks keep buying."],
+    ["Kenji", "Oil chopping between 72 and 78 for a month now"],
+    ["Marta", "silver lagging gold, ratio above 85. Historically that mean-reverts"],
   ],
   "🐸・memes": [
     ["dylanb", "me explaining to my wife why I need a 4th monitor for 'research'"],
@@ -196,6 +213,18 @@ async function seed(guild: Guild) {
   const helpDesk = text("☎️・help-desk");
   const helpDeskUrl = helpDesk ? `https://discord.com/channels/${guild.id}/${helpDesk.id}` : `https://discord.com/channels/${guild.id}`;
 
+  if (ONLY) {
+    // Twins can share an English name (Vietnamese 🪙・crypto); only post where the mirror is not the source.
+    const twins = new Set((await new Db().loadGroups(guild.id)).flatMap((g) => g.members.filter((m) => m.lang !== "en").map((m) => m.channel_id)));
+    for (const ch of guild.channels.cache.values()) if (ch.type === ChannelType.GuildText && ONLY.includes(ch.name) && CHAT[ch.name] && !twins.has(ch.id)) {
+      const hook = await hookFor(ch as TextChannel, me.id);
+      await clearOld(ch as TextChannel, hook.id, me.id);
+      for (const [who, content] of CHAT[ch.name]) await hook.send({ username: who, avatarURL: avatarFor(who), content, allowedMentions: { parse: [] } });
+      console.log(`chat   #${ch.name}`);
+    }
+    return;
+  }
+
   // Branded cards
   for (const [name, picker] of [["🌐・choose-language", true]] as const) {
     const ch = text(name);
@@ -214,7 +243,7 @@ async function seed(guild: Guild) {
   const groupIds = new Set(groups.flatMap((g) => g.members.map((m) => m.channel_id)));
   for (const id of groupIds) {
     const ch = guild.channels.cache.get(id) as TextChannel | undefined;
-    if (!ch) continue;
+    if (!ch || ch.type !== ChannelType.GuildText) continue; // forums hold threads, cleared below
     for (const m of (await ch.messages.fetch({ limit: 100 })).values()) if (m.webhookId) await m.delete().catch(() => {});
   }
   await new Promise((r) => setTimeout(r, 8000));
@@ -230,6 +259,7 @@ async function seed(guild: Guild) {
     if (ch.type !== ChannelType.GuildText) continue;
     const cat = guild.channels.cache.get(ch.parentId ?? "")?.name ?? "";
     if (twinIds.has(ch.id)) continue; // filled by the mirror
+    if (ONLY && !ONLY.includes(ch.name)) continue;
     const lines = BY_CATEGORY[cat]?.[ch.name] ?? CHAT[ch.name];
     if (lines) await post(ch as TextChannel, lines);
   }

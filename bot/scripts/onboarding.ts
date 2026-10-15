@@ -45,7 +45,7 @@ type Tier =
 /** What a channel is, the same in every language. */
 type Kind =
   | "announcements" | "teaser" | "signals"
-  | "verify" | "btcgate" | "general" | "trader" | "bitcoin" | "memes" | "help"
+  | "verify" | "btcgate" | "general" | "trader" | "bitcoin" | "crypto" | "stocks" | "commodities" | "memes" | "help"
   | "start" | "guides" | "strategies" | "forums";
 
 interface Spec {
@@ -68,7 +68,7 @@ interface Spec {
  * language's copy:
  *
  *   ANNOUNCEMENTS   server-guide (always on top) · announcements · signals preview · signals
- *   COMMUNITY       verify · locked bitcoin · general · trader-chat · bitcoin · memes · help-desk
+ *   COMMUNITY       verify · locked bitcoin · general · trader-chat · bitcoin · crypto · stocks · commodities · memes · help-desk
  *   REFERENCE       setup-guides · trading-strategies · forums
  *
  * No voice channels: one per language is more rooms than anyone would use.
@@ -83,6 +83,9 @@ const LAYOUT: { cat: "ann" | "com" | "ref"; kind: Kind; tier: Tier; readOnly?: b
   { cat: "com", kind: "general", tier: "member" },
   { cat: "com", kind: "trader", tier: "trader" },
   { cat: "com", kind: "bitcoin", tier: "member" },
+  { cat: "com", kind: "crypto", tier: "member" },
+  { cat: "com", kind: "stocks", tier: "member" },
+  { cat: "com", kind: "commodities", tier: "member" },
   { cat: "com", kind: "memes", tier: "member" },
   { cat: "com", kind: "help", tier: "free" },
   { cat: "ref", kind: "guides", tier: "member", type: "forum" },
@@ -103,15 +106,15 @@ const CATS: Record<Lang, Record<"ann" | "com" | "ref", string>> = {
 };
 
 const NAMES: Record<Lang, Record<Kind, string>> = {
-  en: { announcements: "📢・announcements", teaser: "🔒・trade-alerts", signals: "⚡・trade-alerts", verify: "✅・verify", btcgate: "🔒・bitcoin", general: "💬・general", trader: "📈・trader-chat", bitcoin: "🟠・bitcoin", memes: "🐸・memes", help: "☎️・help-desk", start: "🧭・server-guide", guides: "📕・setup-guides", strategies: "📗・trading-strategies", forums: "🧵・forums" },
-  zh: { announcements: "📢・公告", teaser: "🔒・交易提醒", signals: "⚡・交易提醒", verify: "✅・验证", btcgate: "🔒・比特币", general: "💬・闲聊", trader: "📈・交易者聊天", bitcoin: "🟠・比特币", memes: "🐸・表情包", help: "☎️・帮助台", start: "🧭・服务器指南", guides: "📕・设置指南", strategies: "📗・交易策略", forums: "🧵・论坛" },
-  ko: { announcements: "📢・공지사항", teaser: "🔒・매매신호", signals: "⚡・매매신호", verify: "✅・인증", btcgate: "🔒・비트코인", general: "💬・자유채팅", trader: "📈・트레이더-채팅", bitcoin: "🟠・비트코인", memes: "🐸・밈", help: "☎️・도움말", start: "🧭・서버-가이드", guides: "📕・설정-가이드", strategies: "📗・매매-전략", forums: "🧵・포럼" },
-  id: { announcements: "📢・pengumuman", teaser: "🔒・sinyal-trading", signals: "⚡・sinyal-trading", verify: "✅・verifikasi", btcgate: "🔒・bitcoin", general: "💬・obrolan-umum", trader: "📈・obrolan-trader", bitcoin: "🟠・bitcoin", memes: "🐸・meme", help: "☎️・bantuan", start: "🧭・panduan-server", guides: "📕・panduan-setup", strategies: "📗・strategi-trading", forums: "🧵・forum" },
-  vi: { announcements: "📢・thông-báo", teaser: "🔒・tín-hiệu", signals: "⚡・tín-hiệu", verify: "✅・xác-minh", btcgate: "🔒・bitcoin", general: "💬・tán-gẫu", trader: "📈・trò-chuyện-trader", bitcoin: "🟠・bitcoin", memes: "🐸・meme", help: "☎️・hỗ-trợ", start: "🧭・hướng-dẫn-server", guides: "📕・hướng-dẫn", strategies: "📗・chiến-lược", forums: "🧵・diễn-đàn" },
-  es: { announcements: "📢・anuncios", teaser: "🔒・alertas", signals: "⚡・alertas", verify: "✅・verificar", btcgate: "🔒・bitcoin", general: "💬・general", trader: "📈・chat-traders", bitcoin: "🟠・bitcoin", memes: "🐸・memes", help: "☎️・ayuda", start: "🧭・guía-del-servidor", guides: "📕・guías", strategies: "📗・estrategias", forums: "🧵・foros" },
-  pt: { announcements: "📢・anúncios", teaser: "🔒・alertas", signals: "⚡・alertas", verify: "✅・verificar", btcgate: "🔒・bitcoin", general: "💬・geral", trader: "📈・chat-traders", bitcoin: "🟠・bitcoin", memes: "🐸・memes", help: "☎️・ajuda", start: "🧭・guia-do-servidor", guides: "📕・guias", strategies: "📗・estratégias", forums: "🧵・fóruns" },
-  tr: { announcements: "📢・duyurular", teaser: "🔒・sinyaller", signals: "⚡・sinyaller", verify: "✅・doğrulama", btcgate: "🔒・bitcoin", general: "💬・sohbet", trader: "📈・trader-sohbet", bitcoin: "🟠・bitcoin", memes: "🐸・mizah", help: "☎️・yardım", start: "🧭・sunucu-rehberi", guides: "📕・kurulum-rehberi", strategies: "📗・stratejiler", forums: "🧵・forum" },
-  ru: { announcements: "📢・объявления", teaser: "🔒・сигналы", signals: "⚡・сигналы", verify: "✅・верификация", btcgate: "🔒・биткоин", general: "💬・общий-чат", trader: "📈・чат-трейдеров", bitcoin: "🟠・биткоин", memes: "🐸・мемы", help: "☎️・помощь", start: "🧭・гид-по-серверу", guides: "📕・гайды", strategies: "📗・стратегии", forums: "🧵・форум" },
+  en: { announcements: "📢・announcements", teaser: "🔒・trade-alerts", signals: "⚡・trade-alerts", verify: "✅・verify", btcgate: "🔒・bitcoin", general: "💬・general", trader: "📈・trader-chat", bitcoin: "🟠・bitcoin", crypto: "🪙・crypto", stocks: "📊・stocks", commodities: "🛢️・commodities", memes: "🐸・memes", help: "☎️・help-desk", start: "🧭・server-guide", guides: "📕・setup-guides", strategies: "📗・trading-strategies", forums: "🧵・forums" },
+  zh: { announcements: "📢・公告", teaser: "🔒・交易提醒", signals: "⚡・交易提醒", verify: "✅・验证", btcgate: "🔒・比特币", general: "💬・闲聊", trader: "📈・交易者聊天", bitcoin: "🟠・比特币", crypto: "🪙・加密货币", stocks: "📊・股票", commodities: "🛢️・大宗商品", memes: "🐸・表情包", help: "☎️・帮助台", start: "🧭・服务器指南", guides: "📕・设置指南", strategies: "📗・交易策略", forums: "🧵・论坛" },
+  ko: { announcements: "📢・공지사항", teaser: "🔒・매매신호", signals: "⚡・매매신호", verify: "✅・인증", btcgate: "🔒・비트코인", general: "💬・자유채팅", trader: "📈・트레이더-채팅", bitcoin: "🟠・비트코인", crypto: "🪙・코인", stocks: "📊・주식", commodities: "🛢️・원자재", memes: "🐸・밈", help: "☎️・도움말", start: "🧭・서버-가이드", guides: "📕・설정-가이드", strategies: "📗・매매-전략", forums: "🧵・포럼" },
+  id: { announcements: "📢・pengumuman", teaser: "🔒・sinyal-trading", signals: "⚡・sinyal-trading", verify: "✅・verifikasi", btcgate: "🔒・bitcoin", general: "💬・obrolan-umum", trader: "📈・obrolan-trader", bitcoin: "🟠・bitcoin", crypto: "🪙・kripto", stocks: "📊・saham", commodities: "🛢️・komoditas", memes: "🐸・meme", help: "☎️・bantuan", start: "🧭・panduan-server", guides: "📕・panduan-setup", strategies: "📗・strategi-trading", forums: "🧵・forum" },
+  vi: { announcements: "📢・thông-báo", teaser: "🔒・tín-hiệu", signals: "⚡・tín-hiệu", verify: "✅・xác-minh", btcgate: "🔒・bitcoin", general: "💬・tán-gẫu", trader: "📈・trò-chuyện-trader", bitcoin: "🟠・bitcoin", crypto: "🪙・crypto", stocks: "📊・cổ-phiếu", commodities: "🛢️・hàng-hóa", memes: "🐸・meme", help: "☎️・hỗ-trợ", start: "🧭・hướng-dẫn-server", guides: "📕・hướng-dẫn", strategies: "📗・chiến-lược", forums: "🧵・diễn-đàn" },
+  es: { announcements: "📢・anuncios", teaser: "🔒・alertas", signals: "⚡・alertas", verify: "✅・verificar", btcgate: "🔒・bitcoin", general: "💬・general", trader: "📈・chat-traders", bitcoin: "🟠・bitcoin", crypto: "🪙・cripto", stocks: "📊・acciones", commodities: "🛢️・materias-primas", memes: "🐸・memes", help: "☎️・ayuda", start: "🧭・guía-del-servidor", guides: "📕・guías", strategies: "📗・estrategias", forums: "🧵・foros" },
+  pt: { announcements: "📢・anúncios", teaser: "🔒・alertas", signals: "⚡・alertas", verify: "✅・verificar", btcgate: "🔒・bitcoin", general: "💬・geral", trader: "📈・chat-traders", bitcoin: "🟠・bitcoin", crypto: "🪙・cripto", stocks: "📊・ações", commodities: "🛢️・commodities", memes: "🐸・memes", help: "☎️・ajuda", start: "🧭・guia-do-servidor", guides: "📕・guias", strategies: "📗・estratégias", forums: "🧵・fóruns" },
+  tr: { announcements: "📢・duyurular", teaser: "🔒・sinyaller", signals: "⚡・sinyaller", verify: "✅・doğrulama", btcgate: "🔒・bitcoin", general: "💬・sohbet", trader: "📈・trader-sohbet", bitcoin: "🟠・bitcoin", crypto: "🪙・kripto", stocks: "📊・hisseler", commodities: "🛢️・emtia", memes: "🐸・mizah", help: "☎️・yardım", start: "🧭・sunucu-rehberi", guides: "📕・kurulum-rehberi", strategies: "📗・stratejiler", forums: "🧵・forum" },
+  ru: { announcements: "📢・объявления", teaser: "🔒・сигналы", signals: "⚡・сигналы", verify: "✅・верификация", btcgate: "🔒・биткоин", general: "💬・общий-чат", trader: "📈・чат-трейдеров", bitcoin: "🟠・биткоин", crypto: "🪙・крипта", stocks: "📊・акции", commodities: "🛢️・сырьё", memes: "🐸・мемы", help: "☎️・помощь", start: "🧭・гид-по-серверу", guides: "📕・гайды", strategies: "📗・стратегии", forums: "🧵・форум" },
 };
 
 /** Categories before the restructure. Channels found in them are moved, not recreated; emptied ones are deleted. */
@@ -140,6 +143,8 @@ const EN_OLD: Partial<Record<Kind, string | null>> = {
 const MIRROR_GROUP: Partial<Record<Kind, string>> = {
   announcements: "announcements", teaser: "trade-alerts-teaser", signals: "trade-alerts",
   general: "general", trader: "trader-chat", bitcoin: "bitcoin", help: "help-desk", memes: "memes",
+  guides: "setup-guides", strategies: "trading-strategies", forums: "forums",
+  crypto: "crypto", stocks: "stocks", commodities: "commodities",
 };
 
 const PICKER: Spec = { name: "🌐・choose-language", parent: null, lang: "all", tier: "picker", readOnly: true, topic: "Pick your language to enter", panel: "picker" };

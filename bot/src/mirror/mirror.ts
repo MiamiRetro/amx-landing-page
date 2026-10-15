@@ -5,6 +5,7 @@ import {
   type Guild,
   type Message,
   type PartialMessage,
+  type ThreadChannel,
   type WebhookClient,
   type WebhookMessageCreateOptions,
 } from "discord.js";
@@ -92,6 +93,7 @@ export class Mirror {
 
   onUpdate(message: Message | PartialMessage) {
     if (message.partial || !this.accepts(message)) return;
+    if (message.channel.isThread()) return; // forum posts mirror on create only; edits stay where they were made
     if (!message.editedTimestamp) return; // embed unfurl, pin, etc.
     void this.queue.run(message.channelId, () => this.mirrorEdit(message).catch((e) => log.error("edit failed", { id: message.id, ...errInfo(e) })));
   }
@@ -106,8 +108,9 @@ export class Mirror {
   private accepts(message: Message | PartialMessage): message is Message {
     if (message.partial) return false;
     if (!message.inGuild() || message.guildId !== this.d.guild.id) return false;
-    if (message.channel.isThread()) return false;
-    const hit = this.d.groups.lookup(message.channelId);
+    // Threads are mirrored only inside a mirrored forum (guides, strategies, forums).
+    if (message.channel.isThread() && !this.forumOf(message)) return false;
+    const hit = this.d.groups.lookup(this.forumOf(message) ?? message.channelId);
     if (!hit || hit.group.paused || this.paused) return false;
     if (message.author.id === this.d.botUserId) return false;
     // Loop guard layer 1: webhook ids we know we own. Layer 2 (application id +
@@ -119,7 +122,15 @@ export class Mirror {
 
   // ---------- create ----------
 
+  /** The forum a message's thread belongs to, when that forum is in a mirror group. */
+  private forumOf(message: Message | PartialMessage): string | null {
+    const ch = message.channel;
+    if (!ch || !("isThread" in ch) || !ch.isThread() || !ch.parentId) return null;
+    return this.d.groups.lookup(ch.parentId) ? ch.parentId : null;
+  }
+
   private async mirrorNew(message: Message) {
+    if (message.channel.isThread()) return this.mirrorForum(message);
     const hit = this.d.groups.lookup(message.channelId)!;
     const targets = this.d.groups.targetsOf(message.channelId);
     if (targets.length === 0) return;
@@ -261,6 +272,93 @@ export class Mirror {
       files.push({ attachment: s.url, name: `${s.name}.${s.format === 4 ? "gif" : "png"}` });
     }
     return files;
+  }
+
+
+  // ---------- forums ----------
+
+  /**
+   * A forum post opens the same post, title translated, in every twin forum;
+   * a reply inside any of those posts lands in all the others. Map rows for a
+   * post record the target forum as target_channel_id and the new thread's id
+   * (also its starter message id) as mirror_message_id, so a thread's twins are
+   * mirrorsOf(sourceThreadId), and a mirrored thread finds its source with sourceOf.
+   */
+  private async mirrorForum(message: Message) {
+    const thread = message.channel as ThreadChannel;
+    const forumId = thread.parentId!;
+    const hit = this.d.groups.lookup(forumId)!;
+    const isPost = message.id === thread.id;
+
+    // Where this message goes: [target forum member, thread to post into (null = open a new post)]
+    let dests: { member: GroupMember; threadId: string | null }[] = [];
+    if (isPost) {
+      dests = this.d.groups.targetsOf(forumId).map((member) => ({ member, threadId: null }));
+    } else {
+      const asSource = await this.d.db.mirrorsOf(thread.id);
+      if (asSource.length) {
+        dests = asSource.map((r) => ({ member: this.d.groups.lookup(r.target_channel_id)?.member, threadId: r.mirror_message_id })).filter((d): d is { member: GroupMember; threadId: string } => !!d.member);
+      } else {
+        const src = await this.d.db.sourceOf(thread.id);
+        if (!src) return; // a post from before mirroring started
+        const siblings = await this.d.db.mirrorsOf(src.source_message_id);
+        const origin = this.d.groups.lookup(src.source_channel_id)?.member;
+        if (origin) dests.push({ member: origin, threadId: src.source_message_id });
+        for (const r of siblings) {
+          if (r.mirror_message_id === thread.id) continue;
+          const member = this.d.groups.lookup(r.target_channel_id)?.member;
+          if (member) dests.push({ member, threadId: r.mirror_message_id });
+        }
+      }
+    }
+    if (dests.length === 0) return;
+
+    const segments = collectSegments(message);
+    const translatable = segments.filter((s) => hasTranslatableText(s.tokenized));
+    const title = isPost ? tokenize(thread.name) : null;
+    const asks = title ? [{ tokenized: title.text, entities: title.entities }, ...translatable] : translatable;
+    const targetLangs = [...new Set(dests.map((d) => d.member.lang))].filter((l) => l !== hit.member.lang);
+    let translations: Record<Lang, string[]> | null = null;
+    let translated = true;
+    if (asks.length && targetLangs.length) {
+      const r = await this.d.translator.translate(asks.map((s) => s.tokenized), asks.map((s) => s.entities), hit.member.lang, targetLangs, await this.glossary());
+      translations = r.translations;
+      translated = r.translated;
+    }
+    // build() indexes translations by position in `translatable`; drop the title from the front.
+    const bodyTranslations = translations && title
+      ? (Object.fromEntries(Object.entries(translations).map(([l, arr]) => [l, arr.slice(1)])) as Record<Lang, string[]>)
+      : translations;
+
+    const files = await this.collectFiles(message);
+    const rows: MapRow[] = [];
+    for (const d of dests) {
+      try {
+        const built = await this.build(message, hit.member.lang, d.member, segments, translatable, bodyTranslations, translated);
+        const hook = await this.hooks.ensure(d.member);
+        const chunks = built.content ? splitForDiscord(built.content) : [undefined];
+        let threadId = d.threadId;
+        const ids: string[] = [];
+        for (let i = 0; i < chunks.length; i++) {
+          const last = i === chunks.length - 1;
+          const opts: WebhookMessageCreateOptions = { ...built, content: chunks[i], embeds: last ? built.embeds : undefined, files: last && files.length ? files : undefined };
+          if (threadId) opts.threadId = threadId;
+          else {
+            const t = title && translations && d.member.lang !== hit.member.lang ? translations[d.member.lang]?.[0] ?? title.text : title?.text ?? thread.name;
+            opts.threadName = detokenize(t, title?.entities ?? []).slice(0, 100);
+          }
+          const sent = await hook.send(opts);
+          threadId ??= sent.channel_id;
+          ids.push(sent.id);
+        }
+        if (isPost) rows.push({ source_message_id: message.id, source_channel_id: forumId, target_channel_id: d.member.channel_id, mirror_message_id: threadId!, lang: d.member.lang });
+        else rows.push(...ids.map((id) => ({ source_message_id: message.id, source_channel_id: forumId, target_channel_id: d.member.channel_id, mirror_message_id: id, lang: d.member.lang })));
+      } catch (e) {
+        log.error("forum mirror failed", { id: message.id, target: d.member.channel_id, ...errInfo(e) });
+      }
+    }
+    await this.d.db.insertMap(rows);
+    log.info("forum mirrored", { id: message.id, post: isPost, from: hit.member.lang, targets: rows.length, translated });
   }
 
   // ---------- edit ----------

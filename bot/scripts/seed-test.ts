@@ -31,7 +31,7 @@ const ALERT_TEASER = (side: string, pair: string, cta: string) =>
 const CHAT: Record<string, Line[]> = {
   // English
   "📢・announcements": [
-    ["BLKBöX", "## Weekly market call\nThursday **18:00 UTC** in 🎙・Meeting Room. Baloo and Matt walk through the BTC weekly, funding and where the bots are positioned.\n-# Recording goes up in setup-guides afterwards."],
+    ["BLKBöX", "## Weekly market call\nThursday **18:00 UTC**, live on YouTube. Baloo and Matt walk through the BTC weekly, funding and where the bots are positioned.\n-# Recording goes up in setup-guides afterwards."],
     ["BLKBöX", "## Blofin now verifies instantly\nPaste your Blofin UID in ✅・verify and the Trading Floor opens in a second. No waiting for a moderator."],
   ],
   "⚡・trade-alerts": [
@@ -197,7 +197,7 @@ async function seed(guild: Guild) {
   const helpDeskUrl = helpDesk ? `https://discord.com/channels/${guild.id}/${helpDesk.id}` : `https://discord.com/channels/${guild.id}`;
 
   // Branded cards
-  for (const [name, picker] of [["🌐・choose-language", true], ["📍・start-here", false]] as const) {
+  for (const [name, picker] of [["🌐・choose-language", true]] as const) {
     const ch = text(name);
     if (!ch) { console.log(`! no #${name}`); continue; }
     const old = (await ch.messages.fetch({ limit: 50 })).filter((m) => m.author.id === me.id);

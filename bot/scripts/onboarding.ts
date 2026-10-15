@@ -42,22 +42,80 @@ type Tier =
   | "member" //    members only
   | "ops"; //      nobody but staff and the bot
 
+/** What a channel is, the same in every language. */
+type Kind =
+  | "announcements" | "teaser" | "signals"
+  | "verify" | "btcgate" | "general" | "trader" | "bitcoin" | "memes" | "help"
+  | "start" | "guides" | "strategies" | "forums";
+
 interface Spec {
   name: string;
   /** Category name; null for top level. */
   parent: string | null;
   lang: Lang | "all";
   tier: Tier;
+  kind?: Kind;
   readOnly?: boolean;
-  /** Created when missing. Existing channels are only re-permissioned, never renamed or moved. */
-  create?: { topic: string; type?: "text" | "voice" | "forum" };
-  /** Panel the bot posts here after creating it. */
-  panel?: "picker" | "verify" | "bitcoin";
-  /** Mirror group this channel joins, with its source channel. */
-  mirror?: { group: string; source: string };
+  type?: "text" | "voice" | "forum";
+  topic?: string;
+  /** Where this channel lived before the restructure; it is moved from there instead of recreated. */
+  legacy?: { name: string; parent: string | null }[];
+  panel?: "picker" | "verify" | "bitcoin" | "start";
 }
 
-const CAT = {
+/**
+ * The one layout every language gets. A member only ever sees their own
+ * language's copy:
+ *
+ *   ANNOUNCEMENTS   server-guide (always on top) · announcements · signals preview · signals
+ *   COMMUNITY       verify · locked bitcoin · general · trader-chat · bitcoin · memes · help-desk
+ *   REFERENCE       setup-guides · trading-strategies · forums
+ *
+ * No voice channels: one per language is more rooms than anyone would use.
+ */
+const LAYOUT: { cat: "ann" | "com" | "ref"; kind: Kind; tier: Tier; readOnly?: boolean; type?: "voice" | "forum"; panel?: Spec["panel"] }[] = [
+  { cat: "ann", kind: "start", tier: "free", readOnly: true, panel: "start" },
+  { cat: "ann", kind: "announcements", tier: "free", readOnly: true },
+  { cat: "ann", kind: "teaser", tier: "teaser", readOnly: true },
+  { cat: "ann", kind: "signals", tier: "member", readOnly: true },
+  { cat: "com", kind: "verify", tier: "verify", readOnly: true, panel: "verify" },
+  { cat: "com", kind: "btcgate", tier: "teaser", readOnly: true, panel: "bitcoin" },
+  { cat: "com", kind: "general", tier: "member" },
+  { cat: "com", kind: "trader", tier: "trader" },
+  { cat: "com", kind: "bitcoin", tier: "member" },
+  { cat: "com", kind: "memes", tier: "member" },
+  { cat: "com", kind: "help", tier: "free" },
+  { cat: "ref", kind: "guides", tier: "member", type: "forum" },
+  { cat: "ref", kind: "strategies", tier: "member", type: "forum" },
+  { cat: "ref", kind: "forums", tier: "member", type: "forum" },
+];
+
+const CATS: Record<Lang, Record<"ann" | "com" | "ref", string>> = {
+  en: { ann: "📢 ANNOUNCEMENTS", com: "💬 COMMUNITY", ref: "📚 REFERENCE" },
+  zh: { ann: "📢 公告", com: "💬 社区", ref: "📚 参考资料" },
+  ko: { ann: "📢 공지", com: "💬 커뮤니티", ref: "📚 자료실" },
+  id: { ann: "📢 PENGUMUMAN", com: "💬 KOMUNITAS", ref: "📚 REFERENSI" },
+  vi: { ann: "📢 THÔNG BÁO", com: "💬 CỘNG ĐỒNG", ref: "📚 TÀI LIỆU" },
+  es: { ann: "📢 ANUNCIOS", com: "💬 COMUNIDAD", ref: "📚 REFERENCIA" },
+  pt: { ann: "📢 ANÚNCIOS", com: "💬 COMUNIDADE", ref: "📚 REFERÊNCIA" },
+  tr: { ann: "📢 DUYURULAR", com: "💬 TOPLULUK", ref: "📚 KAYNAKLAR" },
+  ru: { ann: "📢 ОБЪЯВЛЕНИЯ", com: "💬 СООБЩЕСТВО", ref: "📚 СПРАВКА" },
+};
+
+const NAMES: Record<Lang, Record<Kind, string>> = {
+  en: { announcements: "📢・announcements", teaser: "🔒・trade-alerts", signals: "⚡・trade-alerts", verify: "✅・verify", btcgate: "🔒・bitcoin", general: "💬・general", trader: "📈・trader-chat", bitcoin: "🟠・bitcoin", memes: "🐸・memes", help: "☎️・help-desk", start: "🧭・server-guide", guides: "📕・setup-guides", strategies: "📗・trading-strategies", forums: "🧵・forums" },
+  zh: { announcements: "📢・公告", teaser: "🔒・交易提醒", signals: "⚡・交易提醒", verify: "✅・验证", btcgate: "🔒・比特币", general: "💬・闲聊", trader: "📈・交易者聊天", bitcoin: "🟠・比特币", memes: "🐸・表情包", help: "☎️・帮助台", start: "🧭・服务器指南", guides: "📕・设置指南", strategies: "📗・交易策略", forums: "🧵・论坛" },
+  ko: { announcements: "📢・공지사항", teaser: "🔒・매매신호", signals: "⚡・매매신호", verify: "✅・인증", btcgate: "🔒・비트코인", general: "💬・자유채팅", trader: "📈・트레이더-채팅", bitcoin: "🟠・비트코인", memes: "🐸・밈", help: "☎️・도움말", start: "🧭・서버-가이드", guides: "📕・설정-가이드", strategies: "📗・매매-전략", forums: "🧵・포럼" },
+  id: { announcements: "📢・pengumuman", teaser: "🔒・sinyal-trading", signals: "⚡・sinyal-trading", verify: "✅・verifikasi", btcgate: "🔒・bitcoin", general: "💬・obrolan-umum", trader: "📈・obrolan-trader", bitcoin: "🟠・bitcoin", memes: "🐸・meme", help: "☎️・bantuan", start: "🧭・panduan-server", guides: "📕・panduan-setup", strategies: "📗・strategi-trading", forums: "🧵・forum" },
+  vi: { announcements: "📢・thông-báo", teaser: "🔒・tín-hiệu", signals: "⚡・tín-hiệu", verify: "✅・xác-minh", btcgate: "🔒・bitcoin", general: "💬・tán-gẫu", trader: "📈・trò-chuyện-trader", bitcoin: "🟠・bitcoin", memes: "🐸・meme", help: "☎️・hỗ-trợ", start: "🧭・hướng-dẫn-server", guides: "📕・hướng-dẫn", strategies: "📗・chiến-lược", forums: "🧵・diễn-đàn" },
+  es: { announcements: "📢・anuncios", teaser: "🔒・alertas", signals: "⚡・alertas", verify: "✅・verificar", btcgate: "🔒・bitcoin", general: "💬・general", trader: "📈・chat-traders", bitcoin: "🟠・bitcoin", memes: "🐸・memes", help: "☎️・ayuda", start: "🧭・guía-del-servidor", guides: "📕・guías", strategies: "📗・estrategias", forums: "🧵・foros" },
+  pt: { announcements: "📢・anúncios", teaser: "🔒・alertas", signals: "⚡・alertas", verify: "✅・verificar", btcgate: "🔒・bitcoin", general: "💬・geral", trader: "📈・chat-traders", bitcoin: "🟠・bitcoin", memes: "🐸・memes", help: "☎️・ajuda", start: "🧭・guia-do-servidor", guides: "📕・guias", strategies: "📗・estratégias", forums: "🧵・fóruns" },
+  tr: { announcements: "📢・duyurular", teaser: "🔒・sinyaller", signals: "⚡・sinyaller", verify: "✅・doğrulama", btcgate: "🔒・bitcoin", general: "💬・sohbet", trader: "📈・trader-sohbet", bitcoin: "🟠・bitcoin", memes: "🐸・mizah", help: "☎️・yardım", start: "🧭・sunucu-rehberi", guides: "📕・kurulum-rehberi", strategies: "📗・stratejiler", forums: "🧵・forum" },
+  ru: { announcements: "📢・объявления", teaser: "🔒・сигналы", signals: "⚡・сигналы", verify: "✅・верификация", btcgate: "🔒・биткоин", general: "💬・общий-чат", trader: "📈・чат-трейдеров", bitcoin: "🟠・биткоин", memes: "🐸・мемы", help: "☎️・помощь", start: "🧭・гид-по-серверу", guides: "📕・гайды", strategies: "📗・стратегии", forums: "🧵・форум" },
+};
+
+/** Categories before the restructure. Channels found in them are moved, not recreated; emptied ones are deleted. */
+const OLD_CATS = {
   alerts: "╭───  Alerts  ───╮",
   chat: "╭───  Chat Rooms  ───╮",
   edu: "╭─── Education ───╮",
@@ -69,182 +127,39 @@ const CAT = {
   pt: "╭───  Português  ───╮",
   tr: "╭───  Türkçe  ───╮",
   ru: "╭───  Русский  ───╮",
+} as const;
+
+/** Where the English channels lived. */
+const EN_OLD: Partial<Record<Kind, string | null>> = {
+  announcements: null, teaser: OLD_CATS.alerts, signals: OLD_CATS.alerts, verify: null,
+  btcgate: OLD_CATS.chat, general: OLD_CATS.chat, trader: OLD_CATS.chat, bitcoin: OLD_CATS.chat, memes: OLD_CATS.chat,
+  help: OLD_CATS.chat, start: null, guides: OLD_CATS.edu, strategies: OLD_CATS.edu, forums: OLD_CATS.chat,
 };
 
-const TEASER = "🔒・trade-alerts";
-const teaserTopic: Record<Exclude<Lang, "en">, string> = {
-  zh: "交易提醒预览（#🔒・trade-alerts 的自动翻译镜像）。验证 UID 后可看到完整提醒",
-  ko: "매매신호 미리보기 (#🔒・trade-alerts 자동 번역 미러). UID 인증 후 전체 신호가 열립니다",
-  id: "Pratinjau sinyal trading (cermin terjemahan #🔒・trade-alerts). Verifikasi UID untuk sinyal lengkap",
+/** Kinds whose chat the bot mirrors and translates, keyed to their mirror group (names match the live server's groups). */
+const MIRROR_GROUP: Partial<Record<Kind, string>> = {
+  announcements: "announcements", teaser: "trade-alerts-teaser", signals: "trade-alerts",
+  general: "general", trader: "trader-chat", bitcoin: "bitcoin", help: "help-desk", memes: "memes",
 };
 
-const SPECS: Spec[] = [
-  // Everyone
-  { name: "🌐・choose-language", parent: null, lang: "all", tier: "picker", readOnly: true, create: { topic: "Pick your language to enter · 选择语言 · 언어 선택 · Pilih bahasa" }, panel: "picker" },
-  { name: "📍・start-here", parent: null, lang: "all", tier: "free", readOnly: true },
-  { name: "verify-preview", parent: null, lang: "all", tier: "ops" },
+const PICKER: Spec = { name: "🌐・choose-language", parent: null, lang: "all", tier: "picker", readOnly: true, topic: "Pick your language to enter", panel: "picker" };
 
-  // English
-  { name: "✅・verify", parent: null, lang: "en", tier: "verify", readOnly: true, create: { topic: "Verify your exchange UID to unlock the Trading Floor" }, panel: "verify" },
-  { name: "📢・announcements", parent: null, lang: "en", tier: "free", readOnly: true },
-  { name: TEASER, parent: CAT.alerts, lang: "en", tier: "teaser", readOnly: true },
-  { name: "⚡・trade-alerts", parent: CAT.alerts, lang: "en", tier: "member", readOnly: true },
-  { name: "🔒・bitcoin", parent: CAT.chat, lang: "en", tier: "teaser", readOnly: true, create: { topic: "Verified members only. Verify your UID here to unlock bitcoin chat" }, panel: "bitcoin" },
-  { name: "☎️・help-desk", parent: CAT.chat, lang: "en", tier: "free" },
-  { name: "📈・trader-chat", parent: CAT.chat, lang: "en", tier: "trader" },
-  { name: "🟠・bitcoin", parent: CAT.chat, lang: "en", tier: "member" },
-  { name: "💬・general", parent: CAT.chat, lang: "en", tier: "member" },
-  { name: "🐸・memes", parent: CAT.chat, lang: "en", tier: "member" },
-  { name: "🧵・forums", parent: CAT.chat, lang: "en", tier: "member" },
-  { name: "🎙・Meeting Room", parent: CAT.chat, lang: "en", tier: "member" },
-  { name: "📕・setup-guides", parent: CAT.edu, lang: "en", tier: "member" },
-  { name: "📗・trading-strategies", parent: CAT.edu, lang: "en", tier: "member" },
-
-  // 中文
-  { name: "✅・验证", parent: CAT.zh, lang: "zh", tier: "verify", readOnly: true, create: { topic: "验证你的交易所 UID，解锁交易大厅" }, panel: "verify" },
-  { name: "📢・公告", parent: CAT.zh, lang: "zh", tier: "free", readOnly: true },
-  { name: "🔒・交易提醒", parent: CAT.zh, lang: "zh", tier: "teaser", readOnly: true, create: { topic: teaserTopic.zh }, mirror: { group: "trade-alerts-teaser", source: TEASER } },
-  { name: "⚡・交易提醒", parent: CAT.zh, lang: "zh", tier: "member", readOnly: true },
-  { name: "🔒・比特币", parent: CAT.zh, lang: "zh", tier: "teaser", readOnly: true, create: { topic: "仅限已验证会员。在这里验证 UID 即可解锁比特币频道" }, panel: "bitcoin" },
-  { name: "☎️・帮助台", parent: CAT.zh, lang: "zh", tier: "free" },
-  { name: "📈・交易者聊天", parent: CAT.zh, lang: "zh", tier: "trader" },
-  { name: "🟠・比特币", parent: CAT.zh, lang: "zh", tier: "member" },
-  { name: "💬・闲聊", parent: CAT.zh, lang: "zh", tier: "member" },
-
-  // 한국어
-  { name: "✅・인증", parent: CAT.ko, lang: "ko", tier: "verify", readOnly: true, create: { topic: "거래소 UID를 인증하고 트레이딩 플로어를 여세요" }, panel: "verify" },
-  { name: "📢・공지사항", parent: CAT.ko, lang: "ko", tier: "free", readOnly: true },
-  { name: "🔒・매매신호", parent: CAT.ko, lang: "ko", tier: "teaser", readOnly: true, create: { topic: teaserTopic.ko }, mirror: { group: "trade-alerts-teaser", source: TEASER } },
-  { name: "⚡・매매신호", parent: CAT.ko, lang: "ko", tier: "member", readOnly: true },
-  { name: "🔒・비트코인", parent: CAT.ko, lang: "ko", tier: "teaser", readOnly: true, create: { topic: "인증된 멤버 전용. 여기서 UID를 인증하면 비트코인 채널이 열립니다" }, panel: "bitcoin" },
-  { name: "☎️・도움말", parent: CAT.ko, lang: "ko", tier: "free" },
-  { name: "📈・트레이더-채팅", parent: CAT.ko, lang: "ko", tier: "trader" },
-  { name: "🟠・비트코인", parent: CAT.ko, lang: "ko", tier: "member" },
-  { name: "💬・자유채팅", parent: CAT.ko, lang: "ko", tier: "member" },
-
-  // Bahasa Indonesia
-  { name: "✅・verifikasi", parent: CAT.id, lang: "id", tier: "verify", readOnly: true, create: { topic: "Verifikasi UID exchange kamu untuk membuka Trading Floor" }, panel: "verify" },
-  { name: "📢・pengumuman", parent: CAT.id, lang: "id", tier: "free", readOnly: true },
-  { name: "🔒・sinyal-trading", parent: CAT.id, lang: "id", tier: "teaser", readOnly: true, create: { topic: teaserTopic.id }, mirror: { group: "trade-alerts-teaser", source: TEASER } },
-  { name: "⚡・sinyal-trading", parent: CAT.id, lang: "id", tier: "member", readOnly: true },
-  { name: "🔒・bitcoin", parent: CAT.id, lang: "id", tier: "teaser", readOnly: true, create: { topic: "Khusus member terverifikasi. Verifikasi UID di sini untuk membuka kanal Bitcoin" }, panel: "bitcoin" },
-  { name: "☎️・bantuan", parent: CAT.id, lang: "id", tier: "free" },
-  { name: "📈・obrolan-trader", parent: CAT.id, lang: "id", tier: "trader" },
-  { name: "🟠・bitcoin", parent: CAT.id, lang: "id", tier: "member" },
-  { name: "💬・obrolan-umum", parent: CAT.id, lang: "id", tier: "member" },
-];
-
-/** Channel names and topics for the languages added after the first four. */
-type NewLang = "vi" | "es" | "pt" | "tr" | "ru";
-const NEW_LANGS: Record<NewLang, Record<"verify" | "ann" | "teaser" | "alerts" | "btcgate" | "help" | "trader" | "bitcoin" | "general", [name: string, topic: string]>> = {
-  vi: {
-    verify: ["✅・xác-minh", "Xác minh UID sàn để mở Trading Floor"],
-    ann: ["📢・thông-báo", "Thông báo (bản dịch tự động của #announcements)"],
-    teaser: ["🔒・tín-hiệu", "Xem trước tín hiệu. Xác minh UID để thấy đầy đủ"],
-    alerts: ["⚡・tín-hiệu", "Tín hiệu giao dịch (bản dịch tự động của #trade-alerts)"],
-    btcgate: ["🔒・bitcoin", "Chỉ dành cho thành viên đã xác minh. Xác minh UID tại đây"],
-    help: ["☎️・hỗ-trợ", "Hỏi đáp. Dịch hai chiều với #help-desk"],
-    trader: ["📈・trò-chuyện-trader", "Trò chuyện trader. Dịch hai chiều với #trader-chat"],
-    bitcoin: ["🟠・bitcoin", "Thảo luận Bitcoin. Dịch hai chiều với #bitcoin"],
-    general: ["💬・tán-gẫu", "Trò chuyện tự do. Dịch hai chiều với #general"],
-  },
-  es: {
-    verify: ["✅・verificar", "Verifica tu UID para desbloquear el Trading Floor"],
-    ann: ["📢・anuncios", "Anuncios (traducción automática de #announcements)"],
-    teaser: ["🔒・alertas", "Vista previa de alertas. Verifica tu UID para verlas completas"],
-    alerts: ["⚡・alertas", "Alertas de trading (traducción automática de #trade-alerts)"],
-    btcgate: ["🔒・bitcoin", "Solo miembros verificados. Verifica tu UID aquí"],
-    help: ["☎️・ayuda", "Preguntas. Traducción en ambos sentidos con #help-desk"],
-    trader: ["📈・chat-traders", "Chat de traders. Traducción en ambos sentidos con #trader-chat"],
-    bitcoin: ["🟠・bitcoin", "Bitcoin. Traducción en ambos sentidos con #bitcoin"],
-    general: ["💬・general", "Charla libre. Traducción en ambos sentidos con #general"],
-  },
-  pt: {
-    verify: ["✅・verificar", "Verifique seu UID para liberar o Trading Floor"],
-    ann: ["📢・anúncios", "Anúncios (tradução automática de #announcements)"],
-    teaser: ["🔒・alertas", "Prévia dos alertas. Verifique seu UID para ver completos"],
-    alerts: ["⚡・alertas", "Alertas de trading (tradução automática de #trade-alerts)"],
-    btcgate: ["🔒・bitcoin", "Só membros verificados. Verifique seu UID aqui"],
-    help: ["☎️・ajuda", "Dúvidas. Tradução nos dois sentidos com #help-desk"],
-    trader: ["📈・chat-traders", "Chat de traders. Tradução nos dois sentidos com #trader-chat"],
-    bitcoin: ["🟠・bitcoin", "Bitcoin. Tradução nos dois sentidos com #bitcoin"],
-    general: ["💬・geral", "Papo livre. Tradução nos dois sentidos com #general"],
-  },
-  tr: {
-    verify: ["✅・doğrulama", "Trading Floor'u açmak için UID'ni doğrula"],
-    ann: ["📢・duyurular", "Duyurular (#announcements otomatik çevirisi)"],
-    teaser: ["🔒・sinyaller", "Sinyal önizlemesi. Tamamı için UID'ni doğrula"],
-    alerts: ["⚡・sinyaller", "Trade sinyalleri (#trade-alerts otomatik çevirisi)"],
-    btcgate: ["🔒・bitcoin", "Yalnızca doğrulanmış üyeler. UID'ni burada doğrula"],
-    help: ["☎️・yardım", "Sorular. #help-desk ile iki yönlü çeviri"],
-    trader: ["📈・trader-sohbet", "Trader sohbeti. #trader-chat ile iki yönlü çeviri"],
-    bitcoin: ["🟠・bitcoin", "Bitcoin. #bitcoin ile iki yönlü çeviri"],
-    general: ["💬・sohbet", "Serbest sohbet. #general ile iki yönlü çeviri"],
-  },
-  ru: {
-    verify: ["✅・верификация", "Подтвердите UID, чтобы открыть Trading Floor"],
-    ann: ["📢・объявления", "Объявления (автоперевод #announcements)"],
-    teaser: ["🔒・сигналы", "Превью сигналов. Подтвердите UID, чтобы видеть полностью"],
-    alerts: ["⚡・сигналы", "Торговые сигналы (автоперевод #trade-alerts)"],
-    btcgate: ["🔒・биткоин", "Только для подтверждённых участников. Подтвердите UID здесь"],
-    help: ["☎️・помощь", "Вопросы. Двусторонний перевод с #help-desk"],
-    trader: ["📈・чат-трейдеров", "Чат трейдеров. Двусторонний перевод с #trader-chat"],
-    bitcoin: ["🟠・биткоин", "Биткоин. Двусторонний перевод с #bitcoin"],
-    general: ["💬・общий-чат", "Свободное общение. Двусторонний перевод с #general"],
-  },
-};
-
-for (const [lang, n] of Object.entries(NEW_LANGS) as [NewLang, (typeof NEW_LANGS)[NewLang]][]) {
-  const parent = CAT[lang];
-  const c = (k: keyof typeof n) => ({ topic: n[k][1] });
-  SPECS.push(
-    { name: n.verify[0], parent, lang, tier: "verify", readOnly: true, create: c("verify"), panel: "verify" },
-    { name: n.ann[0], parent, lang, tier: "free", readOnly: true, create: c("ann") },
-    { name: n.teaser[0], parent, lang, tier: "teaser", readOnly: true, create: c("teaser") },
-    { name: n.alerts[0], parent, lang, tier: "member", readOnly: true, create: c("alerts") },
-    { name: n.btcgate[0], parent, lang, tier: "teaser", readOnly: true, create: c("btcgate"), panel: "bitcoin" },
-    { name: n.help[0], parent, lang, tier: "free", create: c("help") },
-    { name: n.trader[0], parent, lang, tier: "trader", create: c("trader") },
-    { name: n.bitcoin[0], parent, lang, tier: "member", create: c("bitcoin") },
-    { name: n.general[0], parent, lang, tier: "member", create: c("general") },
-  );
+const SPECS: Spec[] = [PICKER, { name: "verify-preview", parent: null, lang: "all", tier: "ops" }];
+for (const lang of LANGS) {
+  for (const l of LAYOUT) {
+    const name = NAMES[lang][l.kind];
+    const legacy = lang === "en"
+      ? [{ name, parent: EN_OLD[l.kind] ?? null }, ...(l.kind === "start" ? [{ name: "📍・start-here", parent: null }] : [])]
+      : [{ name, parent: OLD_CATS[lang as Exclude<Lang, "en">] }];
+    SPECS.push({ name, parent: CATS[lang][l.cat], lang, tier: l.tier, kind: l.kind, readOnly: l.readOnly, type: l.type, panel: l.panel, legacy });
+  }
 }
 
-/**
- * Mirror groups and their English source. A language twin joins the group its
- * emoji names; the locked bitcoin channel and verify carry panels, not chat,
- * so they join nothing.
- */
-const GROUP_SOURCES: Record<string, { name: string; parent: string | null }> = {
-  announcements: { name: "📢・announcements", parent: null },
-  "trade-alerts": { name: "⚡・trade-alerts", parent: CAT.alerts },
-  "trade-alerts-teaser": { name: TEASER, parent: CAT.alerts },
-  bitcoin: { name: "🟠・bitcoin", parent: CAT.chat },
-  general: { name: "💬・general", parent: CAT.chat },
-  "trader-chat": { name: "📈・trader-chat", parent: CAT.chat },
-  "help-desk": { name: "☎️・help-desk", parent: CAT.chat },
-};
-function groupOf(s: Spec): string | null {
-  if (s.lang === "en" || s.lang === "all" || s.panel) return null;
-  if (s.tier === "teaser") return "trade-alerts-teaser";
-  const byEmoji: Record<string, string> = { "📢": "announcements", "⚡": "trade-alerts", "🟠": "bitcoin", "💬": "general", "📈": "trader-chat", "☎️": "help-desk" };
-  return byEmoji[s.name.split("・")[0]] ?? null;
-}
-
-/** Categories get the union of their channels, so anything created in them later starts sensible. */
-const CATEGORY_SPECS: { name: string; lang: Lang; tier: Tier }[] = [
-  { name: CAT.alerts, lang: "en", tier: "free" },
-  { name: CAT.chat, lang: "en", tier: "free" },
-  { name: CAT.edu, lang: "en", tier: "member" },
-  { name: CAT.zh, lang: "zh", tier: "free" },
-  { name: CAT.ko, lang: "ko", tier: "free" },
-  { name: CAT.id, lang: "id", tier: "free" },
-  { name: CAT.vi, lang: "vi", tier: "free" },
-  { name: CAT.es, lang: "es", tier: "free" },
-  { name: CAT.pt, lang: "pt", tier: "free" },
-  { name: CAT.tr, lang: "tr", tier: "free" },
-  { name: CAT.ru, lang: "ru", tier: "free" },
-];
+const CATEGORY_SPECS: { name: string; lang: Lang; tier: Tier }[] = LANGS.flatMap((lang) => [
+  { name: CATS[lang].ann, lang, tier: "free" as Tier },
+  { name: CATS[lang].com, lang, tier: "free" as Tier },
+  { name: CATS[lang].ref, lang, tier: "free" as Tier },
+]);
 
 /**
  * Roles whose ViewChannel the new tiers replace on the channels above. Their
@@ -257,7 +172,7 @@ const BOT_ALLOW = [P.ViewChannel, P.SendMessages, P.ReadMessageHistory, P.Manage
 
 const TRANSLATE_PNG = join(dirname(fileURLToPath(import.meta.url)), "..", "assets", "emoji", "translate.png");
 
-const STEPS = ["roles", "members", "channels", "perms", "mirror", "panels", "rules"] as const;
+const STEPS = ["roles", "members", "channels", "perms", "mirror", "panels", "rules", "cleanup"] as const;
 type Step = (typeof STEPS)[number];
 
 interface Ctx {
@@ -328,29 +243,54 @@ async function stepMembers(ctx: Ctx) {
   log(`  ${changed} need a role change`);
 }
 
+const TYPE = { text: ChannelType.GuildText, voice: ChannelType.GuildVoice, forum: ChannelType.GuildForum } as const;
+
+function findCategory(guild: Guild, name: string) {
+  return guild.channels.cache.find((c): c is CategoryChannel => c.type === ChannelType.GuildCategory && c.name === name);
+}
+
+/**
+ * The channel for a spec: already in place, in another of its language's
+ * categories (the layout moved it), or still where it lived before the restructure.
+ */
+function locate(guild: Guild, s: Spec) {
+  const siblings = s.lang === "all" ? [] : Object.values(CATS[s.lang]).map((parent) => ({ name: s.name, parent }));
+  return findChannel(guild, s) ?? [...siblings, ...(s.legacy ?? [])].map((l) => findChannel(guild, l)).find(Boolean);
+}
+
 async function stepChannels(ctx: Ctx) {
   const { guild } = ctx;
   const me = guild.members.me ?? (await guild.members.fetchMe());
   for (const c of CATEGORY_SPECS) {
-    if (guild.channels.cache.some((x) => x.type === ChannelType.GuildCategory && x.name === c.name)) continue;
+    if (findCategory(guild, c.name)) continue;
     log(`  create category ${c.name}`);
     if (ctx.apply) await guild.channels.create({ name: c.name, type: ChannelType.GuildCategory, permissionOverwrites: [{ id: guild.roles.everyone.id, deny: [P.ViewChannel] }], reason: "onboarding" });
   }
+  if (ctx.apply) await guild.channels.fetch();
+
   for (const s of SPECS) {
-    if (findChannel(guild, s)) continue;
-    if (!s.create) {
-      log(`  ! missing #${s.name}${s.parent ? ` in ${s.parent}` : ""} (not created by this script)`);
+    if (s.tier === "ops") continue;
+    const parent = s.parent ? findCategory(guild, s.parent) : undefined;
+    const existing = locate(guild, s);
+    if (existing) {
+      if (existing.name !== s.name) {
+        log(`  rename #${existing.name} → #${s.name}`);
+        if (ctx.apply) await existing.setName(s.name, "onboarding: one layout per language");
+      }
+      if ((existing.parentId ?? null) !== (parent?.id ?? null)) {
+        log(`  move #${existing.name} → ${s.parent ?? "top"}`);
+        if (ctx.apply) await existing.setParent(parent?.id ?? null, { lockPermissions: false, reason: "onboarding: one layout per language" });
+      }
       continue;
     }
-    log(`  create #${s.name}${s.parent ? ` in ${s.parent}` : ""}`);
+    log(`  create ${s.type ?? "text"} #${s.name} in ${s.parent ?? "top"}`);
     if (!ctx.apply) continue;
-    const parent = s.parent ? guild.channels.cache.find((c): c is CategoryChannel => c.type === ChannelType.GuildCategory && c.name === s.parent) : undefined;
     // Born hidden; the perms step opens it to the right tier.
     await guild.channels.create({
       name: s.name,
-      type: ChannelType.GuildText,
+      type: TYPE[s.type ?? "text"] as ChannelType.GuildText,
       parent: parent?.id,
-      topic: s.create.topic,
+      topic: s.type === "voice" ? undefined : s.topic,
       permissionOverwrites: [
         { id: guild.roles.everyone.id, deny: [P.ViewChannel] },
         { id: me.id, type: OverwriteType.Member, allow: BOT_ALLOW },
@@ -358,10 +298,41 @@ async function stepChannels(ctx: Ctx) {
       reason: "onboarding",
     });
   }
-  if (ctx.apply) await guild.channels.fetch();
-  // The picker sits at the very top so a newcomer sees it first.
-  const picker = findChannel(guild, SPECS[0]);
-  if (picker && ctx.apply && "setPosition" in picker) await picker.setPosition(0).catch(() => {});
+  if (!ctx.apply) return;
+  await guild.channels.fetch();
+
+  // Order: picker on top, then each language's three categories, channels in layout order.
+  const positions: { channel: string; position: number }[] = [];
+  const picker = findChannel(guild, PICKER);
+  if (picker) positions.push({ channel: picker.id, position: 0 });
+  CATEGORY_SPECS.forEach((c, i) => {
+    const cat = findCategory(guild, c.name);
+    if (cat) positions.push({ channel: cat.id, position: i + 1 });
+  });
+  for (const c of CATEGORY_SPECS) {
+    SPECS.filter((s) => s.parent === c.name).forEach((s, i) => {
+      const ch = findChannel(guild, s);
+      if (ch) positions.push({ channel: ch.id, position: i });
+    });
+  }
+  await guild.channels.setPositions(positions);
+}
+
+/** Old categories the restructure emptied. Anything still holding a channel (vip-chat, mod-chat) stays. */
+async function stepCleanup(ctx: Ctx) {
+  const { guild } = ctx;
+  for (const v of guild.channels.cache.filter((c) => c.type === ChannelType.GuildVoice && c.name === "🎙・Meeting Room").values()) {
+    log(`  delete voice #${v.name} (no voice rooms in the per-language layout)`);
+    if (ctx.apply) await v.delete("onboarding: no voice channels");
+  }
+  for (const name of Object.values(OLD_CATS)) {
+    const cat = findCategory(guild, name);
+    if (!cat) continue;
+    const left = guild.channels.cache.filter((c) => c.parentId === cat.id);
+    if (left.size) { log(`  keep ${name} (still holds ${left.map((c) => "#" + c.name).join(", ")})`); continue; }
+    log(`  delete empty category ${name}`);
+    if (ctx.apply) await cat.delete("onboarding: replaced by the per-language layout");
+  }
 }
 
 /** The overwrites a channel ends up with: its staff overwrites kept, the tier's language roles laid on top. */
@@ -440,7 +411,7 @@ async function stepPerms(ctx: Ctx) {
     if (ctx.apply) await cat.permissionOverwrites.set(ows, "onboarding: language tiers");
   }
   // The picker goes last: it only opens once every other channel is gated.
-  for (const s of [...SPECS.slice(1), SPECS[0]]) {
+  for (const s of [...SPECS.slice(1), PICKER]) {
     const ch = findChannel(guild, s);
     if (!ch) { log(`  ! skip #${s.name} (missing)`); continue; }
     const ows = overwritesFor(ctx, ch, s.lang, s.tier, !!s.readOnly);
@@ -459,23 +430,26 @@ async function stepMirror(ctx: Ctx) {
     linked.add(channelId);
   };
   for (const s of SPECS) {
-    const group = groupOf(s);
-    if (!group) continue;
+    const group = s.kind && MIRROR_GROUP[s.kind];
+    if (!group || s.lang === "en" || s.lang === "all") continue;
     const ch = findChannel(guild, s);
-    const source = findChannel(guild, GROUP_SOURCES[group]);
+    const sourceSpec = SPECS.find((x) => x.lang === "en" && x.kind === s.kind)!;
+    const source = findChannel(guild, sourceSpec);
     if (!ch || !source) { log(`  ! cannot link #${s.name} (${!ch ? "channel" : "source"} missing)`); continue; }
     if (linked.has(ch.id)) continue;
     log(`  link #${s.name} (${s.lang}) ← #${source.name} in ${group}`);
     if (!ctx.apply) continue;
     const groupId = (await db.findGroupByName(guild.id, group)) ?? (await db.createGroup(guild.id, group));
     await link(source.id, groupId, "en");
-    await link(ch.id, groupId, s.lang as Lang);
+    await link(ch.id, groupId, s.lang);
   }
 }
 
 async function stepPanels(ctx: Ctx) {
   const { guild } = ctx;
   const me = guild.members.me!;
+  const emojis = await guild.emojis.fetch();
+  let tr = emojis.find((e) => e.name === "translate");
   for (const s of SPECS.filter((x) => x.panel)) {
     const ch = findChannel(guild, s) as TextChannel | undefined;
     if (!ch) { log(`  ! no #${s.name} for its panel`); continue; }
@@ -483,13 +457,14 @@ async function stepPanels(ctx: Ctx) {
     if (!ctx.apply) continue;
     const old = (await ch.messages.fetch({ limit: 50 })).filter((m) => m.author.id === me.id);
     for (const m of old.values()) await m.delete().catch(() => {});
-    const lang = s.lang === "all" ? "en" : s.lang;
+    const lang: Lang = s.lang === "all" ? "en" : s.lang;
+    const help = findChannel(guild, SPECS.find((x) => x.lang === lang && x.kind === "help")!);
+    const helpDeskUrl = `https://discord.com/channels/${guild.id}/${help?.id ?? ""}`;
     if (s.panel === "picker") {
-      const help = guild.channels.cache.find((c) => c.name === "☎️・help-desk");
-      const emojis = await guild.emojis.fetch();
-      let tr = emojis.find((e) => e.name === "translate");
       if (!tr) tr = await guild.emojis.create({ attachment: TRANSLATE_PNG, name: "translate", reason: "onboarding: language picker icon" });
-      for (const msg of startHereMessages({ picker: true, translateEmoji: tr.toString(), helpDeskUrl: `https://discord.com/channels/${guild.id}/${help?.id ?? ""}` })) await ch.send(msg);
+      for (const msg of startHereMessages({ picker: true, translateEmoji: tr.toString(), helpDeskUrl })) await ch.send(msg);
+    } else if (s.panel === "start") {
+      for (const msg of startHereMessages({ helpDeskUrl })) await ch.send(msg);
     } else await ch.send(verifyPanel(lang, s.panel));
   }
 }
@@ -502,7 +477,7 @@ async function stepPanels(ctx: Ctx) {
 async function stepRules(ctx: Ctx) {
   const { guild } = ctx;
   if (!guild.features.includes("COMMUNITY")) { log("  not a Community server, nothing to do"); return; }
-  const picker = findChannel(guild, SPECS[0]);
+  const picker = findChannel(guild, PICKER);
   if (!picker) { log("  ! picker channel missing"); return; }
   const old = guild.rulesChannelId && guild.rulesChannelId !== picker.id ? guild.channels.cache.get(guild.rulesChannelId) : undefined;
   if (guild.rulesChannelId !== picker.id) {
@@ -562,7 +537,7 @@ async function main() {
   };
   try {
     log(apply ? "APPLYING" : "DRY RUN (add --apply to make these changes)");
-    const run: Record<Step, (c: Ctx) => Promise<void>> = { roles: stepRoles, members: stepMembers, channels: stepChannels, perms: stepPerms, mirror: stepMirror, panels: stepPanels, rules: stepRules };
+    const run: Record<Step, (c: Ctx) => Promise<void>> = { roles: stepRoles, members: stepMembers, channels: stepChannels, perms: stepPerms, mirror: stepMirror, panels: stepPanels, rules: stepRules, cleanup: stepCleanup };
     for (const step of STEPS) {
       if (only && step !== only) continue;
       log(`\n== ${step}`);

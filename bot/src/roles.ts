@@ -34,6 +34,7 @@ export const LANG_ROLE_NAMES: Record<Lang, { base: string; member: string }> = {
   pt: { base: "Português", member: "Português Member" },
   tr: { base: "Türkçe", member: "Türkçe Member" },
   ru: { base: "Русский", member: "Русский Member" },
+  ja: { base: "日本語", member: "日本語 Member" },
 };
 
 const REPLY: Record<Lang, { base: string; member: string; locked: string }> = {
@@ -81,6 +82,11 @@ const REPLY: Record<Lang, { base: string; member: string; locked: string }> = {
     base: "Добро пожаловать! Русские каналы открыты. Подтвердите UID биржи в ✅・верификация, чтобы открыть весь Trading Floor.",
     member: "С возвращением. Русские каналы открыты.",
     locked: "Язык уже выбран. Если нужно сменить, обратитесь к модератору в канале помощи.",
+  },
+  ja: {
+    base: "ようこそ！日本語チャンネルが開きました。✅・認証 で取引所のUIDを認証すると、Trading Floor 全体が開きます。",
+    member: "おかえりなさい。日本語チャンネルが開きました。",
+    locked: "言語はすでに設定されています。変更が必要な場合はヘルプチャンネルでモデレーターに伝えてください。",
   },
 };
 

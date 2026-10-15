@@ -14,6 +14,7 @@ import { buildProviders } from "./verify/providers/index.js";
 import { VerifyService } from "./verify/service.js";
 import { handleVerifyButton, handleVerifySubmit, VERIFY_BUTTON, VERIFY_MODAL } from "./verify/panel.js";
 import { checkProviders, HealthWatch } from "./verify/health.js";
+import { VipTracker } from "./vip/tracker.js";
 
 async function main() {
   setLogLevel(config.logLevel());
@@ -41,6 +42,7 @@ async function main() {
   let groups: GroupIndex | null = null;
   let roles: LanguageRoles | null = null;
   let verify: VerifyService | null = null;
+  let vip: VipTracker | null = null;
 
   client.once(Events.ClientReady, async (c) => {
     try {
@@ -57,6 +59,8 @@ async function main() {
 
       const affiliates = buildProviders();
       verify = new VerifyService(db, guildId, affiliates);
+      vip = new VipTracker(guild, db, affiliates);
+      vip.schedule();
       log.info("uid verification ready", { exchanges: [...affiliates.values()].map((p) => `${p.id}:${p.live ? "live" : "stand-in"}`) });
 
       // Affiliate keys die quietly: Bybit expires an unbound key after 90 days,
@@ -113,7 +117,7 @@ async function main() {
       }
     }
     if (!i.isChatInputCommand()) return;
-    void handleCommand(i, { guild: mirror.guild, db, groups, mirror, providerId: primary.id, roles, verify });
+    void handleCommand(i, { guild: mirror.guild, db, groups, mirror, providerId: primary.id, roles, verify, vip: vip! });
   });
   client.on(Events.GuildMemberUpdate, (before, after) => {
     if (after.guild.id !== guildId) return;

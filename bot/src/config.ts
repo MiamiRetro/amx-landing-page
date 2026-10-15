@@ -1,6 +1,6 @@
 import "dotenv/config";
 
-export const LANGS = ["en", "zh", "ko", "id", "vi", "es", "pt", "tr", "ru"] as const;
+export const LANGS = ["en", "zh", "ko", "id", "vi", "es", "pt", "tr", "ru", "ja"] as const;
 export type Lang = (typeof LANGS)[number];
 
 export const LANG_NAMES: Record<Lang, string> = {
@@ -13,6 +13,7 @@ export const LANG_NAMES: Record<Lang, string> = {
   pt: "Brazilian Portuguese",
   tr: "Turkish",
   ru: "Russian",
+  ja: "Japanese",
 };
 
 export function isLang(x: string): x is Lang {

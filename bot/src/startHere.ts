@@ -77,7 +77,7 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean;
         [
           `### ${opts.translateEmoji ? opts.translateEmoji + "  " : ""}Pick your language to enter`,
           "Chat, alerts and announcements will show in that language.",
-          "-# 选择语言 · 언어 선택 · Pilih bahasa · Chọn ngôn ngữ · Elige tu idioma · Escolha seu idioma · Dilini seç · Выберите язык",
+          "-# 选择语言 · 언어 선택 · Pilih bahasa · Chọn ngôn ngữ · Elige tu idioma · Escolha seu idioma · Dilini seç · Выберите язык · 言語を選択",
           "-# Your choice is final. A moderator can change it if you need.",
         ].join("\n"),
       ),
@@ -95,6 +95,7 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean;
         new ButtonBuilder().setCustomId(`${PICKER_PREFIX}pt`).setLabel("Português").setEmoji("🇧🇷").setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId(`${PICKER_PREFIX}tr`).setLabel("Türkçe").setEmoji("🇹🇷").setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId(`${PICKER_PREFIX}ru`).setLabel("Русский").setEmoji("🇷🇺").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}ja`).setLabel("日本語").setEmoji("🇯🇵").setStyle(ButtonStyle.Success),
       ),
     );
 
@@ -246,6 +247,7 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean;
             "-# Español Entrar en este servidor significa aceptar sus términos. Nadie es responsable de tus fondos y nada aquí es asesoramiento financiero. Lee los Términos de Servicio completos antes de entrar.",
             "-# Português Entrar neste servidor significa aceitar os termos. Ninguém é responsável pelos seus fundos e nada aqui é recomendação financeira. Leia os Termos de Serviço completos antes de entrar.",
             "-# Türkçe Bu sunucuya girmek şartlarını kabul etmek demektir. Fonlarından kimse sorumlu değildir ve buradaki hiçbir şey yatırım tavsiyesi değildir. Girmeden önce Hizmet Şartları'nın tamamını oku.",
+            "-# 日本語 このサーバーに入ると利用規約に同意したことになります。誰もあなたの資金に責任を負わず、ここにある内容はすべて投資助言ではありません。入る前に利用規約全文を読んでください。",
             "-# Русский Входя на сервер, вы принимаете его условия. Никто не несёт ответственности за ваши средства, и ничто здесь не является финансовым советом. Прочитайте полные Условия использования перед входом.",
           ].join("\n"),
         ),

@@ -14,6 +14,7 @@ import type { GroupIndex } from "../mirror/groups.js";
 import type { Mirror } from "../mirror/mirror.js";
 import type { LanguageRoles } from "../roles.js";
 import type { VerifyService } from "../verify/service.js";
+import type { VipTracker } from "../vip/tracker.js";
 import { EXCHANGES, EXCHANGE_LABELS, isExchange, ProviderError } from "../verify/types.js";
 
 const langChoices = LANGS.map((l) => ({ name: `${LANG_NAMES[l]} (${l})`, value: l }));
@@ -91,6 +92,22 @@ export const commandDefinitions = [
     .setDMPermission(false)
     .addUserOption((o) => o.setName("member").setDescription("Who to move").setRequired(true))
     .addStringOption((o) => o.setName("lang").setDescription("Language").addChoices(...langChoices).setRequired(true)),
+  new SlashCommandBuilder()
+    .setName("vip")
+    .setDescription("VIP tiers from commission earned per member")
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+    .setDMPermission(false)
+    .addSubcommand((s) => s.setName("status").setDescription("A member's commission over 30 days and their tier").addUserOption((o) => o.setName("member").setDescription("Member").setRequired(true)))
+    .addSubcommand((s) => s.setName("run").setDescription("Run this week's check now: store snapshots, set VIP roles, post the report"))
+    .addSubcommand((s) => s.setName("preview").setDescription("Work out tiers without storing anything or changing roles"))
+    .addSubcommand((s) =>
+      s.setName("tiers").setDescription("Set the 30-day commission (USD) each VIP tier needs, lowest first")
+        .addStringOption((o) => o.setName("usd").setDescription("e.g. 1000,2500,5000,10000").setRequired(true)),
+    )
+    .addSubcommand((s) =>
+      s.setName("report-channel").setDescription("Where the weekly VIP report is posted")
+        .addChannelOption((o) => o.setName("channel").setDescription("Staff-only channel").addChannelTypes(ChannelType.GuildText).setRequired(true)),
+    ),
 ].map((c) => c.toJSON());
 
 export interface CommandDeps {
@@ -101,6 +118,7 @@ export interface CommandDeps {
   providerId: string;
   roles: LanguageRoles;
   verify: VerifyService;
+  vip: VipTracker;
 }
 
 export async function handleCommand(i: ChatInputCommandInteraction, d: CommandDeps) {
@@ -111,6 +129,7 @@ export async function handleCommand(i: ChatInputCommandInteraction, d: CommandDe
       i.commandName === "mirror" ? await mirrorCommand(i, d)
       : i.commandName === "uid" ? await uidCommand(i, d)
       : i.commandName === "language" ? await languageCommand(i, d)
+      : i.commandName === "vip" ? await vipCommand(i, d)
       : await glossaryCommand(i, d);
     await i.editReply(text.slice(0, 1900));
   } catch (e) {
@@ -253,6 +272,44 @@ async function languageCommand(i: ChatInputCommandInteraction, d: CommandDeps): 
   if (!isLang(lang)) throw new Error("unknown language");
   const member = await d.guild.members.fetch(i.options.getUser("member", true).id);
   return d.roles.assign(member, lang);
+}
+
+const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
+
+async function vipCommand(i: ChatInputCommandInteraction, d: CommandDeps): Promise<string> {
+  const sub = i.options.getSubcommand();
+  if (sub === "tiers") {
+    const t = i.options.getString("usd", true).split(",").map((x) => Number(x.trim().replace(/[$,_]/g, "")));
+    if (t.length === 0 || t.some((n) => !Number.isFinite(n) || n <= 0)) throw new Error("give USD amounts separated by commas, e.g. 1000,2500,5000,10000");
+    t.sort((a, b) => a - b);
+    await d.db.setSetting(d.guild.id, "vip_tiers", JSON.stringify(t));
+    return `VIP tiers set: ${t.map((n, k) => `VIP ${k + 1} ≥ ${usd(n)}`).join(" · ")} commission per 30 days. Roles change at the next weekly check.`;
+  }
+  if (sub === "report-channel") {
+    const ch = i.options.getChannel("channel", true);
+    await d.db.setSetting(d.guild.id, "vip_report_channel", ch.id);
+    return `The weekly VIP report will post in <#${ch.id}>.`;
+  }
+  if (sub === "status") {
+    const user = i.options.getUser("member", true);
+    const { data } = await d.db.sb.from("commission_snapshots").select("exchange, commission_30d_usd, method, taken_at").eq("guild_id", d.guild.id).eq("discord_user_id", user.id).order("taken_at", { ascending: false }).limit(12);
+    if (!data?.length) return `No commission recorded for <@${user.id}> yet. They need a linked exchange UID, and the weekly check has to have run.`;
+    const latest = data.filter((r) => r.taken_at.slice(0, 10) === data[0].taken_at.slice(0, 10));
+    const total = latest.reduce((a, r) => a + Number(r.commission_30d_usd), 0);
+    const t = await d.vip.thresholds();
+    const tierOf = (n: number) => t.filter((x) => n >= x).length;
+    return [
+      `<@${user.id}>: **${usd(total)}** in the 30 days to ${data[0].taken_at.slice(0, 10)}${tierOf(total) ? ` · **VIP ${tierOf(total)}**` : " · no VIP tier"}`,
+      ...latest.map((r) => `-# ${r.exchange}: ${usd(Number(r.commission_30d_usd))}${r.method === "volume_estimate" ? " (estimated from volume)" : ""}`),
+    ].join("\n");
+  }
+  const rows = await d.vip.run({ apply: sub === "run" });
+  const total = rows.reduce((a, r) => a + r.usd, 0);
+  const vips = rows.filter((r) => r.tier);
+  return [
+    `${sub === "run" ? "Weekly check done." : "Preview, nothing stored or changed."} ${rows.length} linked members, ${usd(total)} commission in 30 days, ${vips.length} in a VIP tier.`,
+    ...rows.slice(0, 10).map((r, k) => `${k + 1}. <@${r.userId}> ${usd(r.usd)}${r.tier ? ` · VIP ${r.tier}` : ""}${r.errors.length ? " ⚠️" : ""}`),
+  ].join("\n");
 }
 
 async function glossaryCommand(i: ChatInputCommandInteraction, d: CommandDeps): Promise<string> {

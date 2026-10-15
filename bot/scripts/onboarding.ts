@@ -103,6 +103,7 @@ const CATS: Record<Lang, Record<"ann" | "com" | "ref", string>> = {
   pt: { ann: "📢 ANÚNCIOS", com: "💬 COMUNIDADE", ref: "📚 REFERÊNCIA" },
   tr: { ann: "📢 DUYURULAR", com: "💬 TOPLULUK", ref: "📚 KAYNAKLAR" },
   ru: { ann: "📢 ОБЪЯВЛЕНИЯ", com: "💬 СООБЩЕСТВО", ref: "📚 СПРАВКА" },
+  ja: { ann: "📢 お知らせ", com: "💬 コミュニティ", ref: "📚 資料" },
 };
 
 const NAMES: Record<Lang, Record<Kind, string>> = {
@@ -115,6 +116,7 @@ const NAMES: Record<Lang, Record<Kind, string>> = {
   pt: { announcements: "📢・anúncios", teaser: "🔒・alertas", signals: "⚡・alertas", verify: "✅・verificar", btcgate: "🔒・bitcoin", general: "💬・geral", trader: "📈・chat-traders", bitcoin: "🟠・bitcoin", crypto: "🪙・cripto", stocks: "📊・ações", commodities: "🛢️・commodities", memes: "🐸・memes", help: "☎️・ajuda", start: "🧭・guia-do-servidor", guides: "📕・guias", strategies: "📗・estratégias", forums: "🧵・fóruns" },
   tr: { announcements: "📢・duyurular", teaser: "🔒・sinyaller", signals: "⚡・sinyaller", verify: "✅・doğrulama", btcgate: "🔒・bitcoin", general: "💬・sohbet", trader: "📈・trader-sohbet", bitcoin: "🟠・bitcoin", crypto: "🪙・kripto", stocks: "📊・hisseler", commodities: "🛢️・emtia", memes: "🐸・mizah", help: "☎️・yardım", start: "🧭・sunucu-rehberi", guides: "📕・kurulum-rehberi", strategies: "📗・stratejiler", forums: "🧵・forum" },
   ru: { announcements: "📢・объявления", teaser: "🔒・сигналы", signals: "⚡・сигналы", verify: "✅・верификация", btcgate: "🔒・биткоин", general: "💬・общий-чат", trader: "📈・чат-трейдеров", bitcoin: "🟠・биткоин", crypto: "🪙・крипта", stocks: "📊・акции", commodities: "🛢️・сырьё", memes: "🐸・мемы", help: "☎️・помощь", start: "🧭・гид-по-серверу", guides: "📕・гайды", strategies: "📗・стратегии", forums: "🧵・форум" },
+  ja: { announcements: "📢・お知らせ", teaser: "🔒・シグナル", signals: "⚡・シグナル", verify: "✅・認証", btcgate: "🔒・ビットコイン", general: "💬・雑談", trader: "📈・トレーダー-チャット", bitcoin: "🟠・ビットコイン", crypto: "🪙・暗号資産", stocks: "📊・株式", commodities: "🛢️・コモディティ", memes: "🐸・ミーム", help: "☎️・ヘルプ", start: "🧭・サーバーガイド", guides: "📕・設定ガイド", strategies: "📗・トレード戦略", forums: "🧵・フォーラム" },
 };
 
 /** Categories before the restructure. Channels found in them are moved, not recreated; emptied ones are deleted. */
@@ -130,6 +132,7 @@ const OLD_CATS = {
   pt: "╭───  Português  ───╮",
   tr: "╭───  Türkçe  ───╮",
   ru: "╭───  Русский  ───╮",
+  ja: "╭───  日本語  ───╮",
 } as const;
 
 /** Where the English channels lived. */

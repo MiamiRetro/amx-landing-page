@@ -10,6 +10,7 @@
 import { ChannelType, type ForumChannel, type Guild, type TextChannel, type Webhook } from "discord.js";
 import { connect } from "../src/lib/client.js";
 import { startHereMessages } from "../src/startHere.js";
+import { Db } from "../src/db/index.js";
 
 const LIVE = "935681399095169035";
 const HOOK = "Mock chat";
@@ -205,16 +206,18 @@ async function seed(guild: Guild) {
     console.log(`cards  #${name}`);
   }
 
-  // The teaser alerts are a mirror group: the bot translates the English
-  // channel into the other three. Clear all four first (deleting a mirror
-  // deletes its original), let the deletes settle, then post English only.
-  const teasers = ["🔒・trade-alerts", "🔒・交易提醒", "🔒・매매신호", "🔒・sinyal-trading"];
-  for (const name of teasers) {
-    const ch = text(name);
+  // Mirrored channels get their chat from the bot: post in the English
+  // source and the bot translates it into every language twin. Clear all of
+  // them first (deleting a mirror deletes its original), then post English only.
+  const groups = await new Db().loadGroups(guild.id);
+  const twinIds = new Set(groups.flatMap((g) => g.members.filter((m) => m.lang !== "en").map((m) => m.channel_id)));
+  const groupIds = new Set(groups.flatMap((g) => g.members.map((m) => m.channel_id)));
+  for (const id of groupIds) {
+    const ch = guild.channels.cache.get(id) as TextChannel | undefined;
     if (!ch) continue;
     for (const m of (await ch.messages.fetch({ limit: 100 })).values()) if (m.webhookId) await m.delete().catch(() => {});
   }
-  await new Promise((r) => setTimeout(r, 5000));
+  await new Promise((r) => setTimeout(r, 8000));
 
   // Mock chat
   const post = async (ch: TextChannel, lines: Line[]) => {
@@ -226,6 +229,7 @@ async function seed(guild: Guild) {
   for (const ch of guild.channels.cache.values()) {
     if (ch.type !== ChannelType.GuildText) continue;
     const cat = guild.channels.cache.get(ch.parentId ?? "")?.name ?? "";
+    if (twinIds.has(ch.id)) continue; // filled by the mirror
     const lines = BY_CATEGORY[cat]?.[ch.name] ?? CHAT[ch.name];
     if (lines) await post(ch as TextChannel, lines);
   }

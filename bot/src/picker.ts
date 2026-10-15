@@ -26,8 +26,16 @@ export function pickerMessage() {
     new ButtonBuilder().setCustomId(`${PICKER_PREFIX}zh`).setLabel("中文").setEmoji("🇨🇳").setStyle(ButtonStyle.Success),
     new ButtonBuilder().setCustomId(`${PICKER_PREFIX}ko`).setLabel("한국어").setEmoji("🇰🇷").setStyle(ButtonStyle.Success),
     new ButtonBuilder().setCustomId(`${PICKER_PREFIX}id`).setLabel("Bahasa Indonesia").setEmoji("🇮🇩").setStyle(ButtonStyle.Success),
+    new ButtonBuilder().setCustomId(`${PICKER_PREFIX}vi`).setLabel("Tiếng Việt").setEmoji("🇻🇳").setStyle(ButtonStyle.Success),
   );
-  return { embeds: [embed], components: [row] };
+  // Discord allows five buttons per row.
+  const row2 = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder().setCustomId(`${PICKER_PREFIX}es`).setLabel("Español").setEmoji("🇪🇸").setStyle(ButtonStyle.Success),
+    new ButtonBuilder().setCustomId(`${PICKER_PREFIX}pt`).setLabel("Português").setEmoji("🇧🇷").setStyle(ButtonStyle.Success),
+    new ButtonBuilder().setCustomId(`${PICKER_PREFIX}tr`).setLabel("Türkçe").setEmoji("🇹🇷").setStyle(ButtonStyle.Success),
+    new ButtonBuilder().setCustomId(`${PICKER_PREFIX}ru`).setLabel("Русский").setEmoji("🇷🇺").setStyle(ButtonStyle.Success),
+  );
+  return { embeds: [embed], components: [row, row2] };
 }
 
 export async function postPicker(channel: TextChannel) {

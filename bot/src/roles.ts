@@ -29,6 +29,11 @@ export const LANG_ROLE_NAMES: Record<Lang, { base: string; member: string }> = {
   zh: { base: "中文", member: "中文 Member" },
   ko: { base: "한국어", member: "한국어 Member" },
   id: { base: "Bahasa Indonesia", member: "Bahasa Indonesia Member" },
+  vi: { base: "Tiếng Việt", member: "Tiếng Việt Member" },
+  es: { base: "Español", member: "Español Member" },
+  pt: { base: "Português", member: "Português Member" },
+  tr: { base: "Türkçe", member: "Türkçe Member" },
+  ru: { base: "Русский", member: "Русский Member" },
 };
 
 const REPLY: Record<Lang, { base: string; member: string; locked: string }> = {
@@ -51,6 +56,31 @@ const REPLY: Record<Lang, { base: string; member: string; locked: string }> = {
     base: "Selamat datang! Kanal Bahasa Indonesia sudah terbuka. Verifikasi UID exchange kamu di ✅・verifikasi untuk membuka seluruh Trading Floor.",
     member: "Selamat datang kembali. Kanal Bahasa Indonesia sudah terbuka.",
     locked: "Bahasamu sudah diatur. Minta moderator di kanal bantuan kalau perlu diganti.",
+  },
+  vi: {
+    base: "Chào mừng! Các kênh tiếng Việt đã mở cho bạn. Xác minh UID sàn của bạn trong ✅・xác-minh để mở toàn bộ Trading Floor.",
+    member: "Chào mừng bạn quay lại. Các kênh tiếng Việt đã mở cho bạn.",
+    locked: "Ngôn ngữ của bạn đã được chọn. Nhờ quản trị viên trong kênh hỗ trợ nếu cần đổi.",
+  },
+  es: {
+    base: "¡Bienvenido! Tus canales en español ya están abiertos. Verifica tu UID del exchange en ✅・verificar para desbloquear todo el Trading Floor.",
+    member: "Bienvenido de nuevo. Tus canales en español ya están abiertos.",
+    locked: "Tu idioma ya está elegido. Pide a un moderador en el canal de ayuda si necesitas cambiarlo.",
+  },
+  pt: {
+    base: "Bem-vindo! Seus canais em português já estão abertos. Verifique seu UID da corretora em ✅・verificar para liberar todo o Trading Floor.",
+    member: "Bem-vindo de volta. Seus canais em português já estão abertos.",
+    locked: "Seu idioma já foi escolhido. Peça a um moderador no canal de ajuda se precisar mudar.",
+  },
+  tr: {
+    base: "Hoş geldin! Türkçe kanalların açıldı. Tüm Trading Floor'u açmak için borsa UID'ni ✅・doğrulama kanalında doğrula.",
+    member: "Tekrar hoş geldin. Türkçe kanalların açıldı.",
+    locked: "Dilin zaten seçildi. Değiştirmen gerekirse yardım kanalında bir moderatöre sor.",
+  },
+  ru: {
+    base: "Добро пожаловать! Русские каналы открыты. Подтвердите UID биржи в ✅・верификация, чтобы открыть весь Trading Floor.",
+    member: "С возвращением. Русские каналы открыты.",
+    locked: "Язык уже выбран. Если нужно сменить, обратитесь к модератору в канале помощи.",
   },
 };
 

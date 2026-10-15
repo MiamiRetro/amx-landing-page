@@ -13,7 +13,7 @@ create table if not exists channel_groups (
 create table if not exists channel_group_members (
   channel_id text primary key,
   group_id uuid not null references channel_groups(id) on delete cascade,
-  lang text not null check (lang in ('en','zh','ko','id')),
+  lang text not null check (lang in ('en','zh','ko','id','vi','es','pt','tr','ru')),
   webhook_id text,
   webhook_token text,
   last_seen_message_id text,
@@ -89,7 +89,7 @@ alter table usage_log enable row level security;
 create table if not exists language_prefs (
   guild_id text not null,
   user_id text not null,
-  lang text not null check (lang in ('en','zh','ko','id')),
+  lang text not null check (lang in ('en','zh','ko','id','vi','es','pt','tr','ru')),
   updated_at timestamptz not null default now(),
   primary key (guild_id, user_id)
 );

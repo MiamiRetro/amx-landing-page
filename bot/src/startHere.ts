@@ -77,7 +77,7 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean;
         [
           `### ${opts.translateEmoji ? opts.translateEmoji + "  " : ""}Pick your language to enter`,
           "Chat, alerts and announcements will show in that language.",
-          "-# 选择语言即表示同意规则 · 언어를 선택하면 규칙에 동의하게 됩니다 · Dengan memilih, kamu menyetujui aturan",
+          "-# 选择语言 · 언어 선택 · Pilih bahasa · Chọn ngôn ngữ · Elige tu idioma · Escolha seu idioma · Dilini seç · Выберите язык",
           "-# Your choice is final. A moderator can change it if you need.",
         ].join("\n"),
       ),
@@ -88,6 +88,13 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean;
         new ButtonBuilder().setCustomId(`${PICKER_PREFIX}zh`).setLabel("中文").setEmoji("🇨🇳").setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId(`${PICKER_PREFIX}ko`).setLabel("한국어").setEmoji("🇰🇷").setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId(`${PICKER_PREFIX}id`).setLabel("Bahasa Indonesia").setEmoji("🇮🇩").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}vi`).setLabel("Tiếng Việt").setEmoji("🇻🇳").setStyle(ButtonStyle.Success),
+      ),
+      row(
+        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}es`).setLabel("Español").setEmoji("🇪🇸").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}pt`).setLabel("Português").setEmoji("🇧🇷").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}tr`).setLabel("Türkçe").setEmoji("🇹🇷").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}ru`).setLabel("Русский").setEmoji("🇷🇺").setStyle(ButtonStyle.Success),
       ),
     );
 
@@ -235,6 +242,11 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean;
             "-# 中文 进入本服务器即表示接受其条款。任何人都不对你的资金负责，这里的内容都不构成投资建议。进入前请阅读完整的服务条款。",
             "-# 한국어 서버에 입장하면 이용약관에 동의하는 것입니다. 누구도 여러분의 자금에 책임지지 않으며, 이 서버의 어떤 내용도 투자 조언이 아닙니다. 입장 전에 전체 이용약관을 읽어 주세요.",
             "-# Bahasa Indonesia Masuk ke server ini berarti kamu menerima ketentuannya. Tidak ada yang bertanggung jawab atas dana kamu, dan tidak ada isi server ini yang merupakan nasihat keuangan. Baca Ketentuan Layanan lengkap sebelum masuk.",
+            "-# Tiếng Việt Vào server này nghĩa là bạn chấp nhận các điều khoản. Không ai chịu trách nhiệm về tiền của bạn, và không nội dung nào ở đây là lời khuyên tài chính. Hãy đọc đầy đủ Điều khoản dịch vụ trước khi vào.",
+            "-# Español Entrar en este servidor significa aceptar sus términos. Nadie es responsable de tus fondos y nada aquí es asesoramiento financiero. Lee los Términos de Servicio completos antes de entrar.",
+            "-# Português Entrar neste servidor significa aceitar os termos. Ninguém é responsável pelos seus fundos e nada aqui é recomendação financeira. Leia os Termos de Serviço completos antes de entrar.",
+            "-# Türkçe Bu sunucuya girmek şartlarını kabul etmek demektir. Fonlarından kimse sorumlu değildir ve buradaki hiçbir şey yatırım tavsiyesi değildir. Girmeden önce Hizmet Şartları'nın tamamını oku.",
+            "-# Русский Входя на сервер, вы принимаете его условия. Никто не несёт ответственности за ваши средства, и ничто здесь не является финансовым советом. Прочитайте полные Условия использования перед входом.",
           ].join("\n"),
         ),
       )

@@ -117,6 +117,81 @@ const PANEL: Record<Lang, PanelText> = {
     button: "Verifikasi UID saya",
     note: "UID adalah nomor akun, bukan kata sandi. Jangan pernah bagikan API key atau kata sandi ke siapa pun di sini.",
   },
+  vi: {
+    title: "Xác minh UID sàn của bạn",
+    body: [
+      "Trading Floor sẽ mở khi chúng tôi thấy tài khoản sàn của bạn được tạo qua một trong các link của chúng tôi.",
+      "",
+      "Bấm nút, chọn sàn và dán UID của bạn. Chỉ mất một giây, không cần thêm thông tin nào khác.",
+    ],
+    bitcoin: [
+      "Kênh Bitcoin chỉ dành cho thành viên đã xác minh.",
+      "",
+      "Xác minh UID sàn bên dưới để mở kênh này, cùng với tín hiệu đầy đủ, kênh trader và toàn bộ Trading Floor.",
+    ],
+    button: "Xác minh UID",
+    note: "UID là số tài khoản, không phải mật khẩu. Đừng bao giờ chia sẻ API key hay mật khẩu với bất kỳ ai ở đây.",
+  },
+  es: {
+    title: "Verifica tu UID del exchange",
+    body: [
+      "El Trading Floor se abre cuando vemos que tu cuenta del exchange se abrió con uno de nuestros enlaces.",
+      "",
+      "Pulsa el botón, elige tu exchange y pega tu UID. Tarda un segundo y no te pedimos nada más.",
+    ],
+    bitcoin: [
+      "El chat de Bitcoin es solo para miembros verificados.",
+      "",
+      "Verifica tu UID abajo y se abre este canal, junto con las alertas completas, el chat de traders y el resto del Trading Floor.",
+    ],
+    button: "Verificar mi UID",
+    note: "Tu UID es un número de cuenta, no una contraseña. Nunca compartas una API key ni una contraseña con nadie aquí.",
+  },
+  pt: {
+    title: "Verifique seu UID da corretora",
+    body: [
+      "O Trading Floor abre quando vemos que sua conta na corretora foi criada por um dos nossos links.",
+      "",
+      "Toque no botão, escolha a corretora e cole seu UID. Leva um segundo e não pedimos mais nada.",
+    ],
+    bitcoin: [
+      "O chat de Bitcoin é só para membros verificados.",
+      "",
+      "Verifique seu UID abaixo e este canal abre, junto com os alertas completos, o chat de traders e todo o Trading Floor.",
+    ],
+    button: "Verificar meu UID",
+    note: "Seu UID é um número de conta, não uma senha. Nunca compartilhe API key ou senha com ninguém aqui.",
+  },
+  tr: {
+    title: "Borsa UID'ni doğrula",
+    body: [
+      "Borsa hesabının bizim linklerimizden biriyle açıldığını gördüğümüzde Trading Floor açılır.",
+      "",
+      "Butona bas, borsanı seç ve UID'ni yapıştır. Bir saniye sürer, başka hiçbir şey istemiyoruz.",
+    ],
+    bitcoin: [
+      "Bitcoin sohbeti yalnızca doğrulanmış üyeler içindir.",
+      "",
+      "Aşağıdan UID'ni doğrula; bu kanal, tam sinyaller, trader sohbeti ve tüm Trading Floor ile birlikte açılır.",
+    ],
+    button: "UID'mi doğrula",
+    note: "UID bir hesap numarasıdır, şifre değil. API anahtarını veya şifreni burada kimseyle paylaşma.",
+  },
+  ru: {
+    title: "Подтвердите UID биржи",
+    body: [
+      "Trading Floor откроется, как только мы увидим, что ваш аккаунт на бирже открыт по одной из наших ссылок.",
+      "",
+      "Нажмите кнопку, выберите биржу и вставьте UID. Это займёт секунду, больше ничего не нужно.",
+    ],
+    bitcoin: [
+      "Чат о биткоине только для подтверждённых участников.",
+      "",
+      "Подтвердите UID ниже, и откроется этот канал, а вместе с ним полные сигналы, чат трейдеров и весь Trading Floor.",
+    ],
+    button: "Подтвердить UID",
+    note: "UID это номер аккаунта, а не пароль. Никогда никому здесь не сообщайте API-ключ или пароль.",
+  },
 };
 
 /**

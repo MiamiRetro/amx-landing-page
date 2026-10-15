@@ -44,13 +44,14 @@ export class VipTracker {
     }
   }
 
-  /** VIP 1..n roles, created when missing. */
-  private async roles(n: number): Promise<Role[]> {
+  /** VIP 1..n roles. Missing ones are created on a real run; a preview just treats them as unheld. */
+  private async roles(n: number, create: boolean): Promise<(Role | null)[]> {
     await this.guild.roles.fetch();
-    const out: Role[] = [];
+    const out: (Role | null)[] = [];
     for (let i = 1; i <= n; i++) {
       const name = `VIP ${i}`;
-      out.push(this.guild.roles.cache.find((r) => r.name === name) ?? (await this.guild.roles.create({ name, permissions: [], reason: "VIP tiers" })));
+      const found = this.guild.roles.cache.find((r) => r.name === name);
+      out.push(found ?? (create ? await this.guild.roles.create({ name, permissions: [], reason: "VIP tiers" }) : null));
     }
     return out;
   }
@@ -83,7 +84,7 @@ export class VipTracker {
     this.running = true;
     try {
       const thresholds = await this.thresholds();
-      const vipRoles = await this.roles(thresholds.length);
+      const vipRoles = await this.roles(thresholds.length, opts.apply);
       const { data: links, error } = await this.db.sb.from("verifications").select("discord_user_id, exchange, uid").eq("guild_id", this.guild.id);
       if (error) throw new Error(`load verifications: ${error.message}`);
       const prices = new Prices();
@@ -112,12 +113,12 @@ export class VipTracker {
 
       for (const row of byUser.values()) {
         const m = members.get(row.userId);
-        row.previous = m ? vipRoles.findIndex((r) => m.roles.cache.has(r.id)) + 1 : 0;
+        row.previous = m ? vipRoles.findIndex((r) => !!r && m.roles.cache.has(r.id)) + 1 : 0;
         // A failed lookup keeps the member where they were rather than demoting on our error.
         row.tier = row.errors.length && row.parts.length === 0 ? row.previous : tierFor(row.usd, thresholds);
         if (!opts.apply || !m || row.tier === row.previous) continue;
         const want = row.tier ? vipRoles[row.tier - 1] : null;
-        const remove = vipRoles.filter((r) => r !== want && m.roles.cache.has(r.id));
+        const remove = vipRoles.filter((r): r is Role => !!r && r !== want && m.roles.cache.has(r.id));
         if (remove.length) await m.roles.remove(remove, `VIP: $${row.usd.toFixed(0)} commission in 30 days`).catch((e) => log.warn("vip role remove failed", errInfo(e)));
         if (want) await m.roles.add(want, `VIP: $${row.usd.toFixed(0)} commission in 30 days`).catch((e) => log.warn("vip role add failed", errInfo(e)));
       }

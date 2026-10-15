@@ -180,7 +180,7 @@ const BOT_ALLOW = [P.ViewChannel, P.SendMessages, P.ReadMessageHistory, P.Manage
 
 const TRANSLATE_PNG = join(dirname(fileURLToPath(import.meta.url)), "..", "assets", "emoji", "translate.png");
 
-const STEPS = ["roles", "members", "channels", "perms", "mirror", "panels", "rules", "cleanup"] as const;
+const STEPS = ["roles", "members", "channels", "perms", "mirror", "panels", "rules", "vip", "cleanup"] as const;
 type Step = (typeof STEPS)[number];
 
 interface Ctx {
@@ -324,6 +324,70 @@ async function stepChannels(ctx: Ctx) {
     });
   }
   await guild.channels.setPositions(positions);
+}
+
+const VIP_CAT = "👑 VIP";
+const VIP_ROLES = ["VIPs", "VIP 1", "VIP 2", "VIP 3", "VIP 4"];
+
+/**
+ * The VIP lounge sits right under the picker, shared by every language: the
+ * legacy VIPs role and the commission tiers VIP 1-4 see it, staff keep their
+ * access. The weekly report goes to an admin-only channel, because it lists
+ * what we earn per client.
+ */
+async function stepVip(ctx: Ctx) {
+  const { guild, db } = ctx;
+  const me = guild.members.me!;
+  for (const name of VIP_ROLES.slice(1)) {
+    if (guild.roles.cache.some((r) => r.name === name)) continue;
+    log(`  create role ${name}`);
+    if (ctx.apply) await guild.roles.create({ name, permissions: [], reason: "VIP tiers" });
+  }
+  let cat = findCategory(guild, VIP_CAT);
+  if (!cat) {
+    log(`  create category ${VIP_CAT}`);
+    if (ctx.apply) cat = await guild.channels.create({ name: VIP_CAT, type: ChannelType.GuildCategory, reason: "VIP lounge" });
+  }
+  const vipRoleIds = VIP_ROLES.map((n) => guild.roles.cache.find((r) => r.name === n)?.id).filter((x): x is string => !!x);
+  const lounge: OverwriteResolvable[] = [
+    { id: guild.roles.everyone.id, deny: [P.ViewChannel] },
+    ...vipRoleIds.map((id) => ({ id, allow: [P.ViewChannel] })),
+    ...["Moderators", "Team - Will Not DM"].map((n) => guild.roles.cache.find((r) => r.name === n)).filter((r) => !!r).map((r) => ({ id: r!.id, allow: [P.ViewChannel] })),
+  ];
+  if (cat && ctx.apply) await cat.permissionOverwrites.set(lounge, "VIP lounge");
+
+  let chat = guild.channels.cache.find((c): c is TextChannel => c.type === ChannelType.GuildText && c.name === "👑・vip-chat");
+  if (!chat) {
+    log("  create #👑・vip-chat");
+    if (ctx.apply && cat) chat = await guild.channels.create({ name: "👑・vip-chat", type: ChannelType.GuildText, parent: cat.id, topic: "For our VIPs", reason: "VIP lounge" });
+  } else if (cat && chat.parentId !== cat.id) {
+    log(`  move #${chat.name} → ${VIP_CAT}`);
+    if (ctx.apply) await chat.setParent(cat.id, { lockPermissions: false, reason: "VIP lounge" });
+  }
+  if (chat && ctx.apply) {
+    // Keep its own overwrites (muted and booster denies), add every VIP tier.
+    for (const id of vipRoleIds) await chat.permissionOverwrites.edit(id, { ViewChannel: true }, { reason: "VIP tiers" });
+    await chat.permissionOverwrites.edit(guild.roles.everyone.id, { ViewChannel: false }, { reason: "VIP lounge" });
+    await chat.permissionOverwrites.edit(me.id, { ViewChannel: true, SendMessages: true, ReadMessageHistory: true }, { reason: "VIP lounge" });
+  }
+
+  let report = guild.channels.cache.find((c): c is TextChannel => c.type === ChannelType.GuildText && c.name === "📊・vip-report");
+  if (!report) {
+    log("  create #📊・vip-report (admins only)");
+    if (ctx.apply) report = await guild.channels.create({
+      name: "📊・vip-report", type: ChannelType.GuildText, topic: "Weekly commission per client and VIP tier changes. Admins only.",
+      permissionOverwrites: [{ id: guild.roles.everyone.id, deny: [P.ViewChannel] }, { id: me.id, type: OverwriteType.Member, allow: [P.ViewChannel, P.SendMessages, P.ReadMessageHistory, P.EmbedLinks] }],
+      reason: "VIP report",
+    });
+  }
+  if (report && ctx.apply) await db.setSetting(guild.id, "vip_report_channel", report.id);
+
+  if (ctx.apply && cat) {
+    await guild.channels.fetch();
+    const picker = findChannel(guild, PICKER);
+    const order = [picker?.id, cat.id, ...CATEGORY_SPECS.map((c) => findCategory(guild, c.name)?.id)].filter((x): x is string => !!x);
+    await guild.channels.setPositions(order.map((channel, position) => ({ channel, position })));
+  }
 }
 
 /** Old categories the restructure emptied. Anything still holding a channel (vip-chat, mod-chat) stays. */
@@ -545,7 +609,7 @@ async function main() {
   };
   try {
     log(apply ? "APPLYING" : "DRY RUN (add --apply to make these changes)");
-    const run: Record<Step, (c: Ctx) => Promise<void>> = { roles: stepRoles, members: stepMembers, channels: stepChannels, perms: stepPerms, mirror: stepMirror, panels: stepPanels, rules: stepRules, cleanup: stepCleanup };
+    const run: Record<Step, (c: Ctx) => Promise<void>> = { roles: stepRoles, members: stepMembers, channels: stepChannels, perms: stepPerms, mirror: stepMirror, panels: stepPanels, rules: stepRules, vip: stepVip, cleanup: stepCleanup };
     for (const step of STEPS) {
       if (only && step !== only) continue;
       log(`\n== ${step}`);

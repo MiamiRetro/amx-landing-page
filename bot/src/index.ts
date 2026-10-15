@@ -60,7 +60,9 @@ async function main() {
       const affiliates = buildProviders();
       verify = new VerifyService(db, guildId, affiliates);
       vip = new VipTracker(guild, db, affiliates);
-      vip.schedule();
+      // The weekly check needs Bybit, which blocks some hosting regions. It runs
+      // from the Mac Studio (scripts/vip-run.ts under launchd) unless VIP_SCHEDULE=1.
+      if (process.env.VIP_SCHEDULE === "1") vip.schedule();
       log.info("uid verification ready", { exchanges: [...affiliates.values()].map((p) => `${p.id}:${p.live ? "live" : "stand-in"}`) });
 
       // Affiliate keys die quietly: Bybit expires an unbound key after 90 days,

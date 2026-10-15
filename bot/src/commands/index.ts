@@ -8,6 +8,7 @@ import {
 } from "discord.js";
 import { isLang, LANG_NAMES, LANGS, type Lang } from "../config.js";
 import type { Db } from "../db/index.js";
+import { buildReport, formatReport, type Funnel } from "../funnel.js";
 import { buildOverwrites } from "../lib/layout.js";
 import { log, errInfo } from "../log.js";
 import type { GroupIndex } from "../mirror/groups.js";
@@ -108,6 +109,18 @@ export const commandDefinitions = [
       s.setName("report-channel").setDescription("Where the weekly VIP report is posted")
         .addChannelOption((o) => o.setName("channel").setDescription("Staff-only channel").addChannelTypes(ChannelType.GuildText).setRequired(true)),
     ),
+  new SlashCommandBuilder()
+    .setName("funnel")
+    .setDescription("Onboarding funnel: joined → picked a language → opened verify → verified")
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+    .setDMPermission(false)
+    .addSubcommand((s) =>
+      s
+        .setName("report")
+        .setDescription("Counts and conversion per step, by language, plus top invites")
+        .addIntegerOption((o) => o.setName("days").setDescription("Window in days (default 30)").setMinValue(1).setMaxValue(365))
+        .addStringOption((o) => o.setName("lang").setDescription("Only this language").addChoices(...langChoices)),
+    ),
 ].map((c) => c.toJSON());
 
 export interface CommandDeps {
@@ -119,6 +132,7 @@ export interface CommandDeps {
   roles: LanguageRoles;
   verify: VerifyService;
   vip: VipTracker;
+  funnel: Funnel;
 }
 
 export async function handleCommand(i: ChatInputCommandInteraction, d: CommandDeps) {
@@ -130,6 +144,7 @@ export async function handleCommand(i: ChatInputCommandInteraction, d: CommandDe
       : i.commandName === "uid" ? await uidCommand(i, d)
       : i.commandName === "language" ? await languageCommand(i, d)
       : i.commandName === "vip" ? await vipCommand(i, d)
+      : i.commandName === "funnel" ? await funnelCommand(i, d)
       : await glossaryCommand(i, d);
     await i.editReply(text.slice(0, 1900));
   } catch (e) {
@@ -272,6 +287,13 @@ async function languageCommand(i: ChatInputCommandInteraction, d: CommandDeps): 
   if (!isLang(lang)) throw new Error("unknown language");
   const member = await d.guild.members.fetch(i.options.getUser("member", true).id);
   return d.roles.assign(member, lang);
+}
+
+async function funnelCommand(i: ChatInputCommandInteraction, d: CommandDeps): Promise<string> {
+  const days = i.options.getInteger("days") ?? 30;
+  const lang = i.options.getString("lang");
+  const rows = await d.funnel.rows(new Date(Date.now() - days * 86_400_000));
+  return formatReport(buildReport(rows, { lang }), days, lang);
 }
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;

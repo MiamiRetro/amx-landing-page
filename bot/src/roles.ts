@@ -1,6 +1,7 @@
 import { PermissionFlagsBits, type Guild, type GuildMember } from "discord.js";
 import { LANGS, type Lang } from "./config.js";
 import type { Db } from "./db/index.js";
+import type { Funnel } from "./funnel.js";
 import { log, errInfo } from "./log.js";
 
 /**
@@ -95,7 +96,7 @@ export class LanguageRoles {
   private memberRoleIds = new Set<string>();
   private loadedAt = 0;
 
-  constructor(private guild: Guild, private db: Db) {}
+  constructor(private guild: Guild, private db: Db, private funnel?: Funnel) {}
 
   async load() {
     this.pairs.clear();
@@ -150,6 +151,7 @@ export class LanguageRoles {
     await this.db.setLangPref(this.guild.id, member.id, lang);
     await this.apply(member, lang);
     log.info("language picked", { user: member.id, lang });
+    this.funnel?.record(member.id, "language_picked", { lang });
     return this.holdsMembership(member) ? REPLY[lang].member : REPLY[lang].base;
   }
 
@@ -159,6 +161,7 @@ export class LanguageRoles {
     if (!this.pairs.has(lang)) return "That language has no roles set up yet.";
     await this.db.setLangPref(this.guild.id, member.id, lang);
     await this.apply(member, lang);
+    this.funnel?.record(member.id, "language_changed_by_mod", { lang });
     return `${member.displayName} is now on ${LANG_ROLE_NAMES[lang].base}${this.holdsMembership(member) ? " (verified)" : ""}.`;
   }
 

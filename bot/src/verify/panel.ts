@@ -18,6 +18,7 @@ import {
   type TextChannel,
 } from "discord.js";
 import type { Lang } from "../config.js";
+import type { Funnel } from "../funnel.js";
 import { log, errInfo } from "../log.js";
 import type { LanguageRoles } from "../roles.js";
 import type { VerifyService } from "./service.js";
@@ -249,8 +250,9 @@ function verifyModal(exchanges: ExchangeId[]) {
     );
 }
 
-export async function handleVerifyButton(i: ButtonInteraction, deps: { verify: VerifyService; roles: LanguageRoles }) {
+export async function handleVerifyButton(i: ButtonInteraction, deps: { verify: VerifyService; roles: LanguageRoles; funnel?: Funnel }) {
   if (!i.inCachedGuild()) return;
+  deps.funnel?.record(i.user.id, "verify_opened");
   const member = await i.guild.members.fetch(i.user.id);
   // The popup is for people who are not in yet. Existing members get told so
   // rather than being handed a form that would overwrite their record.
@@ -269,7 +271,7 @@ export async function handleVerifyButton(i: ButtonInteraction, deps: { verify: V
   await i.showModal(verifyModal(exchanges));
 }
 
-export async function handleVerifySubmit(i: ModalSubmitInteraction, deps: { verify: VerifyService; roles: LanguageRoles; memberRoleId: string | null }) {
+export async function handleVerifySubmit(i: ModalSubmitInteraction, deps: { verify: VerifyService; roles: LanguageRoles; memberRoleId: string | null; funnel?: Funnel }) {
   if (!i.inCachedGuild()) return;
   await i.deferReply({ flags: MessageFlags.Ephemeral });
   try {
@@ -281,6 +283,8 @@ export async function handleVerifySubmit(i: ModalSubmitInteraction, deps: { veri
       return;
     }
     const res = await deps.verify.verify({ userId: i.user.id, alreadyMember: deps.roles.isVerified(member), exchange: picked, uid });
+    deps.funnel?.record(i.user.id, "verify_result", { lang: deps.roles.langOf(member), detail: { outcome: res.outcome, exchange: res.exchange } });
+    if (res.outcome === "verified") deps.funnel?.record(i.user.id, "verified", { lang: deps.roles.langOf(member) });
     await i.editReply(await reply(res, member, deps));
   } catch (e) {
     log.error("verify submit failed", errInfo(e));

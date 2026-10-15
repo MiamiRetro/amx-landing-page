@@ -7,6 +7,7 @@ import { log, setLogLevel, errInfo } from "./log.js";
 import { GroupIndex } from "./mirror/groups.js";
 import { Mirror } from "./mirror/mirror.js";
 import { Semaphore } from "./mirror/queue.js";
+import { Funnel, InviteTracker } from "./funnel.js";
 import { LanguageRoles } from "./roles.js";
 import { handlePickerButton, PICKER_PREFIX } from "./picker.js";
 import { providerFromSpec, Translator } from "./translate/index.js";
@@ -34,7 +35,7 @@ async function main() {
   });
 
   const client = new Client({
-    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMembers],
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildInvites],
     partials: [Partials.Message, Partials.Channel],
   });
 
@@ -43,6 +44,8 @@ async function main() {
   let roles: LanguageRoles | null = null;
   let verify: VerifyService | null = null;
   let vip: VipTracker | null = null;
+  let invites: InviteTracker | null = null;
+  const funnel = new Funnel(db, guildId);
 
   client.once(Events.ClientReady, async (c) => {
     try {
@@ -54,8 +57,13 @@ async function main() {
       mirror = new Mirror({ guild, db, groups, translator, botUserId: c.user.id, applicationId: c.application.id });
       mirror.paused = groups.groups.length > 0 && groups.groups.every((g) => g.paused);
 
-      roles = new LanguageRoles(guild, db);
+      roles = new LanguageRoles(guild, db, funnel);
       await roles.load();
+
+      // Invite use counts, so a join can be traced to the link it came through.
+      // Without Manage Server this stays empty and joins go unattributed.
+      invites = new InviteTracker(guild);
+      await invites.refresh().catch((e) => log.warn("invite cache failed", errInfo(e)));
 
       const affiliates = buildProviders();
       verify = new VerifyService(db, guildId, affiliates);
@@ -124,19 +132,34 @@ async function main() {
     if (verify) {
       const v = verify, r = roles;
       if (i.isButton() && i.customId === VERIFY_BUTTON) {
-        return void handleVerifyButton(i, { verify: v, roles: r }).catch((e) => log.error("verify button failed", errInfo(e)));
+        return void handleVerifyButton(i, { verify: v, roles: r, funnel }).catch((e) => log.error("verify button failed", errInfo(e)));
       }
       if (i.isModalSubmit() && i.customId === VERIFY_MODAL) {
-        return void handleVerifySubmit(i, { verify: v, roles: r, memberRoleId: r.memberRoleId() }).catch((e) => log.error("verify modal failed", errInfo(e)));
+        return void handleVerifySubmit(i, { verify: v, roles: r, memberRoleId: r.memberRoleId(), funnel }).catch((e) => log.error("verify modal failed", errInfo(e)));
       }
     }
     if (!i.isChatInputCommand()) return;
-    void handleCommand(i, { guild: mirror.guild, db, groups, mirror, providerId: primary.id, roles, verify, vip: vip! });
+    void handleCommand(i, { guild: mirror.guild, db, groups, mirror, providerId: primary.id, roles, verify, vip: vip!, funnel });
   });
   client.on(Events.GuildMemberUpdate, (before, after) => {
     if (after.guild.id !== guildId) return;
     if (!roles || before.roles.cache.size === after.roles.cache.size) return;
     void roles.sync(after).catch((e) => log.warn("language tier sync failed", errInfo(e)));
+  });
+  client.on(Events.GuildMemberAdd, (m) => {
+    if (m.guild.id !== guildId || m.user.bot) return;
+    const inv = invites;
+    void (inv ? inv.attribute() : Promise.resolve(null)).then((inviteCode) => funnel.record(m.id, "join", { inviteCode }));
+  });
+  client.on(Events.GuildMemberRemove, (m) => {
+    if (m.guild.id !== guildId || m.user?.bot) return;
+    funnel.record(m.id, "leave", { lang: roles && !m.partial ? roles.langOf(m) : null });
+  });
+  client.on(Events.InviteCreate, (inv) => {
+    if (inv.guild?.id === guildId) invites?.onCreate(inv.code, inv.uses);
+  });
+  client.on(Events.InviteDelete, (inv) => {
+    if (inv.guild?.id === guildId) invites?.onDelete(inv.code);
   });
   client.on(Events.Error, (e) => log.error("client error", errInfo(e)));
   client.on(Events.Warn, (w) => log.warn("client warning", { warning: w }));

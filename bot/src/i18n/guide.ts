@@ -66,6 +66,10 @@ export const GUIDE_EN = {
   bannerCommunityKicker: "Stay close",
   bannerCommunityTitle: "Follow & get help",
   bannerCommunitySub: "YouTube · X · Help-desk",
+  // Exchange strip tags (assets/start-here/render-exchanges.mjs), short: they sit under the exchange name
+  tileBybit: "Easiest start",
+  tileBlofin: "No ID check",
+  tileBitget: "Copy trading",
 };
 
 export type GuideText = typeof GUIDE_EN;

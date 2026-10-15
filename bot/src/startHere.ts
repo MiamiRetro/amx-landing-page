@@ -177,6 +177,8 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean;
       text(t.usCanada),
       text(t.availability),
     )
+    // Link buttons are always grey in Discord, so the colour sits in this strip just above them.
+    .addMediaGalleryComponents(banner("exchanges.png"))
     .addActionRowComponents(
       row(
         link("Bitget", "https://partner.bitget.com/bg/G91HYQ", E.Bitget),
@@ -270,7 +272,7 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean;
   return [
     { components: [welcome], files: [asset("hero.png", opts.lang)], flags: V2 },
     { components: [rules], files: [asset("rules.png", opts.lang)], flags: V2 },
-    { components: [start], files: [asset("start.png", opts.lang)], flags: V2 },
+    { components: [start], files: [asset("start.png", opts.lang), asset("exchanges.png", opts.lang)], flags: V2 },
     { components: [community], files: [asset("community.png", opts.lang)], flags: V2 },
   ];
 }

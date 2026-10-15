@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -42,7 +42,11 @@ const row = (...buttons: ButtonBuilder[]) => new ActionRowBuilder<ButtonBuilder>
 const text = (s: string) => new TextDisplayBuilder().setContent(s);
 const banner = (file: string) => new MediaGalleryBuilder().addItems(new MediaGalleryItemBuilder().setURL(`attachment://${file}`));
 const divider = () => new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small);
-const asset = (file: string) => new AttachmentBuilder(readFileSync(join(ASSETS, file)), { name: file });
+/** A banner in the member's language when one was rendered (assets/start-here/<lang>/), English otherwise. */
+const asset = (file: string, lang: Lang = "en") => {
+  const own = join(ASSETS, lang, file);
+  return new AttachmentBuilder(readFileSync(lang !== "en" && existsSync(own) ? own : join(ASSETS, file)), { name: file });
+};
 
 const TERMS_URL = "https://momentous-bolt-1cc.notion.site/BLKB-X-Inc-Terms-of-Service-f0567f236cfe43f7b04a47ffa4ed3931?pvs=4";
 const PRIVACY_URL = "https://www.blkbox.pro/privacy-policy";
@@ -264,9 +268,9 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean;
 
   // start-here is only seen after a language is picked, so it drops the picker.
   return [
-    { components: [welcome], files: [asset("hero.png")], flags: V2 },
-    { components: [rules], files: [asset("rules.png")], flags: V2 },
-    { components: [start], files: [asset("start.png")], flags: V2 },
-    { components: [community], files: [asset("community.png")], flags: V2 },
+    { components: [welcome], files: [asset("hero.png", opts.lang)], flags: V2 },
+    { components: [rules], files: [asset("rules.png", opts.lang)], flags: V2 },
+    { components: [start], files: [asset("start.png", opts.lang)], flags: V2 },
+    { components: [community], files: [asset("community.png", opts.lang)], flags: V2 },
   ];
 }

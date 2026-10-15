@@ -536,7 +536,7 @@ async function stepPanels(ctx: Ctx) {
       if (!tr) tr = await guild.emojis.create({ attachment: TRANSLATE_PNG, name: "translate", reason: "onboarding: language picker icon" });
       for (const msg of startHereMessages({ picker: true, translateEmoji: tr.toString(), helpDeskUrl })) await ch.send(msg);
     } else if (s.panel === "start") {
-      for (const msg of startHereMessages({ helpDeskUrl })) await ch.send(msg);
+      for (const msg of startHereMessages({ helpDeskUrl, lang })) await ch.send(msg);
     } else await ch.send(verifyPanel(lang, s.panel));
   }
 }

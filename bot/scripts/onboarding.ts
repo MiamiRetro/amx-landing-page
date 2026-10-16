@@ -554,7 +554,12 @@ async function stepRules(ctx: Ctx) {
   const old = guild.rulesChannelId && guild.rulesChannelId !== picker.id ? guild.channels.cache.get(guild.rulesChannelId) : undefined;
   if (guild.rulesChannelId !== picker.id) {
     log(`  rules channel: #${old?.name ?? "none"} → #${picker.name}`);
-    if (ctx.apply) await guild.setRulesChannel(picker.id, "onboarding: the picker carries the rules");
+    if (ctx.apply) {
+      const after = await guild.setRulesChannel(picker.id, "onboarding: the picker carries the rules");
+      // Discord answers 200 and keeps the old channel when the new one is hidden from some members,
+      // which the picker is by design. Then the old channel stays the rules channel, hidden below.
+      if (after.rulesChannelId !== picker.id) log(`  ! Discord kept #${old?.name} as the rules channel (the picker is hidden from members who picked a language)`);
+    }
   }
   if (old && "permissionOverwrites" in old) {
     const everyone = old.permissionOverwrites.cache.get(guild.roles.everyone.id);

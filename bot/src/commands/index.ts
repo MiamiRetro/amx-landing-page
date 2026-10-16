@@ -16,7 +16,7 @@ import type { Mirror } from "../mirror/mirror.js";
 import type { LanguageRoles } from "../roles.js";
 import type { VerifyService } from "../verify/service.js";
 import type { VipTracker } from "../vip/tracker.js";
-import { applyFlagship, ICONS, type FlagshipState } from "../flagship.js";
+import { applyFlagship, ICONS, LABELS, type FlagshipState } from "../flagship.js";
 import { EXCHANGES, EXCHANGE_LABELS, isExchange, ProviderError } from "../verify/types.js";
 
 const langChoices = LANGS.map((l) => ({ name: `${LANG_NAMES[l]} (${l})`, value: l }));
@@ -129,9 +129,10 @@ export const commandDefinitions = [
     .setDMPermission(false)
     .addStringOption((o) =>
       o.setName("state").setDescription("What the indicator says").setRequired(true).addChoices(
-        { name: "🟢 Bullish", value: "bullish" },
-        { name: "🟡 Caution", value: "caution" },
-        { name: "🔴 Bearish", value: "bearish" },
+        { name: "🟢🟢 Strong Bull Trend", value: "strong-bull" },
+        { name: "🟡🟢 Leaning Bullish", value: "lean-bull" },
+        { name: "🔴🟡 Leaning Bearish", value: "lean-bear" },
+        { name: "🔴🔴 Strong Bear Trend", value: "strong-bear" },
       ),
     ),
 ].map((c) => c.toJSON());
@@ -313,12 +314,12 @@ async function funnelCommand(i: ChatInputCommandInteraction, d: CommandDeps): Pr
 /** A moderator's override; the dashboard watch takes over again when the signals next change. */
 async function flagshipCommand(i: ChatInputCommandInteraction, d: CommandDeps): Promise<string> {
   const state = i.options.getString("state", true) as FlagshipState;
-  const r = await applyFlagship(d.guild, state, `AlphanumetriX set to ${state} by ${i.user.tag}`);
-  if (r.total === 0) return "No AlphanumetriX channel found (named like `🟢・alphanumetrix`).";
+  const r = await applyFlagship(d.guild, state, `AlphanumetriX set to ${LABELS[state]} by ${i.user.tag}`);
+  if (r.total === 0) return "No AlphanumetriX channel found (named like `🟢🟢・alphanumetrix`).";
   await d.db.setSetting(d.guild.id, "flagship:state", state);
   log.info("flagship state", { state, changed: r.changed, failed: r.failed.length, by: i.user.id });
   return [
-    `${ICONS[state]} AlphanumetriX set to **${state}**: ${r.changed} of ${r.total} channels renamed.`,
+    `${ICONS[state]} AlphanumetriX set to **${LABELS[state]}**: ${r.changed} of ${r.total} channels renamed.`,
     ...(r.failed.length ? [`-# ${r.failed.length} could not be renamed yet (Discord allows two renames per channel every 10 minutes).`] : []),
   ].join("\n");
 }

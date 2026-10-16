@@ -4,54 +4,51 @@ import type { Db } from "./db/index.js";
 import { log, errInfo } from "./log.js";
 
 /**
- * Keeps the AlphanumetriX channel's 🟢/🟡/🔴 in line with the dashboard's
- * headline for BTC. The dashboard (blkbox-platform, apps/api/src/services/
- * alphanumetrics/copy.ts) takes the latest weekly_diamond, three_day_cross and
- * wave_flip events and maps them:
+ * Keeps the AlphanumetriX channel's icon in line with the BTC strategy card on
+ * the new dashboard (blkbox-frontend, src/overview/market-regimes.ts
+ * btcStrategyScale): count how many of the latest weekly_diamond,
+ * three_day_cross and wave_flip events are bullish.
  *
- *   diamond green + cross bull + sar bull   → max-bull   🟢
- *   diamond neutral + cross bull + sar bull → bull       🟡
- *   diamond neutral + cross bear + sar bear → max-bear   🔴
- *   anything else                            → mixed      🟡
+ *   3 → Strong Bull Trend  🟢🟢
+ *   2 → Leaning Bullish    🟡🟢
+ *   1 → Leaning Bearish    🔴🟡
+ *   0 → Strong Bear Trend  🔴🔴
  *
- * It reads blkbox.tradingview_signal_events from the platform's Supabase with
- * FLAGSHIP_SUPABASE_URL / FLAGSHIP_SUPABASE_KEY (service role; the table's RLS
- * denies anon). /flagship still sets it by hand and wins until the next change.
+ * It reads blkbox.tradingview_signal_events with FLAGSHIP_SUPABASE_URL /
+ * FLAGSHIP_SUPABASE_KEY (service role). /flagship still sets it by hand and
+ * wins until the signals next change.
  */
-export type Severity = "max-bull" | "bull" | "mixed" | "bear" | "max-bear";
-export type FlagshipState = "bullish" | "caution" | "bearish";
-export const ICONS: Record<FlagshipState, string> = { bullish: "🟢", caution: "🟡", bearish: "🔴" };
+export type FlagshipState = "strong-bull" | "lean-bull" | "lean-bear" | "strong-bear";
+export const ICONS: Record<FlagshipState, string> = { "strong-bull": "🟢🟢", "lean-bull": "🟡🟢", "lean-bear": "🔴🟡", "strong-bear": "🔴🔴" };
+export const LABELS: Record<FlagshipState, string> = { "strong-bull": "Strong Bull Trend", "lean-bull": "Leaning Bullish", "lean-bear": "Leaning Bearish", "strong-bear": "Strong Bear Trend" };
+const BY_COUNT: FlagshipState[] = ["strong-bear", "lean-bear", "lean-bull", "strong-bull"];
+/** Any state prefix, old single-emoji ones included, so channels migrate on the first update. */
+export const STATE_PREFIX = /^[🟢🟡🔴]{1,2}・/u;
 
 interface Event { signal: string; direction: string; fired_at: string }
 
-/** The dashboard's rule, ported as-is. A signal that never fired counts as bearish. */
-export function severityOf(events: Event[]): Severity {
+/** Bullish signals among the latest event per signal. A signal that never fired counts as bearish. */
+export function bullishCount(events: Event[]): number {
   const latest = new Map<string, Event>();
   for (const e of events) {
     const cur = latest.get(e.signal);
     if (!cur || Date.parse(e.fired_at) > Date.parse(cur.fired_at)) latest.set(e.signal, e);
   }
-  const diamond = latest.get("weekly_diamond")?.direction === "bullish" ? "green" : "neutral";
-  const cross = latest.get("three_day_cross")?.direction === "bullish" ? "bull" : "bear";
-  const sar = latest.get("wave_flip")?.direction === "bullish" ? "bull" : "bear";
-  if (diamond === "green" && cross === "bull" && sar === "bull") return "max-bull";
-  if (diamond === "neutral" && cross === "bull" && sar === "bull") return "bull";
-  if (diamond === "neutral" && cross === "bear" && sar === "bear") return "max-bear";
-  return "mixed";
+  return ["weekly_diamond", "three_day_cross", "wave_flip"].filter((s) => latest.get(s)?.direction === "bullish").length;
 }
 
-export function stateOf(sev: Severity): FlagshipState {
-  return sev === "max-bull" ? "bullish" : sev === "bear" || sev === "max-bear" ? "bearish" : "caution";
+export function stateOf(events: Event[]): FlagshipState {
+  return BY_COUNT[bullishCount(events)];
 }
 
 /** Renames every language's AlphanumetriX channel to lead with `state`. Returns how many changed. */
 export async function applyFlagship(guild: Guild, state: FlagshipState, reason: string): Promise<{ changed: number; total: number; failed: string[] }> {
   const icon = ICONS[state];
-  const channels = guild.channels.cache.filter((c) => /^(🟢|🟡|🔴)・alphanumetrix$/.test(c.name));
+  const channels = guild.channels.cache.filter((c) => STATE_PREFIX.test(c.name) && c.name.endsWith("・alphanumetrix"));
   let changed = 0;
   const failed: string[] = [];
   for (const c of channels.values()) {
-    const name = c.name.replace(/^(🟢|🟡|🔴)/, icon);
+    const name = c.name.replace(STATE_PREFIX, `${icon}・`);
     if (name === c.name) continue;
     try {
       await c.setName(name, reason);
@@ -79,15 +76,14 @@ export class FlagshipWatch {
     if (!this.sb) return;
     const { data, error } = await this.sb.from("tradingview_signal_events").select("signal, direction, fired_at").eq("symbol", "BTC").order("fired_at", { ascending: false }).limit(200);
     if (error) throw new Error(`signal events: ${error.message}`);
-    const sev = severityOf((data ?? []) as Event[]);
-    const state = stateOf(sev);
-    // Only act on a change of the dashboard's own reading, so a manual /flagship holds until the signals move.
-    const last = await this.db.getSetting(this.guild.id, "flagship:severity");
-    if (last === sev) return;
-    const r = await applyFlagship(this.guild, state, `AlphanumetriX dashboard: ${sev}`);
-    await this.db.setSetting(this.guild.id, "flagship:severity", sev);
+    const state = stateOf((data ?? []) as Event[]);
+    // Only act on a change of the signals' own reading, so a manual /flagship holds until the signals move.
+    const last = await this.db.getSetting(this.guild.id, "flagship:signals");
+    if (last === state) return;
+    const r = await applyFlagship(this.guild, state, `AlphanumetriX: ${LABELS[state]}`);
+    await this.db.setSetting(this.guild.id, "flagship:signals", state);
     await this.db.setSetting(this.guild.id, "flagship:state", state);
-    log.info("flagship state from dashboard", { severity: sev, state, ...r, failed: r.failed.length });
+    log.info("flagship state from signals", { state, ...r, failed: r.failed.length });
   }
 
   start(minutes = 15) {

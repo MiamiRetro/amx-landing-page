@@ -210,14 +210,30 @@ const PANEL: Record<Lang, PanelText> = {
   },
 };
 
+/** The lock channels' lead-in: what is behind the lock, in each language. `{topic}` is the channel's own name. */
+const LOCKED: Record<Lang, string> = {
+  en: "**{topic}** is for verified members. Verify your exchange UID below to unlock it, along with every other locked channel on the Trading Floor.",
+  zh: "**{topic}** 仅对已验证会员开放。在下方验证你的交易所 UID 即可解锁本频道，以及交易大厅所有带锁的频道。",
+  ko: "**{topic}** 채널은 인증된 멤버 전용입니다. 아래에서 거래소 UID를 인증하면 이 채널과 트레이딩 플로어의 모든 잠긴 채널이 열립니다.",
+  id: "**{topic}** khusus untuk member terverifikasi. Verifikasi UID exchange kamu di bawah untuk membukanya, bersama semua kanal terkunci lain di Trading Floor.",
+  vi: "**{topic}** chỉ dành cho thành viên đã xác minh. Xác minh UID sàn bên dưới để mở kênh này cùng mọi kênh bị khóa khác trên Trading Floor.",
+  es: "**{topic}** es solo para miembros verificados. Verifica tu UID abajo para desbloquearlo, junto con todos los demás canales bloqueados del Trading Floor.",
+  pt: "**{topic}** é só para membros verificados. Verifique seu UID abaixo para liberar, junto com todos os outros canais bloqueados do Trading Floor.",
+  tr: "**{topic}** yalnızca doğrulanmış üyeler içindir. Aşağıdan UID'ni doğrula; bu kanal ve Trading Floor'daki diğer tüm kilitli kanallar açılır.",
+  ru: "**{topic}** только для подтверждённых участников. Подтвердите UID ниже, и откроется этот канал вместе со всеми закрытыми каналами Trading Floor.",
+  ja: "**{topic}** は認証済みメンバー専用です。下でUIDを認証すると、このチャンネルとTrading Floorのすべてのロック中チャンネルが開きます。",
+};
+
 /**
- * The message that carries the verify button. `bitcoin` is the same button
- * behind a "verified members only" lead-in, for the locked bitcoin channel.
+ * The message that carries the verify button. `bitcoin` and `locked` are the same
+ * button behind a "verified members only" lead-in, for the lock channels;
+ * `locked` names the channel it stands in for (`topic`).
  */
-export function verifyPanel(lang: Lang = "en", variant: "verify" | "bitcoin" = "verify") {
+export function verifyPanel(lang: Lang = "en", variant: "verify" | "bitcoin" | "locked" = "verify", topic = "") {
   const t = PANEL[lang];
+  const lead = variant === "locked" ? [LOCKED[lang].replace("{topic}", topic)] : variant === "bitcoin" ? t.bitcoin : t.body;
   return {
-    content: [`## ${variant === "bitcoin" ? "🔒 " : ""}${t.title}`, ...(variant === "bitcoin" ? t.bitcoin : t.body), "", `-# ${t.note}`].join("\n"),
+    content: [`## ${variant === "verify" ? "" : "🔒 "}${t.title}`, ...lead, "", `-# ${t.note}`].join("\n"),
     components: [
       new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder().setCustomId(VERIFY_BUTTON).setStyle(ButtonStyle.Success).setLabel(t.button).setEmoji("🔑"),
@@ -227,8 +243,8 @@ export function verifyPanel(lang: Lang = "en", variant: "verify" | "bitcoin" = "
   };
 }
 
-export async function postVerifyPanel(channel: TextChannel, lang: Lang = "en", variant: "verify" | "bitcoin" = "verify") {
-  return channel.send(verifyPanel(lang, variant));
+export async function postVerifyPanel(channel: TextChannel, lang: Lang = "en", variant: "verify" | "bitcoin" | "locked" = "verify", topic = "") {
+  return channel.send(verifyPanel(lang, variant, topic));
 }
 
 /** The popup: exchange picker plus the UID field, in one modal. */

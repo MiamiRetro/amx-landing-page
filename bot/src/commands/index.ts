@@ -121,6 +121,18 @@ export const commandDefinitions = [
         .addIntegerOption((o) => o.setName("days").setDescription("Window in days (default 30)").setMinValue(1).setMaxValue(365))
         .addStringOption((o) => o.setName("lang").setDescription("Only this language").addChoices(...langChoices)),
     ),
+  new SlashCommandBuilder()
+    .setName("flagship")
+    .setDescription("Set the AlphanumetriX indicator state shown on its channel in every language")
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels)
+    .setDMPermission(false)
+    .addStringOption((o) =>
+      o.setName("state").setDescription("What the indicator says").setRequired(true).addChoices(
+        { name: "🟢 Bullish", value: "bullish" },
+        { name: "🟡 Caution", value: "caution" },
+        { name: "🔴 Bearish", value: "bearish" },
+      ),
+    ),
 ].map((c) => c.toJSON());
 
 export interface CommandDeps {
@@ -144,6 +156,7 @@ export async function handleCommand(i: ChatInputCommandInteraction, d: CommandDe
       : i.commandName === "uid" ? await uidCommand(i, d)
       : i.commandName === "language" ? await languageCommand(i, d)
       : i.commandName === "vip" ? await vipCommand(i, d)
+      : i.commandName === "flagship" ? await flagshipCommand(i, d)
       : i.commandName === "funnel" ? await funnelCommand(i, d)
       : await glossaryCommand(i, d);
     await i.editReply(text.slice(0, 1900));
@@ -294,6 +307,38 @@ async function funnelCommand(i: ChatInputCommandInteraction, d: CommandDeps): Pr
   const lang = i.options.getString("lang");
   const rows = await d.funnel.rows(new Date(Date.now() - days * 86_400_000));
   return formatReport(buildReport(rows, { lang }), days, lang);
+}
+
+const FLAGSHIP_ICONS = { bullish: "🟢", caution: "🟡", bearish: "🔴" } as const;
+
+/**
+ * Renames every language's AlphanumetriX channel to lead with the indicator's
+ * state. Discord allows two renames per channel per ten minutes, so a third
+ * change inside that window is refused rather than queued.
+ */
+async function flagshipCommand(i: ChatInputCommandInteraction, d: CommandDeps): Promise<string> {
+  const state = i.options.getString("state", true) as keyof typeof FLAGSHIP_ICONS;
+  const icon = FLAGSHIP_ICONS[state];
+  const channels = d.guild.channels.cache.filter((c) => /^(🟢|🟡|🔴)・alphanumetrix$/.test(c.name));
+  if (channels.size === 0) return "No AlphanumetriX channel found (named like `🟢・alphanumetrix`).";
+  let changed = 0;
+  const failed: string[] = [];
+  for (const c of channels.values()) {
+    const name = c.name.replace(/^(🟢|🟡|🔴)/, icon);
+    if (name === c.name) continue;
+    try {
+      await c.setName(name, `AlphanumetriX indicator: ${state}, set by ${i.user.tag}`);
+      changed++;
+    } catch (e) {
+      failed.push(e instanceof Error ? e.message : String(e));
+    }
+  }
+  await d.db.setSetting(d.guild.id, "flagship:state", state);
+  log.info("flagship state", { state, changed, failed: failed.length, by: i.user.id });
+  return [
+    `${icon} AlphanumetriX set to **${state}**: ${changed} of ${channels.size} channels renamed${changed < channels.size - failed.length ? " (the rest already showed it)" : ""}.`,
+    ...(failed.length ? [`-# ${failed.length} could not be renamed yet (Discord allows two renames per channel every 10 minutes): ${failed[0]}`] : []),
+  ].join("\n");
 }
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;

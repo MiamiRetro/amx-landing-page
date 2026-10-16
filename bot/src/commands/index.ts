@@ -16,6 +16,7 @@ import type { Mirror } from "../mirror/mirror.js";
 import type { LanguageRoles } from "../roles.js";
 import type { VerifyService } from "../verify/service.js";
 import type { VipTracker } from "../vip/tracker.js";
+import { applyFlagship, ICONS, type FlagshipState } from "../flagship.js";
 import { EXCHANGES, EXCHANGE_LABELS, isExchange, ProviderError } from "../verify/types.js";
 
 const langChoices = LANGS.map((l) => ({ name: `${LANG_NAMES[l]} (${l})`, value: l }));
@@ -309,35 +310,16 @@ async function funnelCommand(i: ChatInputCommandInteraction, d: CommandDeps): Pr
   return formatReport(buildReport(rows, { lang }), days, lang);
 }
 
-const FLAGSHIP_ICONS = { bullish: "🟢", caution: "🟡", bearish: "🔴" } as const;
-
-/**
- * Renames every language's AlphanumetriX channel to lead with the indicator's
- * state. Discord allows two renames per channel per ten minutes, so a third
- * change inside that window is refused rather than queued.
- */
+/** A moderator's override; the dashboard watch takes over again when the signals next change. */
 async function flagshipCommand(i: ChatInputCommandInteraction, d: CommandDeps): Promise<string> {
-  const state = i.options.getString("state", true) as keyof typeof FLAGSHIP_ICONS;
-  const icon = FLAGSHIP_ICONS[state];
-  const channels = d.guild.channels.cache.filter((c) => /^(🟢|🟡|🔴)・alphanumetrix$/.test(c.name));
-  if (channels.size === 0) return "No AlphanumetriX channel found (named like `🟢・alphanumetrix`).";
-  let changed = 0;
-  const failed: string[] = [];
-  for (const c of channels.values()) {
-    const name = c.name.replace(/^(🟢|🟡|🔴)/, icon);
-    if (name === c.name) continue;
-    try {
-      await c.setName(name, `AlphanumetriX indicator: ${state}, set by ${i.user.tag}`);
-      changed++;
-    } catch (e) {
-      failed.push(e instanceof Error ? e.message : String(e));
-    }
-  }
+  const state = i.options.getString("state", true) as FlagshipState;
+  const r = await applyFlagship(d.guild, state, `AlphanumetriX set to ${state} by ${i.user.tag}`);
+  if (r.total === 0) return "No AlphanumetriX channel found (named like `🟢・alphanumetrix`).";
   await d.db.setSetting(d.guild.id, "flagship:state", state);
-  log.info("flagship state", { state, changed, failed: failed.length, by: i.user.id });
+  log.info("flagship state", { state, changed: r.changed, failed: r.failed.length, by: i.user.id });
   return [
-    `${icon} AlphanumetriX set to **${state}**: ${changed} of ${channels.size} channels renamed${changed < channels.size - failed.length ? " (the rest already showed it)" : ""}.`,
-    ...(failed.length ? [`-# ${failed.length} could not be renamed yet (Discord allows two renames per channel every 10 minutes): ${failed[0]}`] : []),
+    `${ICONS[state]} AlphanumetriX set to **${state}**: ${r.changed} of ${r.total} channels renamed.`,
+    ...(r.failed.length ? [`-# ${r.failed.length} could not be renamed yet (Discord allows two renames per channel every 10 minutes).`] : []),
   ].join("\n");
 }
 

@@ -17,6 +17,7 @@ import { VerifyService } from "./verify/service.js";
 import { handleVerifyButton, handleVerifySubmit, VERIFY_BUTTON, VERIFY_MODAL } from "./verify/panel.js";
 import { checkProviders, HealthWatch } from "./verify/health.js";
 import { VipTracker } from "./vip/tracker.js";
+import { FlagshipWatch } from "./flagship.js";
 
 async function main() {
   setLogLevel(config.logLevel());
@@ -75,6 +76,8 @@ async function main() {
       // The weekly check needs Bybit, which blocks some hosting regions. It runs
       // from the Mac Studio (scripts/vip-run.ts under launchd) unless VIP_SCHEDULE=1.
       if (process.env.VIP_SCHEDULE === "1") vip.schedule();
+      const flagship = new FlagshipWatch(guild, db);
+      if (flagship.enabled) { flagship.start(); log.info("flagship follows the AlphanumetriX dashboard"); }
       log.info("uid verification ready", { exchanges: [...affiliates.values()].map((p) => `${p.id}:${p.live ? "live" : "stand-in"}`) });
 
       // Affiliate keys die quietly: Bybit expires an unbound key after 90 days,

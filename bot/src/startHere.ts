@@ -43,7 +43,11 @@ const divider = () => new SeparatorBuilder().setDivider(true).setSpacing(Separat
 const asset = (file: string) => new AttachmentBuilder(readFileSync(join(ASSETS, file)), { name: file });
 
 /** One branded card per section, built with Discord's layout components. */
-export function startHereMessages(opts: { helpDeskUrl: string }): MessageCreateOptions[] {
+export const CARD_NAMES = ["welcome", "language", "rules", "start", "community"] as const;
+export type CardName = (typeof CARD_NAMES)[number];
+
+/** Every card on the page, in order, each one named so it can be posted alone. */
+export function startHereSections(opts: { helpDeskUrl: string }): { name: CardName; message: MessageCreateOptions }[] {
   const V2 = MessageFlags.IsComponentsV2;
 
   // Hero image only: the banner already carries the wordmark, headline and tagline.
@@ -200,10 +204,22 @@ export function startHereMessages(opts: { helpDeskUrl: string }): MessageCreateO
     );
 
   return [
-    { components: [welcome], files: [asset("hero.png")], flags: V2 },
-    { components: [language], files: [asset("language.png")], flags: V2 },
-    { components: [rules], files: [asset("rules.png")], flags: V2 },
-    { components: [start], files: [asset("start.png")], flags: V2 },
-    { components: [community], files: [asset("community.png")], flags: V2 },
+    { name: "welcome", message: { components: [welcome], files: [asset("hero.png")], flags: V2 } },
+    { name: "language", message: { components: [language], files: [asset("language.png")], flags: V2 } },
+    { name: "rules", message: { components: [rules], files: [asset("rules.png")], flags: V2 } },
+    { name: "start", message: { components: [start], files: [asset("start.png")], flags: V2 } },
+    { name: "community", message: { components: [community], files: [asset("community.png")], flags: V2 } },
   ];
+}
+
+/** The page in order, for callers that want all of it. */
+export function startHereMessages(opts: { helpDeskUrl: string }): MessageCreateOptions[] {
+  return startHereSections(opts).map((s) => s.message);
+}
+
+/** One card by name, for posting a single section somewhere of its own. */
+export function startHereCard(name: CardName, opts: { helpDeskUrl: string }): MessageCreateOptions {
+  const found = startHereSections(opts).find((s) => s.name === name);
+  if (!found) throw new Error(`unknown card "${name}"`);
+  return found.message;
 }

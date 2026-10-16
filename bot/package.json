@@ -9,6 +9,7 @@
   },
   "scripts": {
     "verify:panel": "tsx scripts/post-verify.ts",
+    "post:card": "tsx scripts/post-card.ts",
     "verify:channel": "tsx scripts/verify-channel.ts",
     "verify:status": "tsx scripts/verify-status.ts",
     "verify:probe": "tsx scripts/verify-probe.ts",

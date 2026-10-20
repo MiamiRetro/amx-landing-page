@@ -20,7 +20,10 @@ const woff2 = (path) => `url(data:font/woff2;base64,${readFileSync(join(BOT, "no
 const font = (w) => `@font-face{font-family:Sora;src:${woff2(`sora/files/sora-latin-${w}-normal.woff2`)};font-weight:${w}}`;
 const noto = (w) => `@font-face{font-family:"Noto Sans Embed";src:${woff2(`noto-sans/files/noto-sans-cyrillic-${w}-normal.woff2`)};font-weight:${w};unicode-range:U+0400-04FF}
 @font-face{font-family:"Noto Sans Embed";src:${woff2(`noto-sans/files/noto-sans-vietnamese-${w}-normal.woff2`)};font-weight:${w};unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+1EA0-1EF9}`;
-const FONTS = `Sora,"Noto Sans Embed","Noto Sans CJK SC","Noto Sans CJK JP","Noto Sans CJK KR","IPAGothic","Noto Sans","Noto Color Emoji",sans-serif`;
+const FONTS = `Sora,"Noto Sans Embed","Noto Sans CJK SC","Noto Sans","Noto Color Emoji",sans-serif`;
+// Han characters differ between Chinese, Japanese and Korean, so each gets its own CJK face first.
+const CJK = { zh: "Noto Sans CJK SC", ja: "Noto Sans CJK JP", ko: "Noto Sans CJK KR" };
+const stack = (lang) => (CJK[lang] ? `Sora,"${CJK[lang]}","Noto Color Emoji",sans-serif` : FONTS);
 
 const CSS = `${[500, 600, 700, 800].map(font).join("\n")}
 ${[500, 600, 700, 800].map(noto).join("\n")}
@@ -227,6 +230,7 @@ for (const lang of langs) {
   for (const [key, card] of Object.entries(CARDS)) {
     await tab.setViewportSize({ width: W, height: HEIGHT[key] ?? H });
     await tab.setContent(card(t), { waitUntil: "load" });
+    await tab.evaluate((f) => { document.body.style.fontFamily = f; }, stack(lang));
     await tab.evaluate(() => document.fonts.ready);
     // Shrink a headline that runs past the edges in a long language.
     await tab.evaluate(() => {

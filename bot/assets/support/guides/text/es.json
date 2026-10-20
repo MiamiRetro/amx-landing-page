@@ -1,0 +1,149 @@
+{
+  "you": "Tú",
+  "typeHere": "Mensaje…",
+  "threadsLabel": "Hilos",
+  "exchange": "Exchange",
+  "submit": "Enviar",
+  "profile": "Perfil",
+  "yourThread": "tu hilo de ayuda",
+  "chGuide": "guía-del-servidor",
+  "catAnn": "ANUNCIOS",
+  "catCom": "COMUNIDAD",
+  "chAnnouncements": "anuncios",
+  "chSignals": "señales-trading",
+  "chGeneral": "general",
+  "chHelp": "ayuda",
+  "chMemes": "memes",
+  "verifyModal": "Verificar mi UID",
+  "verifyTitle": "Verifica tu UID del exchange",
+  "verifyButton": "Verificar mi UID",
+  "step2Card": "2 · Elige tu exchange",
+  "mobile": {
+    "kicker": "Discord en el móvil",
+    "title": "Cómo moverte en el móvil",
+    "sub": "Con tres gestos te basta",
+    "s1": "Abre la lista",
+    "s1p": "Toca ☰ arriba a la izquierda, o desliza a la derecha, para ver todos los canales.",
+    "s2": "Elige un canal",
+    "s2p": "Toca un canal para abrirlo. Desliza a la derecha otra vez para volver.",
+    "s3": "Encuentra los hilos",
+    "s3p": "Toca el icono de hilos arriba a la derecha del canal para verlos."
+  },
+  "desktop": {
+    "kicker": "Discord en el ordenador",
+    "title": "Cómo moverte en el ordenador",
+    "sub": "Igual en la app y en discord.com/app",
+    "l1": "Servidores",
+    "l1p": "Todos tus servidores, en el extremo izquierdo.",
+    "l2": "Canales",
+    "l2p": "Los canales de este servidor. Haz clic para abrir. Los hilos van justo debajo de su canal.",
+    "l3": "Chat",
+    "l3p": "Los mensajes del canal o hilo abierto.",
+    "l4": "Caja de mensaje",
+    "l4p": "Escribe aquí y pulsa Enter. El + añade una captura.",
+    "l5": "Hilos",
+    "l5p": "Lista todos los hilos del canal, incluido el tuyo.",
+    "l6": "Miembros",
+    "l6p": "Quién está aquí. Los moderadores salen arriba."
+  },
+  "help": {
+    "kicker": "ayuda",
+    "title": "Tu hilo de ayuda privado",
+    "sub": "Solo tú y los moderadores lo ven",
+    "onlyYou": "Solo tú puedes ver esto",
+    "s1": "Pulsa Pedir ayuda",
+    "s1p": "En el canal de ayuda, pulsa Pedir ayuda en el mensaje fijado.",
+    "s2": "Toca el enlace",
+    "s2p": "Toca Abrir mi hilo de ayuda para entrar directamente.",
+    "s3": "Pregunta",
+    "s3p": "Escribe tu pregunta. Toca + para añadir una captura.",
+    "foot": "¿Perdiste tu hilo? Abre <b>ayuda</b> y toca el <b>icono de hilos</b>, o pulsa Pedir ayuda otra vez.",
+    "panel": "¿Necesitas ayuda?",
+    "getHelp": "Pedir ayuda",
+    "openThread": "Abrir mi hilo de ayuda"
+  },
+  "verify": {
+    "kicker": "Bybit · Bitget · Blofin",
+    "title": "Desbloquea todo el servidor",
+    "sub": "Tres pasos, unos dos minutos",
+    "s1": "Regístrate con nuestro enlace",
+    "s1p": "Abre la guía del servidor y pulsa el botón de tu exchange.",
+    "s2": "Copia tu UID",
+    "s2p": "En la app del exchange, abre tu perfil y copia el número UID.",
+    "s3": "Verificar mi UID",
+    "s3p": "En cualquier canal 🔒 pulsa Verificar mi UID, elige tu exchange y pega.",
+    "foot": "Solo se verifican cuentas abiertas con <b>nuestros enlaces</b>. El UID es un número, nunca una contraseña ni una API key."
+  },
+  "map": {
+    "kicker": "Mapa del servidor",
+    "title": "Qué hay en cada sitio",
+    "sub": "Los canales de tu idioma y lo que se abre al verificar",
+    "open": "Abierto para ti",
+    "locked": "Se abre al verificar",
+    "foot": "Hasta que verifiques, aparecen como <b>🔒 señales-trading</b> y <b>🔒 grupo-trading</b>.",
+    "openItems": [
+      [
+        "【guía-del-servidor】",
+        "Empieza aquí: normas, registro, verificación"
+      ],
+      [
+        "📢 anuncios",
+        "Novedades del equipo"
+      ],
+      [
+        "💬 general",
+        "Charla con todos"
+      ],
+      [
+        "🐸 memes",
+        "Para divertirse"
+      ],
+      [
+        "☎️ ayuda",
+        "Ayuda en un hilo privado"
+      ]
+    ],
+    "lockedItems": [
+      [
+        "🟢 alphanumetrix",
+        "El estado del indicador estrella"
+      ],
+      [
+        "🤖 alertas-bot",
+        "Alertas de los bots BLKBöX"
+      ],
+      [
+        "⚡ alertas",
+        "Señales de trading"
+      ],
+      [
+        "🟠 grupo-trading",
+        "Bitcoin, cripto, acciones, materias primas"
+      ],
+      [
+        "📚 REFERENCIA",
+        "Guías de configuración y estrategias"
+      ]
+    ]
+  },
+  "scams": {
+    "kicker": "Protégete",
+    "title": "Detecta una estafa",
+    "sub": "El equipo nunca te escribe primero por DM",
+    "never": "El equipo nunca",
+    "neverItems": [
+      "Te pedirá tu contraseña, API key o código 2FA",
+      "Te pedirá tu frase semilla o tu wallet",
+      "Se ofrecerá a operar por ti o duplicar tu dinero",
+      "Te pedirá que envíes fondos a ningún sitio"
+    ],
+    "do": "Haz esto",
+    "doItems": [
+      "No respondas. Bloquea la cuenta",
+      "Denúncialo en tu hilo de ayuda",
+      "Desactiva los DM de miembros del servidor",
+      "Cambia contraseñas y activa 2FA"
+    ],
+    "foot": "¿Dudas? Pregunta en <b>ayuda</b>. Los moderadores reales solo te ayudan aquí, en el servidor."
+  }
+}

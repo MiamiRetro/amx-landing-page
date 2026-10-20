@@ -1,0 +1,149 @@
+{
+  "you": "Kamu",
+  "typeHere": "Kirim pesan…",
+  "threadsLabel": "Thread",
+  "exchange": "Exchange",
+  "submit": "Kirim",
+  "profile": "Profil",
+  "yourThread": "thread bantuanmu",
+  "chGuide": "panduan-server",
+  "catAnn": "PENGUMUMAN",
+  "catCom": "KOMUNITAS",
+  "chAnnouncements": "pengumuman",
+  "chSignals": "sinyal-trading",
+  "chGeneral": "obrolan-umum",
+  "chHelp": "bantuan",
+  "chMemes": "meme",
+  "verifyModal": "Verifikasi UID saya",
+  "verifyTitle": "Verifikasi UID exchange kamu",
+  "verifyButton": "Verifikasi UID saya",
+  "step2Card": "2 · Pilih exchange-mu",
+  "mobile": {
+    "kicker": "Discord di HP",
+    "title": "Cara pakai di HP",
+    "sub": "Cukup tiga langkah",
+    "s1": "Buka daftar",
+    "s1p": "Ketuk ☰ di kiri atas, atau geser ke kanan, untuk melihat semua kanal.",
+    "s2": "Pilih kanal",
+    "s2p": "Ketuk kanal untuk membukanya. Geser ke kanan lagi untuk kembali.",
+    "s3": "Cari thread",
+    "s3p": "Ketuk ikon thread di kanan atas kanal untuk melihat thread-nya."
+  },
+  "desktop": {
+    "kicker": "Discord di komputer",
+    "title": "Cara pakai di desktop",
+    "sub": "Sama di aplikasi dan di discord.com/app",
+    "l1": "Server",
+    "l1p": "Semua server yang kamu ikuti, di paling kiri.",
+    "l2": "Kanal",
+    "l2p": "Kanal server ini. Klik untuk membuka. Thread ada tepat di bawah kanalnya.",
+    "l3": "Obrolan",
+    "l3p": "Pesan di kanal atau thread yang sedang terbuka.",
+    "l4": "Kotak pesan",
+    "l4p": "Ketik di sini lalu tekan Enter. Tombol + menambah screenshot.",
+    "l5": "Thread",
+    "l5p": "Daftar semua thread di kanal ini, termasuk milikmu.",
+    "l6": "Anggota",
+    "l6p": "Siapa saja yang ada. Moderator di paling atas."
+  },
+  "help": {
+    "kicker": "bantuan",
+    "title": "Thread bantuan pribadimu",
+    "sub": "Hanya kamu dan moderator yang bisa melihat",
+    "onlyYou": "Hanya kamu yang bisa melihat ini",
+    "s1": "Tekan Minta bantuan",
+    "s1p": "Di kanal bantuan, tekan Minta bantuan di pesan yang disematkan.",
+    "s2": "Ketuk tautannya",
+    "s2p": "Ketuk Buka thread bantuanku untuk langsung masuk.",
+    "s3": "Tanyakan saja",
+    "s3p": "Tulis pertanyaanmu. Ketuk + untuk menambah screenshot.",
+    "foot": "Thread-mu hilang? Buka <b>bantuan</b> dan ketuk <b>ikon thread</b>, atau tekan Minta bantuan lagi.",
+    "panel": "Butuh bantuan?",
+    "getHelp": "Minta bantuan",
+    "openThread": "Buka thread bantuanku"
+  },
+  "verify": {
+    "kicker": "Bybit · Bitget · Blofin",
+    "title": "Buka seluruh server",
+    "sub": "Tiga langkah, sekitar dua menit",
+    "s1": "Daftar lewat link kami",
+    "s1p": "Buka panduan server dan tekan tombol exchange-mu.",
+    "s2": "Salin UID-mu",
+    "s2p": "Di aplikasi exchange, buka profil dan salin nomor UID.",
+    "s3": "Verifikasi UID saya",
+    "s3p": "Di kanal 🔒 mana pun, tekan Verifikasi UID saya, pilih exchange, lalu tempel.",
+    "foot": "Hanya akun yang dibuka lewat <b>link kami</b> yang bisa diverifikasi. UID itu nomor, bukan password atau API key."
+  },
+  "map": {
+    "kicker": "Peta server",
+    "title": "Apa ada di mana",
+    "sub": "Kanal bahasamu, dan yang terbuka setelah verifikasi",
+    "open": "Sudah terbuka",
+    "locked": "Terbuka setelah verifikasi",
+    "foot": "Sebelum verifikasi, ini tampil sebagai <b>🔒 sinyal-trading</b> dan <b>🔒 grup-trading</b>.",
+    "openItems": [
+      [
+        "【panduan-server】",
+        "Mulai di sini: aturan, daftar, verifikasi"
+      ],
+      [
+        "📢 pengumuman",
+        "Kabar dari tim"
+      ],
+      [
+        "💬 obrolan-umum",
+        "Ngobrol dengan semua"
+      ],
+      [
+        "🐸 meme",
+        "Buat seru-seruan"
+      ],
+      [
+        "☎️ bantuan",
+        "Bantuan di thread pribadi"
+      ]
+    ],
+    "lockedItems": [
+      [
+        "🟢 alphanumetrix",
+        "Status indikator andalan"
+      ],
+      [
+        "🤖 alert-bot",
+        "Alert dari bot BLKBöX"
+      ],
+      [
+        "⚡ sinyal-trading",
+        "Sinyal trading"
+      ],
+      [
+        "🟠 grup-trading",
+        "Bitcoin, kripto, saham, komoditas"
+      ],
+      [
+        "📚 REFERENSI",
+        "Panduan setup dan strategi"
+      ]
+    ]
+  },
+  "scams": {
+    "kicker": "Tetap aman",
+    "title": "Kenali penipuan",
+    "sub": "Staf tidak pernah DM duluan",
+    "never": "Staf tidak akan pernah",
+    "neverItems": [
+      "Minta password, API key, atau kode 2FA",
+      "Minta seed phrase atau wallet",
+      "Menawarkan trading untukmu atau melipatgandakan uang",
+      "Menyuruh kirim dana ke mana pun"
+    ],
+    "do": "Lakukan ini",
+    "doItems": [
+      "Jangan balas. Blokir akunnya",
+      "Laporkan di thread bantuanmu",
+      "Matikan DM dari anggota server",
+      "Ganti password dan aktifkan 2FA"
+    ],
+    "foot": "Ragu? Tanya di <b>bantuan</b>. Moderator asli hanya membantu di sini, di dalam server."
+  }
+}

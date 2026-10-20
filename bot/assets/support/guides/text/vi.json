@@ -1,0 +1,149 @@
+{
+  "you": "Bạn",
+  "typeHere": "Nhắn tin…",
+  "threadsLabel": "Luồng",
+  "exchange": "Sàn",
+  "submit": "Gửi",
+  "profile": "Hồ sơ",
+  "yourThread": "luồng hỗ trợ của bạn",
+  "chGuide": "hướng-dẫn-server",
+  "catAnn": "THÔNG BÁO",
+  "catCom": "CỘNG ĐỒNG",
+  "chAnnouncements": "thông-báo",
+  "chSignals": "tín-hiệu-giao-dịch",
+  "chGeneral": "tán-gẫu",
+  "chHelp": "hỗ-trợ",
+  "chMemes": "meme",
+  "verifyModal": "Xác minh UID",
+  "verifyTitle": "Xác minh UID sàn của bạn",
+  "verifyButton": "Xác minh UID",
+  "step2Card": "2 · Chọn sàn của bạn",
+  "mobile": {
+    "kicker": "Discord trên điện thoại",
+    "title": "Dùng Discord trên điện thoại",
+    "sub": "Chỉ cần ba thao tác",
+    "s1": "Mở danh sách",
+    "s1p": "Chạm ☰ ở góc trên bên trái, hoặc vuốt sang phải, để xem mọi kênh.",
+    "s2": "Chọn kênh",
+    "s2p": "Chạm vào kênh để mở. Vuốt sang phải lần nữa để quay lại.",
+    "s3": "Tìm luồng",
+    "s3p": "Chạm biểu tượng luồng ở góc trên bên phải kênh để xem các luồng."
+  },
+  "desktop": {
+    "kicker": "Discord trên máy tính",
+    "title": "Dùng Discord trên máy tính",
+    "sub": "Giống nhau trên ứng dụng và discord.com/app",
+    "l1": "Máy chủ",
+    "l1p": "Mọi máy chủ bạn tham gia, ở ngoài cùng bên trái.",
+    "l2": "Kênh",
+    "l2p": "Các kênh của máy chủ này. Bấm để mở. Luồng nằm ngay dưới kênh.",
+    "l3": "Trò chuyện",
+    "l3p": "Tin nhắn trong kênh hoặc luồng đang mở.",
+    "l4": "Ô nhắn tin",
+    "l4p": "Gõ ở đây rồi nhấn Enter. Nút + để thêm ảnh chụp màn hình.",
+    "l5": "Luồng",
+    "l5p": "Liệt kê mọi luồng trong kênh này, kể cả của bạn.",
+    "l6": "Thành viên",
+    "l6p": "Ai đang ở đây. Quản trị viên ở trên cùng."
+  },
+  "help": {
+    "kicker": "hỗ trợ",
+    "title": "Luồng hỗ trợ riêng của bạn",
+    "sub": "Chỉ bạn và quản trị viên thấy được",
+    "onlyYou": "Chỉ bạn thấy tin nhắn này",
+    "s1": "Bấm Nhận hỗ trợ",
+    "s1p": "Trong kênh hỗ trợ, bấm Nhận hỗ trợ ở tin nhắn được ghim.",
+    "s2": "Chạm vào liên kết",
+    "s2p": "Chạm Mở luồng hỗ trợ của tôi để vào thẳng.",
+    "s3": "Đặt câu hỏi",
+    "s3p": "Gõ câu hỏi. Chạm + để thêm ảnh chụp màn hình.",
+    "foot": "Mất luồng? Mở <b>hỗ trợ</b> và chạm <b>biểu tượng luồng</b>, hoặc bấm Nhận hỗ trợ lần nữa.",
+    "panel": "Cần hỗ trợ?",
+    "getHelp": "Nhận hỗ trợ",
+    "openThread": "Mở luồng hỗ trợ của tôi"
+  },
+  "verify": {
+    "kicker": "Bybit · Bitget · Blofin",
+    "title": "Mở toàn bộ máy chủ",
+    "sub": "Ba bước, khoảng hai phút",
+    "s1": "Đăng ký qua link của chúng tôi",
+    "s1p": "Mở hướng dẫn server và bấm nút sàn của bạn.",
+    "s2": "Sao chép UID",
+    "s2p": "Trong ứng dụng sàn, mở hồ sơ và sao chép số UID.",
+    "s3": "Xác minh UID",
+    "s3p": "Trong kênh 🔒 bất kỳ, bấm Xác minh UID, chọn sàn và dán vào.",
+    "foot": "Chỉ tài khoản mở qua <b>link của chúng tôi</b> mới xác minh được. UID là một dãy số, không phải mật khẩu hay API key."
+  },
+  "map": {
+    "kicker": "Bản đồ máy chủ",
+    "title": "Cái gì ở đâu",
+    "sub": "Các kênh ngôn ngữ của bạn, và những gì mở ra khi xác minh",
+    "open": "Đã mở cho bạn",
+    "locked": "Mở khi bạn xác minh",
+    "foot": "Trước khi xác minh, chúng hiện là <b>🔒 tín-hiệu-giao-dịch</b> và <b>🔒 nhóm-giao-dịch</b>.",
+    "openItems": [
+      [
+        "【hướng-dẫn-server】",
+        "Bắt đầu ở đây: luật, đăng ký, xác minh"
+      ],
+      [
+        "📢 thông-báo",
+        "Tin tức từ đội ngũ"
+      ],
+      [
+        "💬 tán-gẫu",
+        "Trò chuyện với mọi người"
+      ],
+      [
+        "🐸 meme",
+        "Cho vui"
+      ],
+      [
+        "☎️ hỗ-trợ",
+        "Nhận hỗ trợ trong luồng riêng"
+      ]
+    ],
+    "lockedItems": [
+      [
+        "🟢 alphanumetrix",
+        "Trạng thái chỉ báo chủ lực"
+      ],
+      [
+        "🤖 cảnh-báo-bot",
+        "Cảnh báo từ bot BLKBöX"
+      ],
+      [
+        "⚡ tín-hiệu",
+        "Tín hiệu giao dịch"
+      ],
+      [
+        "🟠 nhóm-giao-dịch",
+        "Bitcoin, crypto, cổ phiếu, hàng hóa"
+      ],
+      [
+        "📚 TÀI LIỆU",
+        "Hướng dẫn cài đặt và chiến lược"
+      ]
+    ]
+  },
+  "scams": {
+    "kicker": "Giữ an toàn",
+    "title": "Nhận biết lừa đảo",
+    "sub": "Nhân viên không bao giờ nhắn riêng trước",
+    "never": "Nhân viên không bao giờ",
+    "neverItems": [
+      "Hỏi mật khẩu, API key hay mã 2FA",
+      "Hỏi cụm từ khôi phục hay ví",
+      "Đề nghị giao dịch hộ hay nhân đôi tiền",
+      "Bảo bạn chuyển tiền đi đâu cả"
+    ],
+    "do": "Hãy làm thế này",
+    "doItems": [
+      "Đừng trả lời. Chặn tài khoản đó",
+      "Báo cáo trong luồng hỗ trợ",
+      "Tắt tin nhắn riêng từ thành viên",
+      "Đổi mật khẩu và bật 2FA"
+    ],
+    "foot": "Không chắc? Hỏi trong <b>hỗ trợ</b>. Quản trị viên thật chỉ giúp bạn ở đây, trong máy chủ."
+  }
+}

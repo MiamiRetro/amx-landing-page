@@ -7,13 +7,17 @@ import { log, setLogLevel, errInfo } from "./log.js";
 import { GroupIndex } from "./mirror/groups.js";
 import { Mirror } from "./mirror/mirror.js";
 import { Semaphore } from "./mirror/queue.js";
+import { Funnel, InviteTracker } from "./funnel.js";
 import { LanguageRoles } from "./roles.js";
 import { handlePickerButton, PICKER_PREFIX } from "./picker.js";
 import { providerFromSpec, Translator } from "./translate/index.js";
+import { InfographicLocalizer, infographicsEnabled } from "./infographic/index.js";
 import { buildProviders } from "./verify/providers/index.js";
 import { VerifyService } from "./verify/service.js";
 import { handleVerifyButton, handleVerifySubmit, VERIFY_BUTTON, VERIFY_MODAL } from "./verify/panel.js";
 import { checkProviders, HealthWatch } from "./verify/health.js";
+import { VipTracker } from "./vip/tracker.js";
+import { FlagshipWatch } from "./flagship.js";
 
 async function main() {
   setLogLevel(config.logLevel());
@@ -32,8 +36,11 @@ async function main() {
     timeoutMs: config.translationTimeoutSec() * 1000,
   });
 
+  const infographics = infographicsEnabled() ? new InfographicLocalizer({ translator }) : undefined;
+  if (infographics) log.info("infographic translation enabled");
+
   const client = new Client({
-    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMembers],
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildInvites],
     partials: [Partials.Message, Partials.Channel],
   });
 
@@ -41,6 +48,9 @@ async function main() {
   let groups: GroupIndex | null = null;
   let roles: LanguageRoles | null = null;
   let verify: VerifyService | null = null;
+  let vip: VipTracker | null = null;
+  let invites: InviteTracker | null = null;
+  const funnel = new Funnel(db, guildId);
 
   client.once(Events.ClientReady, async (c) => {
     try {
@@ -49,14 +59,25 @@ async function main() {
       await guild.roles.fetch();
       groups = new GroupIndex(db, guildId);
       await groups.reload();
-      mirror = new Mirror({ guild, db, groups, translator, botUserId: c.user.id, applicationId: c.application.id });
+      mirror = new Mirror({ guild, db, groups, translator, botUserId: c.user.id, applicationId: c.application.id, infographics });
       mirror.paused = groups.groups.length > 0 && groups.groups.every((g) => g.paused);
 
-      roles = new LanguageRoles(guild, db);
+      roles = new LanguageRoles(guild, db, funnel);
       await roles.load();
+
+      // Invite use counts, so a join can be traced to the link it came through.
+      // Without Manage Server this stays empty and joins go unattributed.
+      invites = new InviteTracker(guild);
+      await invites.refresh().catch((e) => log.warn("invite cache failed", errInfo(e)));
 
       const affiliates = buildProviders();
       verify = new VerifyService(db, guildId, affiliates);
+      vip = new VipTracker(guild, db, affiliates);
+      // The weekly check needs Bybit, which blocks some hosting regions. It runs
+      // from the Mac Studio (scripts/vip-run.ts under launchd) unless VIP_SCHEDULE=1.
+      if (process.env.VIP_SCHEDULE === "1") vip.schedule();
+      const flagship = new FlagshipWatch(guild, db);
+      if (flagship.enabled) { flagship.start(); log.info("flagship follows the AlphanumetriX dashboard"); }
       log.info("uid verification ready", { exchanges: [...affiliates.values()].map((p) => `${p.id}:${p.live ? "live" : "stand-in"}`) });
 
       // Affiliate keys die quietly: Bybit expires an unbound key after 90 days,
@@ -88,6 +109,18 @@ async function main() {
       const g = groups, r = roles;
       setInterval(() => void g.reload().catch((e) => log.warn("group reload failed", errInfo(e))), 60_000).unref();
       setInterval(() => void r.sweep().catch((e) => log.warn("role sweep failed", errInfo(e))), 10 * 60_000).unref();
+
+      // Forum edits and deletes reach the translated copies once a day.
+      const m = mirror;
+      const forumSync = async () => {
+        const last = Number((await db.getSetting(guildId, "forum_sync:last_run")) ?? 0);
+        if (Date.now() - last < 86_400_000) return;
+        const started = Date.now();
+        await m.syncForums(last || started - 86_400_000);
+        await db.setSetting(guildId, "forum_sync:last_run", String(started));
+      };
+      void forumSync().catch((e) => log.warn("forum sync failed", errInfo(e)));
+      setInterval(() => void forumSync().catch((e) => log.warn("forum sync failed", errInfo(e))), 3_600_000).unref();
     } catch (e) {
       log.error("startup failed", errInfo(e));
       process.exit(1);
@@ -106,19 +139,34 @@ async function main() {
     if (verify) {
       const v = verify, r = roles;
       if (i.isButton() && i.customId === VERIFY_BUTTON) {
-        return void handleVerifyButton(i, { verify: v, roles: r }).catch((e) => log.error("verify button failed", errInfo(e)));
+        return void handleVerifyButton(i, { verify: v, roles: r, funnel }).catch((e) => log.error("verify button failed", errInfo(e)));
       }
       if (i.isModalSubmit() && i.customId === VERIFY_MODAL) {
-        return void handleVerifySubmit(i, { verify: v, roles: r, memberRoleId: r.memberRoleId() }).catch((e) => log.error("verify modal failed", errInfo(e)));
+        return void handleVerifySubmit(i, { verify: v, roles: r, memberRoleId: r.memberRoleId(), funnel }).catch((e) => log.error("verify modal failed", errInfo(e)));
       }
     }
     if (!i.isChatInputCommand()) return;
-    void handleCommand(i, { guild: mirror.guild, db, groups, mirror, providerId: primary.id, roles, verify });
+    void handleCommand(i, { guild: mirror.guild, db, groups, mirror, providerId: primary.id, roles, verify, vip: vip!, funnel });
   });
   client.on(Events.GuildMemberUpdate, (before, after) => {
     if (after.guild.id !== guildId) return;
     if (!roles || before.roles.cache.size === after.roles.cache.size) return;
-    void roles.applyPending(after).catch((e) => log.warn("apply pending language failed", errInfo(e)));
+    void roles.sync(after).catch((e) => log.warn("language tier sync failed", errInfo(e)));
+  });
+  client.on(Events.GuildMemberAdd, (m) => {
+    if (m.guild.id !== guildId || m.user.bot) return;
+    const inv = invites;
+    void (inv ? inv.attribute() : Promise.resolve(null)).then((inviteCode) => funnel.record(m.id, "join", { inviteCode }));
+  });
+  client.on(Events.GuildMemberRemove, (m) => {
+    if (m.guild.id !== guildId || m.user?.bot) return;
+    funnel.record(m.id, "leave", { lang: roles && !m.partial ? roles.langOf(m) : null });
+  });
+  client.on(Events.InviteCreate, (inv) => {
+    if (inv.guild?.id === guildId) invites?.onCreate(inv.code, inv.uses);
+  });
+  client.on(Events.InviteDelete, (inv) => {
+    if (inv.guild?.id === guildId) invites?.onDelete(inv.code);
   });
   client.on(Events.Error, (e) => log.error("client error", errInfo(e)));
   client.on(Events.Warn, (w) => log.warn("client warning", { warning: w }));

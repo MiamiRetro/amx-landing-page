@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -16,6 +16,8 @@ import {
   type MessageCreateOptions,
 } from "discord.js";
 import { PICKER_PREFIX } from "./picker.js";
+import type { Lang } from "./config.js";
+import { guideText } from "./i18n/guide.js";
 
 /** Brand from blkbox.pro: navy, Sora, cyan and emerald accents, white wordmark. */
 const GREEN = 0x22d3ee; // site cyan
@@ -40,11 +42,32 @@ const row = (...buttons: ButtonBuilder[]) => new ActionRowBuilder<ButtonBuilder>
 const text = (s: string) => new TextDisplayBuilder().setContent(s);
 const banner = (file: string) => new MediaGalleryBuilder().addItems(new MediaGalleryItemBuilder().setURL(`attachment://${file}`));
 const divider = () => new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small);
-const asset = (file: string) => new AttachmentBuilder(readFileSync(join(ASSETS, file)), { name: file });
+/** A banner in the member's language when one was rendered (assets/start-here/<lang>/), English otherwise. */
+const asset = (file: string, lang: Lang = "en") => {
+  const own = join(ASSETS, lang, file);
+  return new AttachmentBuilder(readFileSync(lang !== "en" && existsSync(own) ? own : join(ASSETS, file)), { name: file });
+};
+
+const TERMS_URL = "https://momentous-bolt-1cc.notion.site/BLKB-X-Inc-Terms-of-Service-f0567f236cfe43f7b04a47ffa4ed3931?pvs=4";
+const PRIVACY_URL = "https://www.blkbox.pro/privacy-policy";
+const RULES = [
+  "**Respect everyone.**  No harassment, no hate.",
+  "**No financial advice.**  Education only. Do your own research.",
+  "**Use the bots responsibly.**  No exploiting, no sharing.",
+  "**No spam or self-promo.**",
+  "**Protect privacy.**  Never share personal data or API keys.",
+  "**Stay on topic**  in each channel.",
+  "**Moderators have the final say.**",
+].join("\n");
 
 /** One branded card per section, built with Discord's layout components. */
-export function startHereMessages(opts: { helpDeskUrl: string }): MessageCreateOptions[] {
+/**
+ * `translateEmoji` is the server's :translate: emoji markup (`<:translate:id>`),
+ * shown on the language card when the server has it.
+ */
+export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean; translateEmoji?: string; lang?: Lang }): MessageCreateOptions[] {
   const V2 = MessageFlags.IsComponentsV2;
+  const t = guideText(opts.lang ?? "en");
 
   // Hero image only: the banner already carries the wordmark, headline and tagline.
   const welcome = new ContainerBuilder()
@@ -56,38 +79,43 @@ export function startHereMessages(opts: { helpDeskUrl: string }): MessageCreateO
   const language = new ContainerBuilder()
     .setAccentColor(GREEN)
     .addMediaGalleryComponents(banner("language.png"))
-    .addTextDisplayComponents(text("Chat, alerts and announcements will show in the language you pick. Change it any time with `/language`."))
+    .addTextDisplayComponents(
+      text(
+        [
+          `### ${opts.translateEmoji ? opts.translateEmoji + "  " : ""}Pick your language to enter`,
+          "Chat, alerts and announcements will show in that language.",
+          "-# 选择语言 · 언어 선택 · Pilih bahasa · Chọn ngôn ngữ · Elige tu idioma · Escolha seu idioma · Dilini seç · Выберите язык · 言語を選択",
+          "-# Your choice is final. A moderator can change it if you need.",
+        ].join("\n"),
+      ),
+    )
     .addActionRowComponents(
       row(
         new ButtonBuilder().setCustomId(`${PICKER_PREFIX}en`).setLabel("English").setEmoji("🇬🇧").setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId(`${PICKER_PREFIX}zh`).setLabel("中文").setEmoji("🇨🇳").setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId(`${PICKER_PREFIX}ko`).setLabel("한국어").setEmoji("🇰🇷").setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId(`${PICKER_PREFIX}id`).setLabel("Bahasa Indonesia").setEmoji("🇮🇩").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}vi`).setLabel("Tiếng Việt").setEmoji("🇻🇳").setStyle(ButtonStyle.Success),
+      ),
+      row(
+        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}es`).setLabel("Español").setEmoji("🇪🇸").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}pt`).setLabel("Português").setEmoji("🇧🇷").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}tr`).setLabel("Türkçe").setEmoji("🇹🇷").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}ru`).setLabel("Русский").setEmoji("🇷🇺").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}ja`).setLabel("日本語").setEmoji("🇯🇵").setStyle(ButtonStyle.Success),
       ),
     );
 
   const rules = new ContainerBuilder()
     .setAccentColor(GREEN)
     .addMediaGalleryComponents(banner("rules.png"))
-    .addTextDisplayComponents(
-      text(
-        [
-          "**Respect everyone.**  No harassment, no hate.",
-          "**No financial advice.**  Education only. Do your own research.",
-          "**Use the bots responsibly.**  No exploiting, no sharing.",
-          "**No spam or self-promo.**",
-          "**Protect privacy.**  Never share personal data or API keys.",
-          "**Stay on topic**  in each channel.",
-          "**Moderators have the final say.**",
-        ].join("\n"),
-      ),
-    )
+    .addTextDisplayComponents(text(t.rules))
     .addSeparatorComponents(divider())
-    .addTextDisplayComponents(text("-# By using this server you agree to the rules, the Terms of Service and the Privacy Policy."))
+    .addTextDisplayComponents(text(t.agreeNote))
     .addActionRowComponents(
       row(
-        link("Terms of Service", "https://momentous-bolt-1cc.notion.site/BLKB-X-Inc-Terms-of-Service-f0567f236cfe43f7b04a47ffa4ed3931?pvs=4", "📄"),
-        link("Privacy Policy", "https://www.blkbox.pro/privacy-policy", "🔒"),
+        link(t.termsButton, TERMS_URL, "📄"),
+        link(t.privacyButton, PRIVACY_URL, "🔒"),
       ),
     );
 
@@ -95,77 +123,79 @@ export function startHereMessages(opts: { helpDeskUrl: string }): MessageCreateO
     .setAccentColor(GREEN)
     .addMediaGalleryComponents(banner("start.png"))
     .addTextDisplayComponents(
-      text("## Three steps to full access"),
-      text("Email, exchange, UID. Then the command center and the Trading Floor are yours, free."),
+      text(t.stepsTitle),
+      text(t.stepsIntro),
     )
     .addSeparatorComponents(divider())
     .addTextDisplayComponents(
-      text("### 1 \u00b7 Get your command center"),
-      text("Market intelligence, proprietary signals, multi-exchange execution and a trade journal, all in one place. No card, no subscription, a couple of minutes to set up."),
+      text(t.step1Title),
+      text(t.step1Body),
     )
-    .addActionRowComponents(row(link("Unlock trading tools", "https://www.blkbox.pro/signup", E.Glow)))
+    .addActionRowComponents(row(link(t.step1Button, "https://www.blkbox.pro/signup", E.Glow)))
     .addSeparatorComponents(divider())
     .addTextDisplayComponents(
-      text("### 2 \u00b7 Choose your exchange"),
+      text(t.step2Title),
       text(
         [
-          "You pay trading fees to an exchange wherever you trade. Sign up through one of our links and the exchange hands us a small share of the fees you are already paying.",
+          t.step2Why1,
           "",
-          "That share is what keeps this place free. The signals, the bots, the tools and every channel here are paid for by it. It never costs you a cent extra, and we only earn when you trade.",
+          t.step2Why2,
           "",
-          "We trust every exchange on this list. The only thing that should decide it is where you live.",
+          t.step2Why3,
         ].join("\n"),
       ),
       text(
         [
-          "**Start here**",
-          "\ud83c\uddec\ud83c\udde7 \ud83c\uddea\ud83c\uddfa  Europe and the UK \u2192 Bybit or Blofin",
-          "\ud83c\uddf0\ud83c\uddf7  \ud55c\uad6d \u2192 Bybit, Blofin or MEXC",
-          "\ud83c\uddee\ud83c\udde9  Indonesia \u2192 Bybit, Blofin, MEXC or Toobit",
-          "\ud83c\uddef\ud83c\uddf5  \u65e5\u672c \u2192 Bybit, Blofin, MEXC or Toobit",
-          "\ud83c\udf0d  Anywhere else \u2192 any of them, Bybit is the easiest start",
+          t.startHereTitle,
+          t.regionEurope,
+          t.regionKorea,
+          t.regionIndonesia,
+          t.regionJapan,
+          t.regionElse,
         ].join("\n"),
       ),
       text(
         [
-          "**Who can open an account**",
+          t.whoTitle,
           "",
-          "**Bybit**  \u00b7  ID check required",
+          t.whoBybit,
           "\ud83c\uddec\ud83c\udde7 \ud83c\uddea\ud83c\uddfa \ud83c\uddef\ud83c\uddf5 \ud83c\uddf0\ud83c\uddf7 \ud83c\uddee\ud83c\udde9",
           "",
-          "**Bitget**  \u00b7  ID check required",
+          t.whoBitget,
           "\ud83c\uddec\ud83c\udde7 \ud83c\uddee\ud83c\udde9",
           "",
-          "**Blofin**  \u00b7  no ID check, futures open at signup",
+          t.whoBlofin,
           "\ud83c\uddec\ud83c\udde7 \ud83c\uddea\ud83c\uddfa \ud83c\uddef\ud83c\uddf5 \ud83c\uddf0\ud83c\uddf7 \ud83c\uddee\ud83c\udde9",
           "",
-          "**MEXC**  \u00b7  no ID check, futures open at signup  \u00b7  *coming soon*",
+          t.whoMexc,
           "\ud83c\uddea\ud83c\uddfa \ud83c\uddef\ud83c\uddf5 \ud83c\uddf0\ud83c\uddf7 \ud83c\uddee\ud83c\udde9",
           "",
-          "**Toobit**  \u00b7  no ID check, futures open at signup  \u00b7  *coming soon*",
+          t.whoToobit,
           "\ud83c\uddea\ud83c\uddfa \ud83c\uddef\ud83c\uddf5 \ud83c\uddf0\ud83c\uddf7 \ud83c\uddee\ud83c\udde9",
         ].join("\n"),
       ),
-      text("-# \ud83c\uddfa\ud83c\uddf8 \ud83c\udde8\ud83c\udde6  **United States and Canada:** every exchange above excludes US and Canadian residents in its own terms. We are working on a home for you."),
-      text("-# Availability changes, and each exchange's own terms are the last word on who may open an account. Check before you sign up. Affiliate links."),
+      text(t.usCanada),
+      text(t.availability),
     )
+    // Link buttons are always grey in Discord, so the colour sits in this strip just above them.
+    .addMediaGalleryComponents(banner("exchanges.png"))
     .addActionRowComponents(
       row(
         link("Bitget", "https://partner.bitget.com/bg/G91HYQ", E.Bitget),
         link("Blofin", "https://partner.blofin.com/d/BLKBox", E.Blofin),
         link("Bybit", "https://partner.bybit.com/b/90136", E.Bybit),
         // Placeholders until the affiliate links exist.
-        new ButtonBuilder().setStyle(ButtonStyle.Secondary).setLabel("MEXC \u00b7 soon").setCustomId("placeholder:mexc").setDisabled(true),
-        new ButtonBuilder().setStyle(ButtonStyle.Secondary).setLabel("Toobit \u00b7 soon").setCustomId("placeholder:toobit").setDisabled(true),
+        new ButtonBuilder().setStyle(ButtonStyle.Secondary).setLabel(t.mexcSoon).setCustomId("placeholder:mexc").setDisabled(true),
+        new ButtonBuilder().setStyle(ButtonStyle.Secondary).setLabel(t.toobitSoon).setCustomId("placeholder:toobit").setDisabled(true),
       ),
     )
     .addSeparatorComponents(divider())
     .addTextDisplayComponents(
-      text("### 3 \u00b7 Verify your UID and unlock the signals"),
-      text("Drop the UID from your exchange account into the app and it verifies instantly. That is what turns on the AlphanumetriX signals, the trade terminal and the trade journal."),
-      text("-# Bitget, Blofin and Bybit UIDs are all accepted."),
+      text(t.step3Title),
+      text(t.step3Body),
+      text(t.step3Note),
     )
-    .addActionRowComponents(row(link("Verify my UID", "https://app.blkbox.pro", E.BLK)));
+    .addActionRowComponents(row(link(t.step3Button, "https://app.blkbox.pro", E.BLK)));
 
   const community = new ContainerBuilder()
     .setAccentColor(GREEN)
@@ -189,21 +219,60 @@ export function startHereMessages(opts: { helpDeskUrl: string }): MessageCreateO
     )
     .addSeparatorComponents(divider())
     .addTextDisplayComponents(
-      text("### Need a hand?"),
-      text("Ask in help-desk, where the community and the team answer. For anything private, open a support ticket and you get a thread with staff only."),
+      text(t.helpTitle),
+      text(t.helpBody),
     )
     .addActionRowComponents(
       row(
-        link("Help-desk", opts.helpDeskUrl, "☎️"),
-        new ButtonBuilder().setStyle(ButtonStyle.Success).setLabel("Open a Support Ticket").setEmoji("🎟️").setCustomId("placeholder:ticket").setDisabled(true),
+        link(t.helpButton, opts.helpDeskUrl, "☎️"),
+        new ButtonBuilder().setStyle(ButtonStyle.Success).setLabel(t.ticketButton).setEmoji("🎟️").setCustomId("placeholder:ticket").setDisabled(true),
       ),
     );
 
+  // The picker channel is the front door and the only thing a newcomer sees:
+  // the rules with the terms they accept by entering, then the language buttons.
+  if (opts.picker) {
+    const terms = new ContainerBuilder()
+      .setAccentColor(GREEN)
+      .addMediaGalleryComponents(banner("rules.png"))
+      .addTextDisplayComponents(text(RULES))
+      .addSeparatorComponents(divider())
+      .addTextDisplayComponents(
+        text(
+          [
+            "### Before you enter",
+            "**Entering this server means you accept its terms.**",
+            "**Nobody here is responsible for your funds.** You decide what you trade, and the risk is yours alone.",
+            "**Nothing in this server is financial advice.** Alerts, bots, calls and chat are education and opinion.",
+            "**Read the full Terms of Service before you enter.**",
+          ].join("\n"),
+        ),
+        text(
+          [
+            "-# 中文 进入本服务器即表示接受其条款。任何人都不对你的资金负责，这里的内容都不构成投资建议。进入前请阅读完整的服务条款。",
+            "-# 한국어 서버에 입장하면 이용약관에 동의하는 것입니다. 누구도 여러분의 자금에 책임지지 않으며, 이 서버의 어떤 내용도 투자 조언이 아닙니다. 입장 전에 전체 이용약관을 읽어 주세요.",
+            "-# Bahasa Indonesia Masuk ke server ini berarti kamu menerima ketentuannya. Tidak ada yang bertanggung jawab atas dana kamu, dan tidak ada isi server ini yang merupakan nasihat keuangan. Baca Ketentuan Layanan lengkap sebelum masuk.",
+            "-# Tiếng Việt Vào server này nghĩa là bạn chấp nhận các điều khoản. Không ai chịu trách nhiệm về tiền của bạn, và không nội dung nào ở đây là lời khuyên tài chính. Hãy đọc đầy đủ Điều khoản dịch vụ trước khi vào.",
+            "-# Español Entrar en este servidor significa aceptar sus términos. Nadie es responsable de tus fondos y nada aquí es asesoramiento financiero. Lee los Términos de Servicio completos antes de entrar.",
+            "-# Português Entrar neste servidor significa aceitar os termos. Ninguém é responsável pelos seus fundos e nada aqui é recomendação financeira. Leia os Termos de Serviço completos antes de entrar.",
+            "-# Türkçe Bu sunucuya girmek şartlarını kabul etmek demektir. Fonlarından kimse sorumlu değildir ve buradaki hiçbir şey yatırım tavsiyesi değildir. Girmeden önce Hizmet Şartları'nın tamamını oku.",
+            "-# 日本語 このサーバーに入ると利用規約に同意したことになります。誰もあなたの資金に責任を負わず、ここにある内容はすべて投資助言ではありません。入る前に利用規約全文を読んでください。",
+            "-# Русский Входя на сервер, вы принимаете его условия. Никто не несёт ответственности за ваши средства, и ничто здесь не является финансовым советом. Прочитайте полные Условия использования перед входом.",
+          ].join("\n"),
+        ),
+      )
+      .addActionRowComponents(row(link("Terms of Service", TERMS_URL, "📄"), link("Privacy Policy", PRIVACY_URL, "🔒")));
+    return [
+      { components: [terms], files: [asset("rules.png")], flags: V2 },
+      { components: [language], files: [asset("language.png")], flags: V2 },
+    ];
+  }
+
+  // start-here is only seen after a language is picked, so it drops the picker.
   return [
-    { components: [welcome], files: [asset("hero.png")], flags: V2 },
-    { components: [language], files: [asset("language.png")], flags: V2 },
-    { components: [rules], files: [asset("rules.png")], flags: V2 },
-    { components: [start], files: [asset("start.png")], flags: V2 },
-    { components: [community], files: [asset("community.png")], flags: V2 },
+    { components: [welcome], files: [asset("hero.png", opts.lang)], flags: V2 },
+    { components: [rules], files: [asset("rules.png", opts.lang)], flags: V2 },
+    { components: [start], files: [asset("start.png", opts.lang), asset("exchanges.png", opts.lang)], flags: V2 },
+    { components: [community], files: [asset("community.png", opts.lang)], flags: V2 },
   ];
 }

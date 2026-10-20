@@ -197,3 +197,10 @@ test("Bitget turns away a non-numeric uid without asking the exchange", async ()
     }
   }
 });
+
+test("a UID the same member already holds verifies without a second row", async () => {
+  const { db, rows } = fakeDb([{ guild_id: "other", discord_user_id: "u1", exchange: "bybit", uid: "12345678", detail: null, verified_at: "" }]);
+  const res = await service(db, provider("bybit", "yes")).verify({ userId: "u1", alreadyMember: false, exchange: "bybit", uid: "12345678" });
+  assert.equal(res.outcome, "verified");
+  assert.equal(rows.length, 1);
+});

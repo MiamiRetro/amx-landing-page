@@ -4,6 +4,7 @@ import type { Db } from "../db/index.js";
 import { log, errInfo } from "../log.js";
 import { placeholdersIntact } from "../mirror/placeholders.js";
 import { AnthropicProvider } from "./anthropic.js";
+import { FallbackAlerter } from "./fallbackAlert.js";
 import { OpenAICompatibleProvider, PRESETS } from "./openai-compatible.js";
 import type { TranslateRequest, TranslateResult, TranslationProvider } from "./provider.js";
 
@@ -58,6 +59,7 @@ export interface TranslatorOptions {
  * mirror can still post something.
  */
 export class Translator {
+  private alerter = new FallbackAlerter();
   constructor(private o: TranslatorOptions) {}
 
   get providerId() {
@@ -119,6 +121,7 @@ export class Translator {
 
   private async callWithFallback(req: TranslateRequest, entities: string[][]): Promise<{ result: TranslateResult; provider: string } | null> {
     const providers = [this.o.primary, ...(this.o.fallbacks ?? [])];
+    let primaryError = "";
     for (const p of providers) {
       for (let attempt = 0; attempt < 2; attempt++) {
         const started = Date.now();
@@ -135,9 +138,15 @@ export class Translator {
             ms: Date.now() - started,
             ok: bad.length === 0,
           });
-          if (bad.length === 0) return { result, provider: p.id };
+          if (bad.length === 0) {
+            if (p === this.o.primary) this.alerter.primaryOk(p.id);
+            else this.alerter.fellBack(this.o.primary.id, p.id, primaryError || "unknown error", req.targets);
+            return { result, provider: p.id };
+          }
+          if (p === this.o.primary) primaryError = `placeholders damaged: ${bad.join(", ")}`;
           log.warn("placeholders damaged, retrying", { provider: p.id, attempt, bad });
         } catch (err) {
+          if (p === this.o.primary) primaryError = String((err as Error)?.message ?? err).slice(0, 160);
           log.warn("translation call failed", { provider: p.id, attempt, ...errInfo(err) });
           await this.o.db?.logUsage({ provider: p.id, input_tokens: 0, cached_tokens: 0, cache_creation_tokens: 0, output_tokens: 0, segments: req.segments.length, ms: Date.now() - started, ok: false });
         }

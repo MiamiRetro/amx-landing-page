@@ -34,6 +34,9 @@ export interface MapRow {
   target_channel_id: string;
   mirror_message_id: string;
   lang: Lang;
+  /** Forum mirrors only: the thread holding the original, and the thread holding this copy. */
+  source_thread_id?: string | null;
+  target_thread_id?: string | null;
 }
 
 function unwrap<T>(r: { data: T | null; error: { message: string } | null }, what: string): T {
@@ -101,6 +104,16 @@ export class Db {
     const r = await this.sb.from("message_map").select("*").eq("mirror_message_id", mirrorMessageId).maybeSingle();
     if (r.error) throw new Error(`source of: ${r.error.message}`);
     return (r.data as MapRow | null) ?? null;
+  }
+
+  /** Every forum mirror row, for the daily edit/delete sync. */
+  async forumRows(): Promise<MapRow[]> {
+    const out: MapRow[] = [];
+    for (let from = 0; ; from += 1000) {
+      const page = unwrap(await this.sb.from("message_map").select("*").not("source_thread_id", "is", null).range(from, from + 999), "forum rows") as MapRow[];
+      out.push(...page);
+      if (page.length < 1000) return out;
+    }
   }
 
   async deleteMap(sourceMessageId: string) {

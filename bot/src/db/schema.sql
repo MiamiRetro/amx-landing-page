@@ -13,7 +13,7 @@ create table if not exists channel_groups (
 create table if not exists channel_group_members (
   channel_id text primary key,
   group_id uuid not null references channel_groups(id) on delete cascade,
-  lang text not null check (lang in ('en','zh','ko','id')),
+  lang text not null check (lang in ('en','zh','ko','id','vi','es','pt','tr','ru','ja')),
   webhook_id text,
   webhook_token text,
   last_seen_message_id text,
@@ -27,6 +27,9 @@ create table if not exists message_map (
   mirror_message_id text not null,
   lang text not null,
   created_at timestamptz not null default now(),
+  -- forum mirrors only: thread of the original and of the copy
+  source_thread_id text,
+  target_thread_id text,
   primary key (source_message_id, target_channel_id)
 );
 create index if not exists message_map_mirror_idx on message_map (mirror_message_id);
@@ -89,7 +92,7 @@ alter table usage_log enable row level security;
 create table if not exists language_prefs (
   guild_id text not null,
   user_id text not null,
-  lang text not null check (lang in ('en','zh','ko','id')),
+  lang text not null check (lang in ('en','zh','ko','id','vi','es','pt','tr','ru','ja')),
   updated_at timestamptz not null default now(),
   primary key (guild_id, user_id)
 );
@@ -128,3 +131,20 @@ create index if not exists verification_attempts_user_idx on verification_attemp
 
 alter table verifications enable row level security;
 alter table verification_attempts enable row level security;
+
+-- Onboarding funnel: one row per step a member takes (join, language_picked,
+-- verify_opened, verify_result, verified, leave, language_changed_by_mod).
+-- invite_code is the invite a join came through, null when it cannot be told.
+create table if not exists funnel_events (
+  id bigserial primary key,
+  guild_id text not null,
+  discord_user_id text not null,
+  event text not null,
+  lang text,
+  detail jsonb,
+  invite_code text,
+  created_at timestamptz not null default now()
+);
+create index if not exists funnel_events_event_idx on funnel_events (guild_id, event, created_at);
+
+alter table funnel_events enable row level security;

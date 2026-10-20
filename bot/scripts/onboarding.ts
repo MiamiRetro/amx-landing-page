@@ -515,7 +515,7 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
       }
       if (tier === "help") {
         // Members write only inside the private thread the Get help button opens for them, never in the channel.
-        const inThread = P.ViewChannel | P.ReadMessageHistory | P.SendMessagesInThreads | P.EmbedLinks | P.AttachFiles;
+        const inThread = P.ViewChannel | P.ReadMessageHistory | P.SendMessagesInThreads | P.EmbedLinks | P.AttachFiles | P.AddReactions | P.UseExternalEmojis;
         const noChat = P.SendMessages | P.CreatePublicThreads | P.CreatePrivateThreads;
         base && set(base, OverwriteType.Role, inThread, noChat);
         member && set(member, OverwriteType.Role, inThread, noChat);

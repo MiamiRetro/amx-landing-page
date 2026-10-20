@@ -16,6 +16,7 @@ import {
   type MessageCreateOptions,
 } from "discord.js";
 import { PICKER_PREFIX } from "./picker.js";
+import { SUPPORT_OPEN } from "./support/desk.js";
 import type { Lang } from "./config.js";
 import { guideText } from "./i18n/guide.js";
 
@@ -225,7 +226,7 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean;
     .addActionRowComponents(
       row(
         link(t.helpButton, opts.helpDeskUrl, "☎️"),
-        new ButtonBuilder().setStyle(ButtonStyle.Success).setLabel(t.ticketButton).setEmoji("🎟️").setCustomId("placeholder:ticket").setDisabled(true),
+        new ButtonBuilder().setStyle(ButtonStyle.Success).setLabel(t.ticketButton).setEmoji("🎟️").setCustomId(SUPPORT_OPEN),
       ),
     );
 

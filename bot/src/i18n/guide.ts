@@ -95,3 +95,34 @@ export function guideText(lang: Lang): GuideText {
   cache.set(lang, t);
   return t;
 }
+
+/** Plain names of the server guide channel; bolded where the script has capitals Discord keeps. */
+const GUIDE_CHANNEL: Record<Lang, string> = {
+  en: "server-guide",
+  zh: "服务器指南",
+  ko: "서버-가이드",
+  id: "panduan-server",
+  vi: "hướng-dẫn-server",
+  es: "guía-del-servidor",
+  pt: "guia-do-servidor",
+  tr: "sunucu-rehberi",
+  ru: "гид-по-серверу",
+  ja: "サーバーガイド",
+};
+
+/**
+ * Discord lowercases channel names, but not the "mathematical bold" letters, so
+ * the guide wears bold capitals. Only plain Latin letters have them: accents
+ * are dropped, Vietnamese keeps its own letters (its stacked accents don't
+ * survive), and Cyrillic and CJK stay as they are.
+ */
+const BOLD_LANGS: Lang[] = ["en", "id", "es", "pt", "tr"];
+export function boldCaps(s: string): string {
+  return [...s.normalize("NFD")]
+    .filter((c) => !/\p{M}/u.test(c))
+    .map((c) => (/[a-z]/i.test(c) ? String.fromCodePoint(0x1d400 + c.toUpperCase().charCodeAt(0) - 65) : c))
+    .join("");
+}
+export function guideChannelName(lang: Lang): string {
+  return `🧭・${BOLD_LANGS.includes(lang) ? boldCaps(GUIDE_CHANNEL[lang]) : GUIDE_CHANNEL[lang]}`;
+}

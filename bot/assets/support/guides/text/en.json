@@ -80,19 +80,49 @@
     "sub": "Your language's channels, and what opens when you verify",
     "open": "Open to you now",
     "openItems": [
-      ["【server guide】", "Start here: rules, sign-up, verify"],
-      ["📢 announcements", "News from the team"],
-      ["💬 general", "Chat with everyone"],
-      ["😂 memes", "Just for fun"],
-      ["☎️ help-desk", "Get help in a private thread"]
+      [
+        "🧭・𝐒𝐄𝐑𝐕𝐄𝐑-𝐆𝐔𝐈𝐃𝐄",
+        "Start here: rules, sign-up, verify"
+      ],
+      [
+        "📢 announcements",
+        "News from the team"
+      ],
+      [
+        "💬 general",
+        "Chat with everyone"
+      ],
+      [
+        "😂 memes",
+        "Just for fun"
+      ],
+      [
+        "☎️ help-desk",
+        "Get help in a private thread"
+      ]
     ],
     "locked": "Opens when you verify",
     "lockedItems": [
-      ["🟢 alphanumetrix", "The flagship indicator's state"],
-      ["🤖 bot-alerts", "Alerts from the BLKBöX bots"],
-      ["⚡ trade-alerts", "Trade signals"],
-      ["🟠 trading group", "Bitcoin, crypto, stocks, commodities"],
-      ["📚 reference", "Setup guides and strategies"]
+      [
+        "🟢 alphanumetrix",
+        "The flagship indicator's state"
+      ],
+      [
+        "🤖 bot-alerts",
+        "Alerts from the BLKBöX bots"
+      ],
+      [
+        "⚡ trade-alerts",
+        "Trade signals"
+      ],
+      [
+        "🟠 trading group",
+        "Bitcoin, crypto, stocks, commodities"
+      ],
+      [
+        "📚 reference",
+        "Setup guides and strategies"
+      ]
     ],
     "foot": "Until you verify, these show as <b>🔒 trade-signals</b> and <b>🔒 trading-group</b>."
   },
@@ -115,5 +145,6 @@
       "Change passwords and turn on 2FA"
     ],
     "foot": "Not sure? Ask in <b>help-desk</b>. Real moderators only help you here, in the server."
-  }
+  },
+  "chGuideName": "🧭・𝐒𝐄𝐑𝐕𝐄𝐑-𝐆𝐔𝐈𝐃𝐄"
 }

@@ -16,7 +16,7 @@ Also asked: how does Discord work, where is everything, I'm lost, how do I use t
 Channels are the rooms listed down the side. On desktop they are always on the
 left. On phone, tap the ☰ menu at the top left (or swipe right) to see them.
 Your language's channels are grouped in sections like Announcements and
-Community; tap a section name to open or close it. The 【server guide】 at the
+Community; tap a section name to open or close it. The 🧭 SERVER-GUIDE channel at the
 top explains everything step by step.
 Guide: discord-mobile
 
@@ -45,14 +45,14 @@ side conversation inside a channel; your help thread is one of these.
 
 ## Which channel should I go to first?
 Also asked: where do I start, what should I read first
-Start with the 【server guide】 at the very top of your channel list. It walks
+Start with the 🧭 SERVER-GUIDE channel at the very top of your channel list. It walks
 you through the rules, how to sign up, and how to verify.
 Guide: channel-map
 
 ## Where is the server guide?
 Also asked: server guide missing, start here
-It is the channel in 【brackets】 at the very top of your channel list, above
-every section. On phone, open the channel list with ☰ and scroll to the top.
+It is the channel with the 🧭 compass and bold capitals at the very top of your
+channel list, above every section. On phone, open the channel list with ☰ and scroll to the top.
 Guide: channel-map
 
 ## What is in each channel?

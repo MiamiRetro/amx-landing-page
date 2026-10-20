@@ -31,6 +31,7 @@ import { Db } from "../src/db/index.js";
 import { connect } from "../src/lib/client.js";
 import { GUIDE_SECTIONS, guideNav, startHereMessages } from "../src/startHere.js";
 import { NOTIFY_ROLES, NOTIFY_TOPICS } from "../src/notify.js";
+import { guideChannelName } from "../src/i18n/guide.js";
 import { LANG_ROLE_NAMES } from "../src/roles.js";
 import { verifyPanel } from "../src/verify/panel.js";
 import { supportPanel } from "../src/support/desk.js";
@@ -73,7 +74,7 @@ interface Spec {
  * The one layout every language gets. A member only ever sees their own
  * language's copy:
  *
- *   (top level)     【server-guide】, above every category, bracketed so it reads as its own part
+ *   (top level)     🧭・𝐒𝐄𝐑𝐕𝐄𝐑-𝐆𝐔𝐈𝐃𝐄, above every category, in bold capitals so it reads as its own part
  *   ANNOUNCEMENTS   announcements · alphanumetrix · bot-alerts · signals · 🔒 trade-signals
  *   COMMUNITY       🔒 trading-group · bitcoin · crypto · stocks · commodities · general · memes · help-desk
  *   REFERENCE       setup-guides · trading-strategies · forums
@@ -144,7 +145,7 @@ for (const lang of LANGS) for (const l of LAYOUT) if (l.lockFor) NAMES[lang][l.k
 /** The server guide's name before it was framed and lifted out of ANNOUNCEMENTS. */
 const START_OLD = Object.fromEntries(LANGS.map((lang) => [lang, NAMES[lang].start])) as Record<Lang, string>;
 // Bracketed, so the one channel above the categories reads as a separate part.
-for (const lang of LANGS) NAMES[lang].start = `【${bare(START_OLD[lang])}】`;
+for (const lang of LANGS) NAMES[lang].start = guideChannelName(lang);
 
 /** The flagship channel's icon follows the AlphanumetriX indicator: /flagship sets it. */
 export { ICONS as FLAGSHIP_STATES } from "../src/flagship.js";
@@ -190,7 +191,7 @@ for (const lang of LANGS) {
     const legacy = lang === "en"
       ? [{ name, parent: EN_OLD[l.kind] ?? null }, ...(l.kind === "start" ? [{ name: "📍・start-here", parent: null }] : [])]
       : [{ name, parent: OLD_CATS[lang as Exclude<Lang, "en">] }];
-    if (l.kind === "start") legacy.push({ name: START_OLD[lang], parent: CATS[lang][l.cat] }, { name: `═🧭・${bare(START_OLD[lang])}・🧭═`, parent: null });
+    if (l.kind === "start") legacy.push({ name: START_OLD[lang], parent: CATS[lang][l.cat] }, { name: `═🧭・${bare(START_OLD[lang])}・🧭═`, parent: null }, { name: `【${bare(START_OLD[lang])}】`, parent: null });
     if (l.kind === "tradegate") legacy.push({ name: NAMES[lang].btcgate, parent: CATS[lang][l.cat] });
     // Memes wore 🐸 before 😂, which reads as "funny" in every language.
     if (l.kind === "memes") legacy.push({ name: NAMES[lang].memes.replace("😂", "🐸"), parent: CATS[lang][l.cat] });

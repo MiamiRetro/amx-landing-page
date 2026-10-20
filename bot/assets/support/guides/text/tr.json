@@ -83,7 +83,7 @@
     "foot": "Doğrulayana kadar bunlar <b>🔒 işlem-sinyalleri</b> ve <b>🔒 trading-grubu</b> olarak görünür.",
     "openItems": [
       [
-        "【sunucu-rehberi】",
+        "🧭・𝐒𝐔𝐍𝐔𝐂𝐔-𝐑𝐄𝐇𝐁𝐄𝐑𝐈",
         "Buradan başla: kurallar, kayıt, doğrulama"
       ],
       [
@@ -145,5 +145,6 @@
       "Şifreleri değiştir ve 2FA'yı aç"
     ],
     "foot": "Emin değil misin? <b>yardım</b> kanalında sor. Gerçek moderatörler sana yalnızca burada, sunucuda yardım eder."
-  }
+  },
+  "chGuideName": "🧭・𝐒𝐔𝐍𝐔𝐂𝐔-𝐑𝐄𝐇𝐁𝐄𝐑𝐈"
 }

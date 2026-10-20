@@ -83,7 +83,7 @@
     "foot": "Trước khi xác minh, chúng hiện là <b>🔒 tín-hiệu-giao-dịch</b> và <b>🔒 nhóm-giao-dịch</b>.",
     "openItems": [
       [
-        "【hướng-dẫn-server】",
+        "🧭・hướng-dẫn-server",
         "Bắt đầu ở đây: luật, đăng ký, xác minh"
       ],
       [
@@ -145,5 +145,6 @@
       "Đổi mật khẩu và bật 2FA"
     ],
     "foot": "Không chắc? Hỏi trong <b>hỗ trợ</b>. Quản trị viên thật chỉ giúp bạn ở đây, trong máy chủ."
-  }
+  },
+  "chGuideName": "🧭・hướng-dẫn-server"
 }

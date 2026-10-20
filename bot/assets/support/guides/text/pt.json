@@ -83,7 +83,7 @@
     "foot": "Até você verificar, eles aparecem como <b>🔒 sinais-trading</b> e <b>🔒 grupo-trading</b>.",
     "openItems": [
       [
-        "【guia-do-servidor】",
+        "🧭・𝐆𝐔𝐈𝐀-𝐃𝐎-𝐒𝐄𝐑𝐕𝐈𝐃𝐎𝐑",
         "Comece aqui: regras, cadastro, verificação"
       ],
       [
@@ -145,5 +145,6 @@
       "Troque senhas e ative 2FA"
     ],
     "foot": "Na dúvida? Pergunte em <b>ajuda</b>. Moderadores de verdade só ajudam aqui, no servidor."
-  }
+  },
+  "chGuideName": "🧭・𝐆𝐔𝐈𝐀-𝐃𝐎-𝐒𝐄𝐑𝐕𝐈𝐃𝐎𝐑"
 }

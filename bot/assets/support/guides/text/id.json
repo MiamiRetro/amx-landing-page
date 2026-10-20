@@ -83,7 +83,7 @@
     "foot": "Sebelum verifikasi, ini tampil sebagai <b>🔒 sinyal-trading</b> dan <b>🔒 grup-trading</b>.",
     "openItems": [
       [
-        "【panduan-server】",
+        "🧭・𝐏𝐀𝐍𝐃𝐔𝐀𝐍-𝐒𝐄𝐑𝐕𝐄𝐑",
         "Mulai di sini: aturan, daftar, verifikasi"
       ],
       [
@@ -145,5 +145,6 @@
       "Ganti password dan aktifkan 2FA"
     ],
     "foot": "Ragu? Tanya di <b>bantuan</b>. Moderator asli hanya membantu di sini, di dalam server."
-  }
+  },
+  "chGuideName": "🧭・𝐏𝐀𝐍𝐃𝐔𝐀𝐍-𝐒𝐄𝐑𝐕𝐄𝐑"
 }

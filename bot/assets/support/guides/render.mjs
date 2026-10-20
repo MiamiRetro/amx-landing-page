@@ -93,7 +93,7 @@ const chat = (t, { hotPlus = false, hotBurger = false, title = "help-desk" } = {
 const channelList = (t, { hot = "", threads = false, burger = false } = {}) => `<div class="phone"><div class="screen"><div class="srv">
   <div class="guilds"><div class="g"></div><div class="g on ${burger ? "hot" : ""}"></div><div class="g"></div><div class="g"></div></div>
   <div class="chs"><div class="name">BLKBöX Trading Floor</div>
-    <div class="ch ${hot === "guide" ? "on hot" : ""}">【${esc(t.chGuide)}】</div>
+    <div class="ch ${hot === "guide" ? "on hot" : ""}">${esc(t.chGuideName ?? "🧭 " + t.chGuide)}</div>
     <div class="cat">${esc(t.catAnn)}</div>
     <div class="ch">📢 ${esc(t.chAnnouncements)}</div>
     <div class="ch">🔒 ${esc(t.chSignals)}</div>
@@ -118,7 +118,7 @@ const desktop = (t) => {
     <div class="guilds" style="width:72px;padding-top:16px"><div class="g on" style="width:48px;height:48px"></div><div class="g" style="width:48px;height:48px"></div><div class="g" style="width:48px;height:48px"></div></div>
     <div class="chs" style="width:230px;flex:none;background:#0e1922;font-size:14px">
       <div class="name">BLKBöX Trading Floor</div>
-      <div class="ch">【${esc(t.chGuide)}】</div>
+      <div class="ch">${esc(t.chGuideName ?? "🧭 " + t.chGuide)}</div>
       <div class="cat">${esc(t.catAnn)}</div><div class="ch">📢 ${esc(t.chAnnouncements)}</div><div class="ch">🔒 ${esc(t.chSignals)}</div>
       <div class="cat">${esc(t.catCom)}</div><div class="ch">💬 ${esc(t.chGeneral)}</div><div class="ch on">☎️ ${esc(t.chHelp)}</div>
       <div class="th">🤖 ${esc(t.yourThread)}</div><div class="ch">😂 ${esc(t.chMemes)}</div>
@@ -157,7 +157,7 @@ const lockedPanel = (t) => `<div class="phone"><div class="screen">
   </div></div></div></div>`;
 
 const signupArt = (t) => `<div class="phone"><div class="screen">
-  <div class="pbar"><span>【${esc(t.chGuide)}】</span></div>
+  <div class="pbar"><span>${esc(t.chGuideName ?? "🧭 " + t.chGuide)}</span></div>
   <div style="padding:14px"><div style="font-weight:800;font-size:15px">${esc(t.step2Card)}</div>
     <i style="display:block;height:8px;border-radius:4px;background:rgba(255,255,255,.12);margin-top:10px;width:90%"></i>
     <i style="display:block;height:8px;border-radius:4px;background:rgba(255,255,255,.12);margin-top:6px;width:70%"></i>

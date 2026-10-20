@@ -29,7 +29,8 @@ import { fileURLToPath } from "node:url";
 import { LANGS, type Lang } from "../src/config.js";
 import { Db } from "../src/db/index.js";
 import { connect } from "../src/lib/client.js";
-import { startHereMessages } from "../src/startHere.js";
+import { GUIDE_SECTIONS, guideNav, startHereMessages } from "../src/startHere.js";
+import { NOTIFY_ROLES, NOTIFY_TOPICS } from "../src/notify.js";
 import { LANG_ROLE_NAMES } from "../src/roles.js";
 import { verifyPanel } from "../src/verify/panel.js";
 import { supportPanel } from "../src/support/desk.js";
@@ -220,7 +221,7 @@ const BOT_ALLOW = [P.ViewChannel, P.SendMessages, P.ReadMessageHistory, P.Manage
 
 const TRANSLATE_PNG = join(dirname(fileURLToPath(import.meta.url)), "..", "assets", "emoji", "translate.png");
 
-const STEPS = ["roles", "members", "channels", "perms", "mirror", "panels", "rules", "vip", "cleanup"] as const;
+const STEPS = ["roles", "members", "channels", "perms", "mirror", "notify", "panels", "rules", "vip", "cleanup"] as const;
 type Step = (typeof STEPS)[number];
 
 interface Ctx {
@@ -593,6 +594,21 @@ async function stepMirror(ctx: Ctx) {
   }
 }
 
+/** Notification roles: one per ping topic, which members pick in the server guide instead of being pinged with @everyone. */
+async function stepNotify(ctx: Ctx) {
+  const { guild } = ctx;
+  for (const topic of NOTIFY_TOPICS) {
+    const { name } = NOTIFY_ROLES[topic];
+    let role = guild.roles.cache.find((r) => r.name === name);
+    if (!role) {
+      log(`  create role ${name}`);
+      // Not mentionable: members can't ping each other with it; moderators (Mention Everyone) and webhooks can.
+      if (ctx.apply) role = await guild.roles.create({ name, mentionable: false, permissions: [], reason: "notification center" });
+    }
+    if (role && ctx.apply) await ctx.db.setSetting(guild.id, `notify_role:${topic}`, role.id);
+  }
+}
+
 async function stepPanels(ctx: Ctx) {
   const { guild } = ctx;
   const me = guild.members.me!;
@@ -620,7 +636,12 @@ async function stepPanels(ctx: Ctx) {
       // The bot opens each language's help threads here, whichever button they came from.
       await ctx.db.setSetting(guild.id, `support_channel:${lang}`, ch.id);
     } else if (s.panel === "start") {
-      for (const msg of startHereMessages({ helpDeskUrl, lang })) await ch.send(msg);
+      // Post the guide, then point the jump-to card at the sections it just posted.
+      const sent = [];
+      for (const msg of startHereMessages({ helpDeskUrl, lang })) sent.push(await ch.send(msg));
+      const url = (key: (typeof GUIDE_SECTIONS)[number]) => sent[GUIDE_SECTIONS.indexOf(key)]?.url ?? "";
+      const nav = sent[GUIDE_SECTIONS.indexOf("nav")];
+      if (nav) await nav.edit(guideNav(lang, { rules: url("rules"), start: url("start"), notify: url("notify"), community: url("community") }));
     } else await ch.send(verifyPanel(lang, s.panel));
   }
 }
@@ -698,7 +719,7 @@ async function main() {
   };
   try {
     log(apply ? "APPLYING" : "DRY RUN (add --apply to make these changes)");
-    const run: Record<Step, (c: Ctx) => Promise<void>> = { roles: stepRoles, members: stepMembers, channels: stepChannels, perms: stepPerms, mirror: stepMirror, panels: stepPanels, rules: stepRules, vip: stepVip, cleanup: stepCleanup };
+    const run: Record<Step, (c: Ctx) => Promise<void>> = { roles: stepRoles, members: stepMembers, channels: stepChannels, perms: stepPerms, mirror: stepMirror, panels: stepPanels, rules: stepRules, vip: stepVip, cleanup: stepCleanup, notify: stepNotify };
     for (const step of STEPS) {
       if (only && step !== only) continue;
       log(`\n== ${step}`);

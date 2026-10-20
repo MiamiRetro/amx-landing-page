@@ -17,6 +17,8 @@ import {
 } from "discord.js";
 import { PICKER_PREFIX } from "./picker.js";
 import { SUPPORT_OPEN } from "./support/desk.js";
+import { notifyButton, NOTIFY_TEXT } from "./notify.js";
+import { VERIFY_BUTTON } from "./verify/panel.js";
 import type { Lang } from "./config.js";
 import { guideText } from "./i18n/guide.js";
 
@@ -60,6 +62,46 @@ const RULES = [
   "**Stay on topic**  in each channel.",
   "**Moderators have the final say.**",
 ].join("\n");
+
+/** Message links to the guide's sections, filled in once the guide is posted. */
+export interface GuideLinks {
+  rules: string;
+  start: string;
+  notify: string;
+  community: string;
+}
+
+/** The guide's messages in posting order; the onboarding panels step uses it to link the jump-to card. */
+export const GUIDE_SECTIONS = ["welcome", "nav", "rules", "start", "notify", "community"] as const;
+
+/**
+ * The jump-to card under the hero: link buttons to each section (once their
+ * message ids are known) and the three things people come for.
+ */
+export function guideNav(lang: Lang, links?: GuideLinks) {
+  const t = guideText(lang);
+  const card = new ContainerBuilder()
+    .setAccentColor(GREEN)
+    .addTextDisplayComponents(text(t.navTitle), text(t.navBody));
+  if (links) {
+    card.addActionRowComponents(
+      row(
+        link(t.navRules, links.rules, "📜"),
+        link(t.navStart, links.start, "🚀"),
+        link(t.navNotify, links.notify, "🔔"),
+        link(t.navCommunity, links.community, "🤝"),
+      ),
+    );
+  }
+  card.addActionRowComponents(
+    row(
+      new ButtonBuilder().setCustomId(VERIFY_BUTTON).setStyle(ButtonStyle.Success).setLabel(t.navVerify).setEmoji("🔑"),
+      new ButtonBuilder().setCustomId(SUPPORT_OPEN).setStyle(ButtonStyle.Primary).setLabel(t.navHelp).setEmoji("🛟"),
+      notifyButton(lang),
+    ),
+  );
+  return { components: [card], flags: MessageFlags.IsComponentsV2 as const };
+}
 
 /** One branded card per section, built with Discord's layout components. */
 /**
@@ -269,11 +311,19 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean;
     ];
   }
 
-  // start-here is only seen after a language is picked, so it drops the picker.
+  const n = NOTIFY_TEXT[opts.lang ?? "en"];
+  const notify = new ContainerBuilder()
+    .setAccentColor(GREEN)
+    .addTextDisplayComponents(text(n.title), text(n.body))
+    .addActionRowComponents(row(notifyButton(opts.lang ?? "en")));
+
+  // start-here is only seen after a language is picked, so it drops the picker. Order matches GUIDE_SECTIONS.
   return [
     { components: [welcome], files: [asset("hero.png", opts.lang)], flags: V2 },
+    guideNav(opts.lang ?? "en"),
     { components: [rules], files: [asset("rules.png", opts.lang)], flags: V2 },
     { components: [start], files: [asset("start.png", opts.lang), asset("exchanges.png", opts.lang)], flags: V2 },
+    { components: [notify], flags: V2 },
     { components: [community], files: [asset("community.png", opts.lang)], flags: V2 },
   ];
 }

@@ -54,6 +54,15 @@ export const GUIDE_EN = {
   helpBody: "Ask in help-desk, where the community and the team answer. For anything private, open a support ticket and you get a thread with staff only.",
   helpButton: "Help-desk",
   ticketButton: "Open a Support Ticket",
+  // Jump-to card under the hero
+  navTitle: "### 🧭 Jump to",
+  navBody: "Tap a button to go straight to that part of the guide.",
+  navRules: "Rules",
+  navStart: "Get started",
+  navNotify: "Notifications",
+  navCommunity: "Help & community",
+  navVerify: "Verify my UID",
+  navHelp: "Get help",
   // Banner headlines (rendered into the images by assets/start-here/render-i18n.mjs)
   bannerStep: "Step",
   bannerHeroLine1: "The crypto trader's",

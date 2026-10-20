@@ -49,5 +49,13 @@
   "bannerCommunitySub": "YouTube · X · Help-desk",
   "tileBybit": "En kolay başlangıç",
   "tileBlofin": "Kimlik doğrulama yok",
-  "tileBitget": "Copy trading"
+  "tileBitget": "Copy trading",
+  "navTitle": "### 🧭 Hızlı geçiş",
+  "navBody": "Rehberin o bölümüne gitmek için bir butona bas.",
+  "navRules": "Kurallar",
+  "navStart": "Başla",
+  "navNotify": "Bildirimler",
+  "navCommunity": "Yardım & topluluk",
+  "navVerify": "UID'mi doğrula",
+  "navHelp": "Yardım al"
 }

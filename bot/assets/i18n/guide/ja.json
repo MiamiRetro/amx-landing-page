@@ -49,5 +49,13 @@
   "bannerCommunitySub": "YouTube · X · Help-desk",
   "tileBybit": "いちばん簡単",
   "tileBlofin": "本人確認なし",
-  "tileBitget": "コピートレード"
+  "tileBitget": "コピートレード",
+  "navTitle": "### 🧭 ジャンプ",
+  "navBody": "ボタンを押すとガイドのその部分へすぐ移動します。",
+  "navRules": "ルール",
+  "navStart": "はじめる",
+  "navNotify": "通知",
+  "navCommunity": "ヘルプ＆コミュニティ",
+  "navVerify": "UIDを認証する",
+  "navHelp": "サポートを受ける"
 }

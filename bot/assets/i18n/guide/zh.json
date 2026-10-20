@@ -49,5 +49,13 @@
   "bannerCommunitySub": "YouTube · X · Help-desk",
   "tileBybit": "上手最简单",
   "tileBlofin": "无需身份验证",
-  "tileBitget": "跟单交易"
+  "tileBitget": "跟单交易",
+  "navTitle": "### 🧭 快速跳转",
+  "navBody": "点按钮直接跳到指南的对应部分。",
+  "navRules": "规则",
+  "navStart": "开始使用",
+  "navNotify": "通知",
+  "navCommunity": "帮助与社区",
+  "navVerify": "验证我的 UID",
+  "navHelp": "获取帮助"
 }

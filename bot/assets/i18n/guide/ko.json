@@ -49,5 +49,13 @@
   "bannerCommunitySub": "YouTube · X · Help-desk",
   "tileBybit": "가장 쉬운 시작",
   "tileBlofin": "신원 인증 없음",
-  "tileBitget": "카피 트레이딩"
+  "tileBitget": "카피 트레이딩",
+  "navTitle": "### 🧭 바로가기",
+  "navBody": "버튼을 누르면 가이드의 해당 부분으로 바로 이동해요.",
+  "navRules": "규칙",
+  "navStart": "시작하기",
+  "navNotify": "알림",
+  "navCommunity": "도움말 & 커뮤니티",
+  "navVerify": "UID 인증하기",
+  "navHelp": "도움 받기"
 }

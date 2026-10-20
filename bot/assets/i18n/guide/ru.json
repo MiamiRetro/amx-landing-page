@@ -49,5 +49,13 @@
   "bannerCommunitySub": "YouTube · X · Help-desk",
   "tileBybit": "Проще всего начать",
   "tileBlofin": "Без проверки личности",
-  "tileBitget": "Копитрейдинг"
+  "tileBitget": "Копитрейдинг",
+  "navTitle": "### 🧭 Перейти к",
+  "navBody": "Нажмите кнопку, чтобы сразу перейти к нужной части гида.",
+  "navRules": "Правила",
+  "navStart": "Начать",
+  "navNotify": "Уведомления",
+  "navCommunity": "Помощь и сообщество",
+  "navVerify": "Подтвердить UID",
+  "navHelp": "Получить помощь"
 }

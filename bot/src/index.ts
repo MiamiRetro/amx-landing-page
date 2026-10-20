@@ -21,6 +21,7 @@ import { FlagshipWatch } from "./flagship.js";
 import { SupportAssistant } from "./support/assistant.js";
 import { SupportDesk, SUPPORT_PREFIX } from "./support/desk.js";
 import { SupportReview } from "./support/review.js";
+import { NotifyCenter, NOTIFY_OPEN, NOTIFY_SET } from "./notify.js";
 
 async function main() {
   setLogLevel(config.logLevel());
@@ -55,6 +56,7 @@ async function main() {
   let invites: InviteTracker | null = null;
   let support: SupportDesk | null = null;
   let review: SupportReview | null = null;
+  let notify: NotifyCenter | null = null;
   const funnel = new Funnel(db, guildId);
 
   client.once(Events.ClientReady, async (c) => {
@@ -72,6 +74,7 @@ async function main() {
 
       // Help-desk threads. Without an Anthropic key every thread goes straight to a moderator.
       const assistant = process.env.ANTHROPIC_API_KEY && process.env.SUPPORT_ASSISTANT !== "off" ? new SupportAssistant() : null;
+      notify = new NotifyCenter(guild, db, roles);
       support = new SupportDesk(guild, db, roles, c.user.id, assistant);
       log.info("support desk ready", { assistant: assistant?.model ?? "off" });
       if (SupportReview.enabled()) {
@@ -157,6 +160,12 @@ async function main() {
     if (i.guildId !== guildId) return;
     if (!mirror || !groups || !roles || !verify) return;
     if (i.isButton() && i.customId.startsWith(PICKER_PREFIX)) return void handlePickerButton(i, roles);
+    if (i.isButton() && i.customId === NOTIFY_OPEN && i.inCachedGuild() && notify) {
+      return void notify.onButton(i).catch((e) => log.error("notify button failed", errInfo(e)));
+    }
+    if (i.isStringSelectMenu() && i.customId === NOTIFY_SET && i.inCachedGuild() && notify) {
+      return void notify.onSelect(i).catch((e) => log.error("notify select failed", errInfo(e)));
+    }
     if (i.isButton() && i.customId.startsWith(SUPPORT_PREFIX) && i.inCachedGuild() && support) {
       return void support.onButton(i).catch((e) => log.error("support button failed", errInfo(e)));
     }

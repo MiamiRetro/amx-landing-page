@@ -49,5 +49,13 @@
   "bannerCommunitySub": "YouTube · X · Help-desk",
   "tileBybit": "Paling gampang",
   "tileBlofin": "Tanpa verifikasi ID",
-  "tileBitget": "Copy trading"
+  "tileBitget": "Copy trading",
+  "navTitle": "### 🧭 Lompat ke",
+  "navBody": "Tekan tombol untuk langsung ke bagian panduan itu.",
+  "navRules": "Aturan",
+  "navStart": "Mulai",
+  "navNotify": "Notifikasi",
+  "navCommunity": "Bantuan & komunitas",
+  "navVerify": "Verifikasi UID saya",
+  "navHelp": "Minta bantuan"
 }

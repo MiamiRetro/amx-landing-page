@@ -49,5 +49,13 @@
   "bannerCommunitySub": "YouTube · X · Help-desk",
   "tileBybit": "Inicio más fácil",
   "tileBlofin": "Sin verificación",
-  "tileBitget": "Copy trading"
+  "tileBitget": "Copy trading",
+  "navTitle": "### 🧭 Ir a",
+  "navBody": "Pulsa un botón para ir directo a esa parte de la guía.",
+  "navRules": "Reglas",
+  "navStart": "Empezar",
+  "navNotify": "Notificaciones",
+  "navCommunity": "Ayuda y comunidad",
+  "navVerify": "Verificar mi UID",
+  "navHelp": "Pedir ayuda"
 }

@@ -40,52 +40,52 @@ export const LANG_ROLE_NAMES: Record<Lang, { base: string; member: string }> = {
 
 const REPLY: Record<Lang, { base: string; member: string; locked: string }> = {
   en: {
-    base: "Welcome. Your English channels are open. Verify your exchange UID in ✅・verify to unlock the full Trading Floor.",
+    base: "Welcome. Your English channels are open. Press “Verify my UID” in any 🔒 channel to unlock the full Trading Floor.",
     member: "Welcome back. Your English channels are open.",
     locked: "Your language is already set. Ask a moderator in help-desk if you need it changed.",
   },
   zh: {
-    base: "欢迎！中文频道已经为你开放。在 ✅・验证 中验证你的交易所 UID，即可解锁完整的交易大厅。",
+    base: "欢迎！中文频道已经为你开放。在任意 🔒 频道点击「验证我的 UID」，即可解锁完整的交易大厅。",
     member: "欢迎回来，中文频道已经为你开放。",
     locked: "你的语言已经设置好了。如需更改，请在帮助台联系管理员。",
   },
   ko: {
-    base: "환영합니다! 한국어 채널이 열렸어요. ✅・인증 채널에서 거래소 UID를 인증하면 트레이딩 플로어 전체가 열립니다.",
+    base: "환영합니다! 한국어 채널이 열렸어요. 🔒 채널에서 「내 UID 인증하기」를 누르면 트레이딩 플로어 전체가 열립니다.",
     member: "다시 오신 걸 환영해요. 한국어 채널이 열렸어요.",
     locked: "언어가 이미 설정되어 있어요. 변경이 필요하면 도움말 채널에서 운영진에게 문의해 주세요.",
   },
   id: {
-    base: "Selamat datang! Kanal Bahasa Indonesia sudah terbuka. Verifikasi UID exchange kamu di ✅・verifikasi untuk membuka seluruh Trading Floor.",
+    base: "Selamat datang! Kanal Bahasa Indonesia sudah terbuka. Tekan “Verifikasi UID saya” di kanal 🔒 mana pun untuk membuka seluruh Trading Floor.",
     member: "Selamat datang kembali. Kanal Bahasa Indonesia sudah terbuka.",
     locked: "Bahasamu sudah diatur. Minta moderator di kanal bantuan kalau perlu diganti.",
   },
   vi: {
-    base: "Chào mừng! Các kênh tiếng Việt đã mở cho bạn. Xác minh UID sàn của bạn trong ✅・xác-minh để mở toàn bộ Trading Floor.",
+    base: "Chào mừng! Các kênh tiếng Việt đã mở cho bạn. Bấm “Xác minh UID” trong bất kỳ kênh 🔒 nào để mở toàn bộ Trading Floor.",
     member: "Chào mừng bạn quay lại. Các kênh tiếng Việt đã mở cho bạn.",
     locked: "Ngôn ngữ của bạn đã được chọn. Nhờ quản trị viên trong kênh hỗ trợ nếu cần đổi.",
   },
   es: {
-    base: "¡Bienvenido! Tus canales en español ya están abiertos. Verifica tu UID del exchange en ✅・verificar para desbloquear todo el Trading Floor.",
+    base: "¡Bienvenido! Tus canales en español ya están abiertos. Pulsa «Verificar mi UID» en cualquier canal 🔒 para desbloquear todo el Trading Floor.",
     member: "Bienvenido de nuevo. Tus canales en español ya están abiertos.",
     locked: "Tu idioma ya está elegido. Pide a un moderador en el canal de ayuda si necesitas cambiarlo.",
   },
   pt: {
-    base: "Bem-vindo! Seus canais em português já estão abertos. Verifique seu UID da corretora em ✅・verificar para liberar todo o Trading Floor.",
+    base: "Bem-vindo! Seus canais em português já estão abertos. Toque em “Verificar meu UID” em qualquer canal 🔒 para liberar todo o Trading Floor.",
     member: "Bem-vindo de volta. Seus canais em português já estão abertos.",
     locked: "Seu idioma já foi escolhido. Peça a um moderador no canal de ajuda se precisar mudar.",
   },
   tr: {
-    base: "Hoş geldin! Türkçe kanalların açıldı. Tüm Trading Floor'u açmak için borsa UID'ni ✅・doğrulama kanalında doğrula.",
+    base: "Hoş geldin! Türkçe kanalların açıldı. Tüm Trading Floor'u açmak için herhangi bir 🔒 kanalında “UID'mi doğrula”ya bas.",
     member: "Tekrar hoş geldin. Türkçe kanalların açıldı.",
     locked: "Dilin zaten seçildi. Değiştirmen gerekirse yardım kanalında bir moderatöre sor.",
   },
   ru: {
-    base: "Добро пожаловать! Русские каналы открыты. Подтвердите UID биржи в ✅・верификация, чтобы открыть весь Trading Floor.",
+    base: "Добро пожаловать! Русские каналы открыты. Нажмите «Подтвердить UID» в любом 🔒 канале, чтобы открыть весь Trading Floor.",
     member: "С возвращением. Русские каналы открыты.",
     locked: "Язык уже выбран. Если нужно сменить, обратитесь к модератору в канале помощи.",
   },
   ja: {
-    base: "ようこそ！日本語チャンネルが開きました。✅・認証 で取引所のUIDを認証すると、Trading Floor 全体が開きます。",
+    base: "ようこそ！日本語チャンネルが開きました。🔒 チャンネルの「UIDを認証する」を押すと、Trading Floor 全体が開きます。",
     member: "おかえりなさい。日本語チャンネルが開きました。",
     locked: "言語はすでに設定されています。変更が必要な場合はヘルプチャンネルでモデレーターに伝えてください。",
   },

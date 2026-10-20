@@ -505,8 +505,10 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
       const base = role(l, "base"), member = role(l, "member");
       if (tier === "verify" || tier === "teaser") base && set(base, OverwriteType.Role, P.ViewChannel, 0n);
       if (tier === "free") {
-        base && set(base, OverwriteType.Role, P.ViewChannel, 0n);
-        member && set(member, OverwriteType.Role, P.ViewChannel, 0n);
+        // An open channel allows Send outright, so a leftover @everyone deny can't mute it.
+        const allow = readOnly ? P.ViewChannel : P.ViewChannel | P.SendMessages;
+        base && set(base, OverwriteType.Role, allow, 0n);
+        member && set(member, OverwriteType.Role, allow, 0n);
       }
       if (tier === "trader") {
         base && set(base, OverwriteType.Role, P.ViewChannel, P.SendMessages | P.SendMessagesInThreads | P.CreatePublicThreads | P.AddReactions);

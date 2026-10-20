@@ -46,7 +46,7 @@ type Tier =
 type Kind =
   | "announcements" | "teaser" | "signals" | "flagship" | "investor" | "daytrade"
   | "lock-flagship" | "lock-investor" | "lock-daytrade" | "lock-crypto" | "lock-stocks" | "lock-commodities"
-  | "verify" | "btcgate" | "general" | "trader" | "bitcoin" | "crypto" | "stocks" | "commodities" | "memes" | "help"
+  | "verify" | "btcgate" | "tradegate" | "general" | "trader" | "bitcoin" | "crypto" | "stocks" | "commodities" | "memes" | "help"
   | "start" | "guides" | "strategies" | "forums";
 
 interface Spec {
@@ -70,9 +70,9 @@ interface Spec {
  * The one layout every language gets. A member only ever sees their own
  * language's copy:
  *
- *   (top level)     ═🧭・server-guide・🧭═, above every category, framed so it reads as its own part
+ *   (top level)     【server-guide】, above every category, bracketed so it reads as its own part
  *   ANNOUNCEMENTS   announcements · alphanumetrix · bot-alerts · signals · 🔒 trade-signals
- *   COMMUNITY       verify · locked bitcoin · general · trader-chat · bitcoin · crypto · stocks · commodities · memes · help-desk
+ *   COMMUNITY       general · memes · help-desk · bitcoin · crypto · stocks · commodities · 🔒 trading-group
  *   REFERENCE       setup-guides · trading-strategies · forums
  *
  * No voice channels: one per language is more rooms than anyone would use.
@@ -87,19 +87,16 @@ const LAYOUT: { cat: "ann" | "com" | "ref"; top?: true; kind: Kind; tier: Tier; 
   { cat: "ann", kind: "signals", tier: "member", readOnly: true },
   // One 🔒 trade-signals channel stands in for alphanumetrix, bot-alerts and trade-alerts.
   { cat: "ann", kind: "teaser", tier: "teaser", readOnly: true, panel: "locked" },
-  { cat: "com", kind: "verify", tier: "verify", readOnly: true, panel: "verify" },
-  { cat: "com", kind: "btcgate", tier: "teaser", readOnly: true, panel: "bitcoin" },
-  { cat: "com", kind: "lock-crypto", tier: "teaser", readOnly: true, panel: "locked", lockFor: "crypto" },
-  { cat: "com", kind: "lock-stocks", tier: "teaser", readOnly: true, panel: "locked", lockFor: "stocks" },
-  { cat: "com", kind: "lock-commodities", tier: "teaser", readOnly: true, panel: "locked", lockFor: "commodities" },
-  { cat: "com", kind: "general", tier: "member" },
-  { cat: "com", kind: "trader", tier: "trader" },
+  // General and memes are open to everyone who picked a language; the 🔒 panels carry the Verify button.
+  { cat: "com", kind: "general", tier: "free" },
+  { cat: "com", kind: "memes", tier: "free" },
+  { cat: "com", kind: "help", tier: "free" },
   { cat: "com", kind: "bitcoin", tier: "member" },
   { cat: "com", kind: "crypto", tier: "member" },
   { cat: "com", kind: "stocks", tier: "member" },
   { cat: "com", kind: "commodities", tier: "member" },
-  { cat: "com", kind: "memes", tier: "member" },
-  { cat: "com", kind: "help", tier: "free" },
+  // One 🔒 trading-group channel stands in for bitcoin, crypto, stocks and commodities.
+  { cat: "com", kind: "tradegate", tier: "teaser", readOnly: true, panel: "locked" },
   { cat: "ref", kind: "guides", tier: "member", type: "forum" },
   { cat: "ref", kind: "strategies", tier: "member", type: "forum" },
   { cat: "ref", kind: "forums", tier: "member", type: "forum" },
@@ -119,16 +116,16 @@ const CATS: Record<Lang, Record<"ann" | "com" | "ref", string>> = {
 };
 
 const NAMES: Record<Lang, Record<Kind, string>> = {
-  en: { announcements: "📢・announcements", flagship: "🟢🟢・alphanumetrix", investor: "💼・investor-signals", daytrade: "🤖・bot-alerts", "lock-flagship": "", "lock-investor": "", "lock-daytrade": "", "lock-crypto": "", "lock-stocks": "", "lock-commodities": "", teaser: "🔒・trade-signals", signals: "⚡・trade-alerts", verify: "✅・verify", btcgate: "🔒・bitcoin", general: "💬・general", trader: "📈・trader-chat", bitcoin: "🟠・bitcoin", crypto: "🪙・crypto", stocks: "📊・stocks", commodities: "🛢️・commodities", memes: "🐸・memes", help: "☎️・help-desk", start: "🧭・server-guide", guides: "📕・setup-guides", strategies: "📗・trading-strategies", forums: "🧵・forums" },
-  zh: { announcements: "📢・公告", flagship: "🟢🟢・alphanumetrix", investor: "💼・投资信号", daytrade: "🤖・机器人提醒", "lock-flagship": "", "lock-investor": "", "lock-daytrade": "", "lock-crypto": "", "lock-stocks": "", "lock-commodities": "", teaser: "🔒・交易信号", signals: "⚡・交易提醒", verify: "✅・验证", btcgate: "🔒・比特币", general: "💬・闲聊", trader: "📈・交易者聊天", bitcoin: "🟠・比特币", crypto: "🪙・加密货币", stocks: "📊・股票", commodities: "🛢️・大宗商品", memes: "🐸・表情包", help: "☎️・帮助台", start: "🧭・服务器指南", guides: "📕・设置指南", strategies: "📗・交易策略", forums: "🧵・论坛" },
-  ko: { announcements: "📢・공지사항", flagship: "🟢🟢・alphanumetrix", investor: "💼・투자-신호", daytrade: "🤖・봇-알림", "lock-flagship": "", "lock-investor": "", "lock-daytrade": "", "lock-crypto": "", "lock-stocks": "", "lock-commodities": "", teaser: "🔒・매매신호", signals: "⚡・매매신호", verify: "✅・인증", btcgate: "🔒・비트코인", general: "💬・자유채팅", trader: "📈・트레이더-채팅", bitcoin: "🟠・비트코인", crypto: "🪙・코인", stocks: "📊・주식", commodities: "🛢️・원자재", memes: "🐸・밈", help: "☎️・도움말", start: "🧭・서버-가이드", guides: "📕・설정-가이드", strategies: "📗・매매-전략", forums: "🧵・포럼" },
-  id: { announcements: "📢・pengumuman", flagship: "🟢🟢・alphanumetrix", investor: "💼・sinyal-investor", daytrade: "🤖・alert-bot", "lock-flagship": "", "lock-investor": "", "lock-daytrade": "", "lock-crypto": "", "lock-stocks": "", "lock-commodities": "", teaser: "🔒・sinyal-trading", signals: "⚡・sinyal-trading", verify: "✅・verifikasi", btcgate: "🔒・bitcoin", general: "💬・obrolan-umum", trader: "📈・obrolan-trader", bitcoin: "🟠・bitcoin", crypto: "🪙・kripto", stocks: "📊・saham", commodities: "🛢️・komoditas", memes: "🐸・meme", help: "☎️・bantuan", start: "🧭・panduan-server", guides: "📕・panduan-setup", strategies: "📗・strategi-trading", forums: "🧵・forum" },
-  vi: { announcements: "📢・thông-báo", flagship: "🟢🟢・alphanumetrix", investor: "💼・tín-hiệu-đầu-tư", daytrade: "🤖・cảnh-báo-bot", "lock-flagship": "", "lock-investor": "", "lock-daytrade": "", "lock-crypto": "", "lock-stocks": "", "lock-commodities": "", teaser: "🔒・tín-hiệu-giao-dịch", signals: "⚡・tín-hiệu", verify: "✅・xác-minh", btcgate: "🔒・bitcoin", general: "💬・tán-gẫu", trader: "📈・trò-chuyện-trader", bitcoin: "🟠・bitcoin", crypto: "🪙・crypto", stocks: "📊・cổ-phiếu", commodities: "🛢️・hàng-hóa", memes: "🐸・meme", help: "☎️・hỗ-trợ", start: "🧭・hướng-dẫn-server", guides: "📕・hướng-dẫn", strategies: "📗・chiến-lược", forums: "🧵・diễn-đàn" },
-  es: { announcements: "📢・anuncios", flagship: "🟢🟢・alphanumetrix", investor: "💼・señales-inversión", daytrade: "🤖・alertas-bot", "lock-flagship": "", "lock-investor": "", "lock-daytrade": "", "lock-crypto": "", "lock-stocks": "", "lock-commodities": "", teaser: "🔒・señales-trading", signals: "⚡・alertas", verify: "✅・verificar", btcgate: "🔒・bitcoin", general: "💬・general", trader: "📈・chat-traders", bitcoin: "🟠・bitcoin", crypto: "🪙・cripto", stocks: "📊・acciones", commodities: "🛢️・materias-primas", memes: "🐸・memes", help: "☎️・ayuda", start: "🧭・guía-del-servidor", guides: "📕・guías", strategies: "📗・estrategias", forums: "🧵・foros" },
-  pt: { announcements: "📢・anúncios", flagship: "🟢🟢・alphanumetrix", investor: "💼・sinais-investimento", daytrade: "🤖・alertas-bot", "lock-flagship": "", "lock-investor": "", "lock-daytrade": "", "lock-crypto": "", "lock-stocks": "", "lock-commodities": "", teaser: "🔒・sinais-trading", signals: "⚡・alertas", verify: "✅・verificar", btcgate: "🔒・bitcoin", general: "💬・geral", trader: "📈・chat-traders", bitcoin: "🟠・bitcoin", crypto: "🪙・cripto", stocks: "📊・ações", commodities: "🛢️・commodities", memes: "🐸・memes", help: "☎️・ajuda", start: "🧭・guia-do-servidor", guides: "📕・guias", strategies: "📗・estratégias", forums: "🧵・fóruns" },
-  tr: { announcements: "📢・duyurular", flagship: "🟢🟢・alphanumetrix", investor: "💼・yatırım-sinyalleri", daytrade: "🤖・bot-uyarıları", "lock-flagship": "", "lock-investor": "", "lock-daytrade": "", "lock-crypto": "", "lock-stocks": "", "lock-commodities": "", teaser: "🔒・işlem-sinyalleri", signals: "⚡・sinyaller", verify: "✅・doğrulama", btcgate: "🔒・bitcoin", general: "💬・sohbet", trader: "📈・trader-sohbet", bitcoin: "🟠・bitcoin", crypto: "🪙・kripto", stocks: "📊・hisseler", commodities: "🛢️・emtia", memes: "🐸・mizah", help: "☎️・yardım", start: "🧭・sunucu-rehberi", guides: "📕・kurulum-rehberi", strategies: "📗・stratejiler", forums: "🧵・forum" },
-  ru: { announcements: "📢・объявления", flagship: "🟢🟢・alphanumetrix", investor: "💼・инвест-сигналы", daytrade: "🤖・алерты-бота", "lock-flagship": "", "lock-investor": "", "lock-daytrade": "", "lock-crypto": "", "lock-stocks": "", "lock-commodities": "", teaser: "🔒・торговые-сигналы", signals: "⚡・сигналы", verify: "✅・верификация", btcgate: "🔒・биткоин", general: "💬・общий-чат", trader: "📈・чат-трейдеров", bitcoin: "🟠・биткоин", crypto: "🪙・крипта", stocks: "📊・акции", commodities: "🛢️・сырьё", memes: "🐸・мемы", help: "☎️・помощь", start: "🧭・гид-по-серверу", guides: "📕・гайды", strategies: "📗・стратегии", forums: "🧵・форум" },
-  ja: { announcements: "📢・お知らせ", flagship: "🟢🟢・alphanumetrix", investor: "💼・投資シグナル", daytrade: "🤖・ボットアラート", "lock-flagship": "", "lock-investor": "", "lock-daytrade": "", "lock-crypto": "", "lock-stocks": "", "lock-commodities": "", teaser: "🔒・トレードシグナル", signals: "⚡・シグナル", verify: "✅・認証", btcgate: "🔒・ビットコイン", general: "💬・雑談", trader: "📈・トレーダー-チャット", bitcoin: "🟠・ビットコイン", crypto: "🪙・暗号資産", stocks: "📊・株式", commodities: "🛢️・コモディティ", memes: "🐸・ミーム", help: "☎️・ヘルプ", start: "🧭・サーバーガイド", guides: "📕・設定ガイド", strategies: "📗・トレード戦略", forums: "🧵・フォーラム" },
+  en: { announcements: "📢・announcements", flagship: "🟢🟢・alphanumetrix", investor: "💼・investor-signals", daytrade: "🤖・bot-alerts", "lock-flagship": "", "lock-investor": "", "lock-daytrade": "", "lock-crypto": "", "lock-stocks": "", "lock-commodities": "", teaser: "🔒・trade-signals", signals: "⚡・trade-alerts", verify: "✅・verify", btcgate: "🔒・bitcoin", tradegate: "🔒・trading-group", general: "💬・general", trader: "📈・trader-chat", bitcoin: "🟠・bitcoin", crypto: "🪙・crypto", stocks: "📊・stocks", commodities: "🛢️・commodities", memes: "🐸・memes", help: "☎️・help-desk", start: "🧭・server-guide", guides: "📕・setup-guides", strategies: "📗・trading-strategies", forums: "🧵・forums" },
+  zh: { announcements: "📢・公告", flagship: "🟢🟢・alphanumetrix", investor: "💼・投资信号", daytrade: "🤖・机器人提醒", "lock-flagship": "", "lock-investor": "", "lock-daytrade": "", "lock-crypto": "", "lock-stocks": "", "lock-commodities": "", teaser: "🔒・交易信号", signals: "⚡・交易提醒", verify: "✅・验证", btcgate: "🔒・比特币", tradegate: "🔒・交易群组", general: "💬・闲聊", trader: "📈・交易者聊天", bitcoin: "🟠・比特币", crypto: "🪙・加密货币", stocks: "📊・股票", commodities: "🛢️・大宗商品", memes: "🐸・表情包", help: "☎️・帮助台", start: "🧭・服务器指南", guides: "📕・设置指南", strategies: "📗・交易策略", forums: "🧵・论坛" },
+  ko: { announcements: "📢・공지사항", flagship: "🟢🟢・alphanumetrix", investor: "💼・투자-신호", daytrade: "🤖・봇-알림", "lock-flagship": "", "lock-investor": "", "lock-daytrade": "", "lock-crypto": "", "lock-stocks": "", "lock-commodities": "", teaser: "🔒・매매신호", signals: "⚡・매매신호", verify: "✅・인증", btcgate: "🔒・비트코인", tradegate: "🔒・트레이딩-그룹", general: "💬・자유채팅", trader: "📈・트레이더-채팅", bitcoin: "🟠・비트코인", crypto: "🪙・코인", stocks: "📊・주식", commodities: "🛢️・원자재", memes: "🐸・밈", help: "☎️・도움말", start: "🧭・서버-가이드", guides: "📕・설정-가이드", strategies: "📗・매매-전략", forums: "🧵・포럼" },
+  id: { announcements: "📢・pengumuman", flagship: "🟢🟢・alphanumetrix", investor: "💼・sinyal-investor", daytrade: "🤖・alert-bot", "lock-flagship": "", "lock-investor": "", "lock-daytrade": "", "lock-crypto": "", "lock-stocks": "", "lock-commodities": "", teaser: "🔒・sinyal-trading", signals: "⚡・sinyal-trading", verify: "✅・verifikasi", btcgate: "🔒・bitcoin", tradegate: "🔒・grup-trading", general: "💬・obrolan-umum", trader: "📈・obrolan-trader", bitcoin: "🟠・bitcoin", crypto: "🪙・kripto", stocks: "📊・saham", commodities: "🛢️・komoditas", memes: "🐸・meme", help: "☎️・bantuan", start: "🧭・panduan-server", guides: "📕・panduan-setup", strategies: "📗・strategi-trading", forums: "🧵・forum" },
+  vi: { announcements: "📢・thông-báo", flagship: "🟢🟢・alphanumetrix", investor: "💼・tín-hiệu-đầu-tư", daytrade: "🤖・cảnh-báo-bot", "lock-flagship": "", "lock-investor": "", "lock-daytrade": "", "lock-crypto": "", "lock-stocks": "", "lock-commodities": "", teaser: "🔒・tín-hiệu-giao-dịch", signals: "⚡・tín-hiệu", verify: "✅・xác-minh", btcgate: "🔒・bitcoin", tradegate: "🔒・nhóm-giao-dịch", general: "💬・tán-gẫu", trader: "📈・trò-chuyện-trader", bitcoin: "🟠・bitcoin", crypto: "🪙・crypto", stocks: "📊・cổ-phiếu", commodities: "🛢️・hàng-hóa", memes: "🐸・meme", help: "☎️・hỗ-trợ", start: "🧭・hướng-dẫn-server", guides: "📕・hướng-dẫn", strategies: "📗・chiến-lược", forums: "🧵・diễn-đàn" },
+  es: { announcements: "📢・anuncios", flagship: "🟢🟢・alphanumetrix", investor: "💼・señales-inversión", daytrade: "🤖・alertas-bot", "lock-flagship": "", "lock-investor": "", "lock-daytrade": "", "lock-crypto": "", "lock-stocks": "", "lock-commodities": "", teaser: "🔒・señales-trading", signals: "⚡・alertas", verify: "✅・verificar", btcgate: "🔒・bitcoin", tradegate: "🔒・grupo-trading", general: "💬・general", trader: "📈・chat-traders", bitcoin: "🟠・bitcoin", crypto: "🪙・cripto", stocks: "📊・acciones", commodities: "🛢️・materias-primas", memes: "🐸・memes", help: "☎️・ayuda", start: "🧭・guía-del-servidor", guides: "📕・guías", strategies: "📗・estrategias", forums: "🧵・foros" },
+  pt: { announcements: "📢・anúncios", flagship: "🟢🟢・alphanumetrix", investor: "💼・sinais-investimento", daytrade: "🤖・alertas-bot", "lock-flagship": "", "lock-investor": "", "lock-daytrade": "", "lock-crypto": "", "lock-stocks": "", "lock-commodities": "", teaser: "🔒・sinais-trading", signals: "⚡・alertas", verify: "✅・verificar", btcgate: "🔒・bitcoin", tradegate: "🔒・grupo-trading", general: "💬・geral", trader: "📈・chat-traders", bitcoin: "🟠・bitcoin", crypto: "🪙・cripto", stocks: "📊・ações", commodities: "🛢️・commodities", memes: "🐸・memes", help: "☎️・ajuda", start: "🧭・guia-do-servidor", guides: "📕・guias", strategies: "📗・estratégias", forums: "🧵・fóruns" },
+  tr: { announcements: "📢・duyurular", flagship: "🟢🟢・alphanumetrix", investor: "💼・yatırım-sinyalleri", daytrade: "🤖・bot-uyarıları", "lock-flagship": "", "lock-investor": "", "lock-daytrade": "", "lock-crypto": "", "lock-stocks": "", "lock-commodities": "", teaser: "🔒・işlem-sinyalleri", signals: "⚡・sinyaller", verify: "✅・doğrulama", btcgate: "🔒・bitcoin", tradegate: "🔒・trading-grubu", general: "💬・sohbet", trader: "📈・trader-sohbet", bitcoin: "🟠・bitcoin", crypto: "🪙・kripto", stocks: "📊・hisseler", commodities: "🛢️・emtia", memes: "🐸・mizah", help: "☎️・yardım", start: "🧭・sunucu-rehberi", guides: "📕・kurulum-rehberi", strategies: "📗・stratejiler", forums: "🧵・forum" },
+  ru: { announcements: "📢・объявления", flagship: "🟢🟢・alphanumetrix", investor: "💼・инвест-сигналы", daytrade: "🤖・алерты-бота", "lock-flagship": "", "lock-investor": "", "lock-daytrade": "", "lock-crypto": "", "lock-stocks": "", "lock-commodities": "", teaser: "🔒・торговые-сигналы", signals: "⚡・сигналы", verify: "✅・верификация", btcgate: "🔒・биткоин", tradegate: "🔒・трейдинг-группа", general: "💬・общий-чат", trader: "📈・чат-трейдеров", bitcoin: "🟠・биткоин", crypto: "🪙・крипта", stocks: "📊・акции", commodities: "🛢️・сырьё", memes: "🐸・мемы", help: "☎️・помощь", start: "🧭・гид-по-серверу", guides: "📕・гайды", strategies: "📗・стратегии", forums: "🧵・форум" },
+  ja: { announcements: "📢・お知らせ", flagship: "🟢🟢・alphanumetrix", investor: "💼・投資シグナル", daytrade: "🤖・ボットアラート", "lock-flagship": "", "lock-investor": "", "lock-daytrade": "", "lock-crypto": "", "lock-stocks": "", "lock-commodities": "", teaser: "🔒・トレードシグナル", signals: "⚡・シグナル", verify: "✅・認証", btcgate: "🔒・ビットコイン", tradegate: "🔒・トレードグループ", general: "💬・雑談", trader: "📈・トレーダー-チャット", bitcoin: "🟠・ビットコイン", crypto: "🪙・暗号資産", stocks: "📊・株式", commodities: "🛢️・コモディティ", memes: "🐸・ミーム", help: "☎️・ヘルプ", start: "🧭・サーバーガイド", guides: "📕・設定ガイド", strategies: "📗・トレード戦略", forums: "🧵・フォーラム" },
 };
 
 /** Names the bot-alerts channel had as day-trade signals, so the migration renames instead of recreating. */
@@ -142,8 +139,8 @@ const bare = (name: string) => name.split("・").slice(1).join("・");
 for (const lang of LANGS) for (const l of LAYOUT) if (l.lockFor) NAMES[lang][l.kind] = `🔒・${bare(NAMES[lang][l.lockFor])}`;
 /** The server guide's name before it was framed and lifted out of ANNOUNCEMENTS. */
 const START_OLD = Object.fromEntries(LANGS.map((lang) => [lang, NAMES[lang].start])) as Record<Lang, string>;
-// Framed and mirrored, so the one channel above the categories reads as a separate part.
-for (const lang of LANGS) NAMES[lang].start = `═🧭・${bare(START_OLD[lang])}・🧭═`;
+// Bracketed, so the one channel above the categories reads as a separate part.
+for (const lang of LANGS) NAMES[lang].start = `【${bare(START_OLD[lang])}】`;
 
 /** The flagship channel's icon follows the AlphanumetriX indicator: /flagship sets it. */
 export { ICONS as FLAGSHIP_STATES } from "../src/flagship.js";
@@ -189,7 +186,8 @@ for (const lang of LANGS) {
     const legacy = lang === "en"
       ? [{ name, parent: EN_OLD[l.kind] ?? null }, ...(l.kind === "start" ? [{ name: "📍・start-here", parent: null }] : [])]
       : [{ name, parent: OLD_CATS[lang as Exclude<Lang, "en">] }];
-    if (l.kind === "start") legacy.push({ name: START_OLD[lang], parent: CATS[lang][l.cat] });
+    if (l.kind === "start") legacy.push({ name: START_OLD[lang], parent: CATS[lang][l.cat] }, { name: `═🧭・${bare(START_OLD[lang])}・🧭═`, parent: null });
+    if (l.kind === "tradegate") legacy.push({ name: NAMES[lang].btcgate, parent: CATS[lang][l.cat] });
     if (l.kind === "teaser") legacy.push({ name: TEASER_OLD[lang], parent: CATS[lang][l.cat] });
     if (l.kind === "daytrade") {
       legacy.push({ name: DAYTRADE_OLD[lang], parent: CATS[lang][l.cat] });
@@ -445,6 +443,15 @@ async function stepCleanup(ctx: Ctx) {
       if (!ch) continue;
       log(`  delete #${ch.name} (${lang}; 🔒 trade-signals replaces it)`);
       if (ctx.apply) await ch.delete("onboarding: one locked trade-signals channel");
+    }
+    // Verify (every 🔒 panel carries the button), trader-chat, and the 🔒 topic stand-ins folded into trading-group.
+    const com = CATS[lang].com;
+    const gone = [NAMES[lang].verify, NAMES[lang].trader, NAMES[lang].btcgate, ...(["crypto", "stocks", "commodities"] as const).map((k) => `🔒・${bare(NAMES[lang][k])}`)];
+    for (const name of gone) {
+      const ch = findChannel(guild, { name, parent: com });
+      if (!ch) continue;
+      log(`  delete #${ch.name} (${lang}; no longer in the layout)`);
+      if (ctx.apply) await ch.delete("onboarding: community layout trimmed");
     }
   }
   for (const v of guild.channels.cache.filter((c) => c.type === ChannelType.GuildVoice && c.name === "🎙・Meeting Room").values()) {

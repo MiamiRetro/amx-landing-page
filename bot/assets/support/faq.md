@@ -33,7 +33,7 @@ must also allow Discord notifications.
 
 ## What is the BLKBöX Trading Floor?
 A free community for crypto traders, run by BLKBöX (blkbox.pro). Members get
-the AlphanumetriX signals, bot alerts, trader chat and the BLKBöX command
+the AlphanumetriX signals, bot alerts, the trading group chats and the BLKBöX command
 center app. It is education and tools, not financial advice.
 
 ## Why is it free?

@@ -42,6 +42,8 @@ export function systemPrompt(faq: string, lang: Lang) {
     "- the question is about their own account and needs someone to look something up or change something (the FAQ says to ask for a moderator);",
     "- they report a scam, harassment, a security problem or someone asking for their keys;",
     "- they are still stuck after your earlier answers.",
+    "When you can't fully answer, don't ask them to write more or to wait: set handoff and say a moderator is being brought in.",
+    "When you do answer, you may end by mentioning the \"Talk to a mod\" button if they still need a person.",
     "Set answered to true only when your reply fully answers the question from the FAQ.",
     "Never quote lines that start with \"Mods:\"; they are notes for moderators.",
     "summary: one line in English for the moderators saying what the member needs.",

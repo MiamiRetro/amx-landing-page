@@ -212,7 +212,7 @@ const CATEGORY_SPECS: { name: string; lang: Lang; tier: Tier }[] = LANGS.flatMap
 const REPLACED_ROLE_NAMES = ["Member", "Members", "New Member", "Muted Member"];
 
 // Thread permissions are for help-desk, where each support request gets a private thread.
-const BOT_ALLOW = [P.ViewChannel, P.SendMessages, P.ReadMessageHistory, P.ManageMessages, P.ManageWebhooks, P.EmbedLinks, P.AttachFiles, P.CreatePrivateThreads, P.SendMessagesInThreads, P.ManageThreads];
+const BOT_ALLOW = [P.ViewChannel, P.SendMessages, P.ReadMessageHistory, P.ManageMessages, P.ManageWebhooks, P.EmbedLinks, P.AttachFiles, P.CreatePrivateThreads, P.SendMessagesInThreads, P.ManageThreads, P.PinMessages];
 
 const TRANSLATE_PNG = join(dirname(fileURLToPath(import.meta.url)), "..", "assets", "emoji", "translate.png");
 
@@ -603,7 +603,9 @@ async function stepPanels(ctx: Ctx) {
     } else if (s.panel === "locked") {
       await ch.send(verifyPanel(lang, "locked", s.topic));
     } else if (s.panel === "support") {
-      await ch.send(supportPanel(lang));
+      // Pinned, so the button is still there once the chat has scrolled it away.
+      const panel = await ch.send(supportPanel(lang));
+      await panel.pin("onboarding: help-desk panel").catch((e) => log(`  ! could not pin the help panel in #${s.name}: ${e}`));
       // The bot opens each language's help threads here, whichever button they came from.
       await ctx.db.setSetting(guild.id, `support_channel:${lang}`, ch.id);
     } else if (s.panel === "start") {

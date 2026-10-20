@@ -18,6 +18,7 @@ import type { Db } from "../db/index.js";
 import { log, errInfo } from "../log.js";
 import type { LanguageRoles } from "../roles.js";
 import type { SupportAssistant, Turn } from "./assistant.js";
+import { guideFile } from "./guides.js";
 import { SUPPORT_TEXT } from "./text.js";
 
 export const SUPPORT_OPEN = "support:open";
@@ -195,13 +196,16 @@ export class SupportDesk {
           from: x.author.id === this.botUserId ? "assistant" : x.author.id === state.userId ? "member" : "moderator",
           text: x.content,
           images: x.author.id === state.userId ? shots(x) : undefined,
+          // Guides go out named guide-<key>.png, so the thread itself records which ones were sent.
+          guides: x.author.id === this.botUserId ? [...x.attachments.values()].map((f) => /^guide-(.+)\.png$/.exec(f.name)?.[1]).filter((g): g is string => !!g) : undefined,
         }));
       const a = await this.assistant.answer(state.lang, turns);
       state.answers++;
       if (!a.answered) state.misses++;
       const handoff = a.handoff || state.misses >= MAX_MISSES || state.answers >= MAX_ANSWERS;
-      if (a.reply.trim()) await thread.send({ content: a.reply.slice(0, 1900), components: threadButtons(state.lang, !handoff), allowedMentions: { parse: [] } });
-      log.info("support answer", { thread: thread.id, answered: a.answered, handoff, model: this.assistant.model });
+      const files = a.guides.map((g) => ({ attachment: guideFile(g, state.lang), name: `guide-${g}.png` }));
+      if (a.reply.trim()) await thread.send({ content: a.reply.slice(0, 1900), files, components: threadButtons(state.lang, !handoff), allowedMentions: { parse: [] } });
+      log.info("support answer", { thread: thread.id, answered: a.answered, handoff, guides: a.guides, model: this.assistant.model });
       if (handoff) await this.handoff(thread, state, a.summary || m.content.slice(0, 200));
     } catch (e) {
       log.error("support answer failed", { thread: thread.id, ...errInfo(e) });

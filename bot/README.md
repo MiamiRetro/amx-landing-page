@@ -44,7 +44,7 @@ Create a project (or reuse one), open the SQL editor, paste `src/db/schema.sql`,
 | `BYBIT_*`, `BITGET_*`, `BLOFIN_*` | Affiliate API keys for UID verification (see below) |
 | `VERIFY_ALERT_CHANNEL_ID` | Channel the 12-hourly key-health check posts to when an exchange stops answering. Unset, it only logs |
 | `VERIFY_DISABLED` | Comma-separated exchanges to hide from the picker, e.g. while a key is being replaced |
-| `SUPPORT_MODEL` | Model for the help-desk assistant (default `claude-haiku-5-5`). It answers only from `assets/support/faq.md`; `SUPPORT_ASSISTANT=off` sends every thread straight to a moderator |
+| `SUPPORT_MODEL` | Model for the help-desk assistant (default `claude-haiku-5-5`). It answers only from `assets/support/faq.md` and attaches the infographics its entries name (`assets/support/guides/`, re-render with `node assets/support/guides/render.mjs`); `SUPPORT_ASSISTANT=off` sends every thread straight to a moderator |
 | `SUPPORT_MOD_ROLES` | Comma-separated roles added to a help thread on handoff (default `Moderators`) |
 | `SUPPORT_ALERT_CHANNEL_ID` | Where handoffs are announced; falls back to `VERIFY_ALERT_CHANNEL_ID` |
 | `HEARTBEAT_URL` | Pinged every `HEARTBEAT_MIN` (5) minutes while connected, for an outside monitor such as healthchecks.io to alert on silence |

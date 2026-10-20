@@ -5,6 +5,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
 import { LANG_NAMES, type Lang } from "../config.js";
+import { GUIDES, MAX_GUIDES } from "./guides.js";
 
 // assets/ sits two levels above both src/support and dist/support, so dev and the built bot read the same file.
 const FAQ_PATH = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "assets", "support", "faq.md");
@@ -22,6 +23,8 @@ export const Answer = z.object({
   handoff: z.boolean(),
   /** One line in English for the moderators: what the member needs. */
   summary: z.string(),
+  /** Infographics to attach, named on the "Guide:" lines of the FAQ entries the reply used. */
+  guides: z.array(z.enum(GUIDES)),
 });
 export type Answer = z.infer<typeof Answer>;
 
@@ -30,6 +33,8 @@ export interface Turn {
   text: string;
   /** Screenshots the member attached, as URLs the model can fetch. */
   images?: string[];
+  /** Guides the assistant attached to this message. */
+  guides?: string[];
 }
 
 /** Screenshots sent to the model per answer, newest first; older ones stay in the thread for the moderators. */
@@ -53,6 +58,8 @@ export function systemPrompt(faq: string, lang: Lang) {
     "Never quote lines that start with \"Mods:\"; they are notes for moderators.",
     "Members may attach screenshots (an exchange error, their account page) or links. Use them to understand the problem, but never repeat a UID, email or balance you read from one.",
     "summary: one line in English for the moderators saying what the member needs.",
+    `guides: when an FAQ entry you answered from has a "Guide:" line, list that guide so the bot attaches the picture; at most ${MAX_GUIDES}, and none when handing off without an answer. Don't describe the picture; one short mention like "see the picture below" is enough.`,
+    "Skip a guide the assistant already attached earlier in this thread (shown as [guide: name]).",
     "",
     "<faq>",
     faq,
@@ -71,12 +78,15 @@ export class SupportAssistant {
   }
 
   async answer(lang: Lang, turns: Turn[]): Promise<Answer> {
-    const transcript = turns.map((t) => `${t.from}: ${t.text}${t.images?.length ? ` [${t.images.length} screenshot(s) attached]` : ""}`).join("\n");
+    const transcript = turns
+      .map((t) => `${t.from}: ${t.text}${t.images?.length ? ` [${t.images.length} screenshot(s) attached]` : ""}${t.guides?.map((g) => ` [guide: ${g}]`).join("") ?? ""}`)
+      .join("\n");
     const images = turns.flatMap((t) => t.images ?? []).slice(-MAX_IMAGES);
     const response = await this.client.messages.parse({
       model: this.model,
       max_tokens: 1024,
-      system: systemPrompt(this.faq, lang),
+      // The FAQ is the bulk of every call and the same each time, so it is cached.
+      system: [{ type: "text", text: systemPrompt(this.faq, lang), cache_control: { type: "ephemeral" } }],
       messages: [{
         role: "user",
         content: [
@@ -86,9 +96,9 @@ export class SupportAssistant {
       }],
       output_config: { format: zodOutputFormat(Answer) },
     });
-    if (response.stop_reason === "refusal") return { reply: "", answered: false, handoff: true, summary: "assistant declined to answer" };
+    if (response.stop_reason === "refusal") return { reply: "", answered: false, handoff: true, summary: "assistant declined to answer", guides: [] };
     const parsed = response.parsed_output;
     if (!parsed) throw new Error("support answer did not parse as JSON");
-    return parsed;
+    return { ...parsed, guides: [...new Set(parsed.guides)].slice(0, MAX_GUIDES) };
   }
 }

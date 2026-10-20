@@ -1,0 +1,119 @@
+{
+  "you": "You",
+  "typeHere": "Message…",
+  "chGuide": "server guide",
+  "catAnn": "Announcements",
+  "catCom": "Community",
+  "chAnnouncements": "announcements",
+  "chSignals": "trade-signals",
+  "chGeneral": "general",
+  "chHelp": "help-desk",
+  "chMemes": "memes",
+  "yourThread": "your help thread",
+  "threadsLabel": "Threads",
+  "verifyModal": "Verify your UID",
+  "exchange": "Exchange",
+  "submit": "Submit",
+  "verifyTitle": "Verify your exchange UID",
+  "verifyButton": "Verify my UID",
+  "step2Card": "2 · Choose your exchange",
+  "profile": "Profile",
+  "mobile": {
+    "kicker": "Discord on your phone",
+    "title": "Getting around on mobile",
+    "sub": "Three moves are all you need",
+    "s1": "Open the list",
+    "s1p": "Tap ☰ at the top left, or swipe right, to see every channel.",
+    "s2": "Pick a channel",
+    "s2p": "Tap a channel to open it. Swipe right again to go back.",
+    "s3": "Find threads",
+    "s3p": "Tap the threads icon at the top right of a channel to see its threads."
+  },
+  "desktop": {
+    "kicker": "Discord on a computer",
+    "title": "Getting around on desktop",
+    "sub": "The same in the app and at discord.com/app",
+    "l1": "Servers",
+    "l1p": "Every server you are in, down the far left.",
+    "l2": "Channels",
+    "l2p": "This server's channels. Click one to open it. Threads sit just under their channel.",
+    "l3": "Chat",
+    "l3p": "Messages in the channel or thread you have open.",
+    "l4": "Message box",
+    "l4p": "Type here and press Enter. The + adds a screenshot.",
+    "l5": "Threads",
+    "l5p": "Lists every thread in this channel, including yours.",
+    "l6": "Members",
+    "l6p": "Who is here. Moderators show at the top."
+  },
+  "help": {
+    "kicker": "help-desk",
+    "title": "Your private help thread",
+    "sub": "Only you and the moderators can see it",
+    "panel": "Need help?",
+    "getHelp": "Get help",
+    "onlyYou": "Only you can see this",
+    "openThread": "Open my help thread",
+    "s1": "Press Get help",
+    "s1p": "In help-desk, press Get help on the pinned message.",
+    "s2": "Tap the link",
+    "s2p": "Tap Open my help thread to jump straight into it.",
+    "s3": "Ask away",
+    "s3p": "Type your question. Tap + to add a screenshot.",
+    "foot": "Lost your thread? Open <b>help-desk</b> and tap the <b>threads icon</b>, or press Get help again."
+  },
+  "verify": {
+    "kicker": "Bybit · Bitget · Blofin",
+    "title": "Unlock the full server",
+    "sub": "Three steps, about two minutes",
+    "s1": "Sign up with our link",
+    "s1p": "Open the server guide and press your exchange's button.",
+    "s2": "Copy your UID",
+    "s2p": "In the exchange app, open your profile and copy the UID number.",
+    "s3": "Verify my UID",
+    "s3p": "In any 🔒 channel press Verify my UID, pick your exchange and paste.",
+    "foot": "Only accounts opened through <b>our links</b> can be verified. A UID is a number, never a password or API key."
+  },
+  "map": {
+    "kicker": "Server map",
+    "title": "What's where",
+    "sub": "Your language's channels, and what opens when you verify",
+    "open": "Open to you now",
+    "openItems": [
+      ["【server guide】", "Start here: rules, sign-up, verify"],
+      ["📢 announcements", "News from the team"],
+      ["💬 general", "Chat with everyone"],
+      ["🐸 memes", "Just for fun"],
+      ["☎️ help-desk", "Get help in a private thread"]
+    ],
+    "locked": "Opens when you verify",
+    "lockedItems": [
+      ["🟢 alphanumetrix", "The flagship indicator's state"],
+      ["🤖 bot-alerts", "Alerts from the BLKBöX bots"],
+      ["⚡ trade-alerts", "Trade signals"],
+      ["🟠 trading group", "Bitcoin, crypto, stocks, commodities"],
+      ["📚 reference", "Setup guides and strategies"]
+    ],
+    "foot": "Until you verify, these show as <b>🔒 trade-signals</b> and <b>🔒 trading-group</b>."
+  },
+  "scams": {
+    "kicker": "Stay safe",
+    "title": "Spot a scam",
+    "sub": "Staff never DM you first",
+    "never": "Staff will never",
+    "neverItems": [
+      "Ask for your password, API key or 2FA code",
+      "Ask for your seed phrase or wallet",
+      "Offer to trade for you or double your money",
+      "Ask you to send funds anywhere"
+    ],
+    "do": "Do this instead",
+    "doItems": [
+      "Don't reply. Block the account",
+      "Report it in your help thread",
+      "Turn off DMs from server members",
+      "Change passwords and turn on 2FA"
+    ],
+    "foot": "Not sure? Ask in <b>help-desk</b>. Real moderators only help you here, in the server."
+  }
+}

@@ -2,7 +2,9 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { LANGS } from "../src/config.js";
 import { Answer, loadFaq, SupportAssistant, systemPrompt } from "../src/support/assistant.js";
+import { existsSync } from "node:fs";
 import { SUPPORT_OPEN, supportPanel } from "../src/support/desk.js";
+import { GUIDES, guideFile } from "../src/support/guides.js";
 import { SUPPORT_TEXT } from "../src/support/text.js";
 
 test("the FAQ ships with the bot and goes into the prompt whole", () => {
@@ -33,7 +35,7 @@ test("the panel carries the open button in the member's language", () => {
 });
 
 test("an answer goes back as parsed, and a refusal hands off", async () => {
-  const reply = { reply: "Press Verify my UID in any 🔒 channel.", answered: true, handoff: false, summary: "how to verify" };
+  const reply = { reply: "Press Verify my UID in any 🔒 channel.", answered: true, handoff: false, summary: "how to verify", guides: ["verify"] };
   const fake = (out: unknown, stop = "end_turn") => ({ messages: { parse: async () => ({ stop_reason: stop, parsed_output: out }) } });
   const a = await new SupportAssistant("test", fake(reply) as never, "faq").answer("en", [{ from: "member", text: "how do I verify?" }]);
   assert.deepEqual(a, Answer.parse(reply));
@@ -43,10 +45,32 @@ test("an answer goes back as parsed, and a refusal hands off", async () => {
 
 test("the member's latest screenshots go to the model as images", async () => {
   let sent: any;
-  const client = { messages: { parse: async (p: unknown) => ((sent = p), { stop_reason: "end_turn", parsed_output: { reply: "ok", answered: true, handoff: false, summary: "" } }) } };
+  const client = { messages: { parse: async (p: unknown) => ((sent = p), { stop_reason: "end_turn", parsed_output: { reply: "ok", answered: true, handoff: false, summary: "", guides: [] } }) } };
   const urls = ["https://cdn/1.png", "https://cdn/2.png", "https://cdn/3.png", "https://cdn/4.png"];
   await new SupportAssistant("test", client as never, "faq").answer("en", [{ from: "member", text: "this error", images: urls }]);
   const content = sent.messages[0].content;
   assert.deepEqual(content.filter((c: any) => c.type === "image").map((c: any) => c.source.url), urls.slice(-3));
   assert.match(content.at(-1).text, /4 screenshot\(s\) attached/);
+});
+
+test("every Guide: line in the FAQ names a guide that has an image", () => {
+  const named = [...loadFaq().matchAll(/^Guide: (.+)$/gm)].map((m) => m[1].trim());
+  assert.ok(named.length >= 10);
+  for (const g of named) assert.ok((GUIDES as readonly string[]).includes(g), `unknown guide ${g}`);
+  for (const g of GUIDES) assert.ok(existsSync(guideFile(g, "en")), `missing image for ${g}`);
+  // A language without its own render falls back to the English card.
+  assert.ok(existsSync(guideFile("scams", "ko")));
+});
+
+test("guides come back once each, at most two, and earlier ones show in the thread", async () => {
+  let sent: any;
+  const out = { reply: "See below.", answered: true, handoff: false, summary: "", guides: ["verify", "verify", "uid", "scams"] };
+  const client = { messages: { parse: async (p: unknown) => ((sent = p), { stop_reason: "end_turn", parsed_output: out }) } };
+  const a = await new SupportAssistant("test", client as never, "faq").answer("en", [
+    { from: "assistant", text: "Here is how to verify.", guides: ["verify"] },
+    { from: "member", text: "where is my uid?" },
+  ]);
+  assert.deepEqual(a.guides, ["verify", "uid"]);
+  assert.match(sent.messages[0].content.at(-1).text, /\[guide: verify\]/);
+  assert.equal(sent.system[0].cache_control.type, "ephemeral");
 });

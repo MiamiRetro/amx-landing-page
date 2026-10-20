@@ -39,8 +39,14 @@ export function providerFromSpec(spec: string): TranslationProvider {
   return new OpenAICompatibleProvider({ vendor, model, baseUrl: preset.baseUrl, apiKey, jsonMode: preset.jsonMode, extraHeaders: preset.extraHeaders });
 }
 
+/**
+ * Bumped when the prompt changes what a good translation is, so cached ones made
+ * under the old rules are not reused. "polite": polite forms of address everywhere.
+ */
+const STYLE = "polite";
+
 export function segmentHash(text: string, sourceLang: Lang): string {
-  return createHash("sha256").update(`${sourceLang}\u0000${text.trim()}`).digest("hex").slice(0, 32);
+  return createHash("sha256").update(`${STYLE}\u0000${sourceLang}\u0000${text.trim()}`).digest("hex").slice(0, 32);
 }
 
 export interface TranslatorOptions {

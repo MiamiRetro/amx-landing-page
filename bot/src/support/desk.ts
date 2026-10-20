@@ -29,8 +29,9 @@ export const SUPPORT_PREFIX = "support:";
 /** Thread names carry the state, so it survives a restart: the assistant answers 🤖 threads, moderators own 🙋 ones. */
 const OPEN = "🤖";
 const HANDED = "🙋";
-/** Unanswered questions before a moderator is called in anyway. */
-const MAX_MISSES = 2;
+/** Unanswered questions, or assistant replies, before the moderator button shows anyway. */
+const OFFER_AFTER_MISSES = 2;
+const OFFER_AFTER_ANSWERS = 3;
 /** Assistant replies per thread; past this a person is better value. */
 const MAX_ANSWERS = 8;
 
@@ -39,6 +40,8 @@ interface ThreadState {
   lang: Lang;
   misses: number;
   answers: number;
+  /** The moderator button is showing: the assistant guides first and only offers a person when it's needed. */
+  offered: boolean;
   handedOff: boolean;
   busy: boolean;
 }
@@ -63,7 +66,7 @@ function goTo(lang: Lang, thread: ThreadChannel) {
   return [new ActionRowBuilder<ButtonBuilder>().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setURL(thread.url).setLabel(SUPPORT_TEXT[lang].goButton).setEmoji("🛟"))];
 }
 
-function threadButtons(lang: Lang, human = true) {
+function threadButtons(lang: Lang, human = false) {
   const t = SUPPORT_TEXT[lang];
   const row = new ActionRowBuilder<ButtonBuilder>();
   if (human) row.addComponents(new ButtonBuilder().setCustomId(SUPPORT_HUMAN).setStyle(ButtonStyle.Secondary).setLabel(t.humanButton).setEmoji("🙋"));
@@ -117,7 +120,7 @@ export class SupportDesk {
     const userId = intro?.mentions.users.first()?.id;
     if (!userId) return null;
     const member = await this.guild.members.fetch(userId).catch(() => null);
-    const state: ThreadState = { userId, lang: (member && this.roles.langOf(member)) || "en", misses: 0, answers: 0, handedOff, busy: false };
+    const state: ThreadState = { userId, lang: (member && this.roles.langOf(member)) || "en", misses: 0, answers: 0, offered: false, handedOff, busy: false };
     this.threads.set(thread.id, state);
     return state;
   }
@@ -167,7 +170,7 @@ export class SupportDesk {
     });
     await thread.members.add(i.user.id);
     await thread.send({ content: fill(t.intro, { user: `<@${i.user.id}>` }), components: threadButtons(lang), allowedMentions: { users: [i.user.id] } });
-    this.threads.set(thread.id, { userId: i.user.id, lang, misses: 0, answers: 0, handedOff: false, busy: false });
+    this.threads.set(thread.id, { userId: i.user.id, lang, misses: 0, answers: 0, offered: false, handedOff: false, busy: false });
     log.info("support thread opened", { thread: thread.id, user: i.user.id, lang });
     await i.editReply({ content: fill(t.opened, { link: `<#${thread.id}>` }), components: goTo(lang, thread) });
   }
@@ -202,10 +205,14 @@ export class SupportDesk {
       const a = await this.assistant.answer(state.lang, turns);
       state.answers++;
       if (!a.answered) state.misses++;
-      const handoff = a.handoff || state.misses >= MAX_MISSES || state.answers >= MAX_ANSWERS;
+      // Only a safety report brings the moderators in straight away; otherwise the member gets the button when it's needed.
+      const handoff = a.handoff || state.answers >= MAX_ANSWERS;
+      const nudge = !state.offered && !a.offerHuman && (state.misses >= OFFER_AFTER_MISSES || state.answers >= OFFER_AFTER_ANSWERS);
+      state.offered ||= a.offerHuman || nudge;
       const files = a.guides.map((g) => ({ attachment: guideFile(g, state.lang), name: `guide-${g}.png` }));
-      if (a.reply.trim()) await thread.send({ content: a.reply.slice(0, 1900), files, components: threadButtons(state.lang, !handoff), allowedMentions: { parse: [] } });
-      log.info("support answer", { thread: thread.id, answered: a.answered, handoff, guides: a.guides, model: this.assistant.model });
+      const content = [a.reply.trim(), nudge ? SUPPORT_TEXT[state.lang].offerHint : ""].filter(Boolean).join("\n\n");
+      if (content) await thread.send({ content: content.slice(0, 1900), files, components: threadButtons(state.lang, state.offered && !handoff), allowedMentions: { parse: [] } });
+      log.info("support answer", { thread: thread.id, answered: a.answered, offered: state.offered, handoff, guides: a.guides, model: this.assistant.model });
       if (handoff) await this.handoff(thread, state, a.summary || m.content.slice(0, 200));
     } catch (e) {
       log.error("support answer failed", { thread: thread.id, ...errInfo(e) });

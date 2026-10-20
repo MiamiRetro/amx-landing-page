@@ -6,6 +6,7 @@ import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
 import { LANG_NAMES, type Lang } from "../config.js";
 import { GUIDES, MAX_GUIDES } from "./guides.js";
+import { SUPPORT_TEXT } from "./text.js";
 
 // assets/ sits two levels above both src/support and dist/support, so dev and the built bot read the same file.
 const FAQ_PATH = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "assets", "support", "faq.md");
@@ -19,8 +20,10 @@ export const Answer = z.object({
   reply: z.string(),
   /** The FAQ covered the question and the reply answers it. */
   answered: z.boolean(),
-  /** A moderator should take over: not covered, asked for a person, account-specific, or a safety report. */
+  /** Bring the moderators in now, without waiting: only for a safety report (scam, harassment, someone after their keys). */
   handoff: z.boolean(),
+  /** Show the "Talk to a mod" button: the member asked for a person, sounds frustrated, or needs something only staff can do. */
+  offerHuman: z.boolean(),
   /** One line in English for the moderators: what the member needs. */
   summary: z.string(),
   /** Infographics to attach, named on the "Guide:" lines of the FAQ entries the reply used. */
@@ -47,14 +50,14 @@ export function systemPrompt(faq: string, lang: Lang) {
     "Use the polite form of address where the language has one (Korean 존댓말, Japanese です/ます, Vietnamese bạn, Russian вы, Turkish siz, never slang pronouns).",
     "Answer only from the FAQ below. Never invent features, prices, links, dates or policies, and never give trading or financial advice.",
     "Never ask for passwords, API keys, seed phrases or personal documents. A UID is fine.",
-    "Set handoff to true, and say in your reply that a moderator will join, when any of these hold:",
-    "- the FAQ does not cover the question, or only partly covers it;",
-    "- the member asks for a person, a moderator or staff;",
+    "Guide the member yourself. Do not mention moderators, staff, people or the moderator button unless offerHuman is true.",
+    "When the FAQ doesn't fully cover a question, help with what it does cover and ask one short question to narrow it down, instead of giving up.",
+    `Set offerHuman to true, and say they can tap the "${SUPPORT_TEXT[lang].humanButton}" button below, when any of these hold:`,
+    "- they ask for a person, a human, a moderator, staff or an admin;",
+    "- they sound frustrated, annoyed or stuck (repeating themselves, complaining that it isn't working, short angry messages);",
     "- the question is about their own account and needs someone to look something up or change something (the FAQ says to ask for a moderator);",
-    "- they report a scam, harassment, a security problem or someone asking for their keys;",
-    "- they are still stuck after your earlier answers.",
-    "When you can't fully answer, don't ask them to write more or to wait: set handoff and say a moderator is being brought in.",
-    "When you do answer, you may end by mentioning the \"Talk to a mod\" button if they still need a person.",
+    "- the FAQ can't answer it after you have tried to narrow it down.",
+    "Set handoff to true only when they report a scam, harassment, a security problem or someone asking for their keys or passwords; say a moderator is being brought in.",
     "Set answered to true only when your reply fully answers the question from the FAQ.",
     "Never quote lines that start with \"Mods:\"; they are notes for moderators.",
     "Members may attach screenshots (an exchange error, their account page) or links. Use them to understand the problem, but never repeat a UID, email or balance you read from one.",
@@ -103,7 +106,7 @@ export class SupportAssistant {
       }],
       output_config: { format: zodOutputFormat(Answer) },
     });
-    if (response.stop_reason === "refusal") return { reply: "", answered: false, handoff: true, summary: "assistant declined to answer", guides: [] };
+    if (response.stop_reason === "refusal") return { reply: "", answered: false, handoff: true, offerHuman: true, summary: "assistant declined to answer", guides: [] };
     const parsed = response.parsed_output;
     if (!parsed) throw new Error("support answer did not parse as JSON");
     return { ...parsed, guides: [...new Set(parsed.guides)].slice(0, MAX_GUIDES) };

@@ -178,12 +178,12 @@ export const NOTIFY_TEXT: Record<Lang, NotifyText> = {
   },
   tr: {
     title: "### 🔔 Bildirimler",
-    body: "@everyone ile asla etiketlemiyoruz. İstediğin bildirimleri seç, istediğin zaman değiştir.",
+    body: "@everyone ile asla etiketlemiyoruz. İstediğiniz bildirimleri seçin, istediğiniz zaman değiştirin.",
     button: "Bildirimleri seç",
-    pick: "Hangi konularda bildirim almak istediğini seç. Durdurmak için işareti kaldır.",
-    placeholder: "Bildirimlerini seç",
-    saved: "Kaydedildi. Şunlar için bildirim alacaksın: {list}",
-    none: "Kaydedildi. Hiçbir bildirim almayacaksın.",
+    pick: "Hangi konularda bildirim almak istediğinizi seçin. Durdurmak için işareti kaldırın.",
+    placeholder: "Bildirimlerinizi seçin",
+    saved: "Kaydedildi. Şunlar için bildirim alacaksınız: {list}",
+    none: "Kaydedildi. Hiçbir bildirim almayacaksınız.",
     verifiedOnly: "(doğrulanmış üyeler)",
     topics: {
       announcements: ["Duyurular", "Ekipten haberler ve güncellemeler"],

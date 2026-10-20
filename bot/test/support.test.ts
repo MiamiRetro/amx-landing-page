@@ -35,7 +35,7 @@ test("the panel carries the open button in the member's language", () => {
 });
 
 test("an answer goes back as parsed, and a refusal hands off", async () => {
-  const reply = { reply: "Press Verify my UID in any 🔒 channel.", answered: true, handoff: false, summary: "how to verify", guides: ["verify"] };
+  const reply = { reply: "Press Verify my UID in any 🔒 channel.", answered: true, handoff: false, offerHuman: false, summary: "how to verify", guides: ["verify"] };
   const fake = (out: unknown, stop = "end_turn") => ({ messages: { parse: async () => ({ stop_reason: stop, parsed_output: out }) } });
   const a = await new SupportAssistant("test", fake(reply) as never, "faq").answer("en", [{ from: "member", text: "how do I verify?" }]);
   assert.deepEqual(a, Answer.parse(reply));
@@ -45,7 +45,7 @@ test("an answer goes back as parsed, and a refusal hands off", async () => {
 
 test("the member's latest screenshots go to the model as images", async () => {
   let sent: any;
-  const client = { messages: { parse: async (p: unknown) => ((sent = p), { stop_reason: "end_turn", parsed_output: { reply: "ok", answered: true, handoff: false, summary: "", guides: [] } }) } };
+  const client = { messages: { parse: async (p: unknown) => ((sent = p), { stop_reason: "end_turn", parsed_output: { reply: "ok", answered: true, handoff: false, offerHuman: false, summary: "", guides: [] } }) } };
   const urls = ["https://cdn/1.png", "https://cdn/2.png", "https://cdn/3.png", "https://cdn/4.png"];
   await new SupportAssistant("test", client as never, "faq").answer("en", [{ from: "member", text: "this error", images: urls }]);
   const content = sent.messages[0].content;

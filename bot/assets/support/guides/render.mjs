@@ -94,14 +94,14 @@ const channelList = (t, { hot = "", threads = false, burger = false } = {}) => `
   <div class="guilds"><div class="g"></div><div class="g on ${burger ? "hot" : ""}"></div><div class="g"></div><div class="g"></div></div>
   <div class="chs"><div class="name">BLKBöX Trading Floor</div>
     <div class="ch ${hot === "guide" ? "on hot" : ""}">${esc(t.chGuideName ?? "🧭 " + t.chGuide)}</div>
-    <div class="cat">${esc(t.catAnn)}</div>
-    <div class="ch">📢 ${esc(t.chAnnouncements)}</div>
-    <div class="ch">🔒 ${esc(t.chSignals)}</div>
-    <div class="cat">${esc(t.catCom)}</div>
+    <div class="cat">┏━━ ${esc(t.catAnn)}</div>
+    <div class="ch">┣📢 ${esc(t.chAnnouncements)}</div>
+    <div class="ch">┣🔒 ${esc(t.chSignals)}</div>
+    <div class="cat">┏━━ ${esc(t.catCom)}</div>
     <div class="ch ${hot === "general" ? "on hot" : ""}">💬 ${esc(t.chGeneral)}</div>
     <div class="ch ${hot === "help" ? "on hot" : ""}">☎️ ${esc(t.chHelp)}</div>
     ${threads ? `<div class="th ${hot === "thread" ? "hot" : ""}">🤖 ${esc(t.yourThread)}</div>` : ""}
-    <div class="ch">😂 ${esc(t.chMemes)}</div>
+    <div class="ch">┣😂 ${esc(t.chMemes)}</div>
   </div></div></div></div>`;
 
 const threadsView = (t) => `<div class="phone"><div class="screen">
@@ -119,9 +119,9 @@ const desktop = (t) => {
     <div class="chs" style="width:230px;flex:none;background:#0e1922;font-size:14px">
       <div class="name">BLKBöX Trading Floor</div>
       <div class="ch">${esc(t.chGuideName ?? "🧭 " + t.chGuide)}</div>
-      <div class="cat">${esc(t.catAnn)}</div><div class="ch">📢 ${esc(t.chAnnouncements)}</div><div class="ch">🔒 ${esc(t.chSignals)}</div>
-      <div class="cat">${esc(t.catCom)}</div><div class="ch">💬 ${esc(t.chGeneral)}</div><div class="ch on">☎️ ${esc(t.chHelp)}</div>
-      <div class="th">🤖 ${esc(t.yourThread)}</div><div class="ch">😂 ${esc(t.chMemes)}</div>
+      <div class="cat">┏━━ ${esc(t.catAnn)}</div><div class="ch">┣📢 ${esc(t.chAnnouncements)}</div><div class="ch">┣🔒 ${esc(t.chSignals)}</div>
+      <div class="cat">┏━━ ${esc(t.catCom)}</div><div class="ch">┣💬 ${esc(t.chGeneral)}</div><div class="ch on">┣☎️ ${esc(t.chHelp)}</div>
+      <div class="th">🤖 ${esc(t.yourThread)}</div><div class="ch">┣😂 ${esc(t.chMemes)}</div>
     </div>
     <div style="flex:1;display:flex;flex-direction:column;background:#111c26">
       <div class="pbar" style="height:54px"><span># ${esc(t.chHelp)}</span><div class="ticon" style="margin-left:auto">🧵</div><div class="ticon">👥</div></div>

@@ -107,7 +107,8 @@ const LAYOUT: { cat: "ann" | "com" | "ref"; top?: true; kind: Kind; tier: Tier; 
   { cat: "ref", kind: "forums", tier: "member", type: "forum" },
 ];
 
-const CATS: Record<Lang, Record<"ann" | "com" | "ref", string>> = {
+/** The categories as they were named with an emoji; renamed in place to the folder style below. */
+const CATS_EMOJI: Record<Lang, Record<"ann" | "com" | "ref", string>> = {
   en: { ann: "📢 ANNOUNCEMENTS", com: "💬 COMMUNITY", ref: "📚 REFERENCE" },
   zh: { ann: "📢 公告", com: "💬 社区", ref: "📚 参考资料" },
   ko: { ann: "📢 공지", com: "💬 커뮤니티", ref: "📚 자료실" },
@@ -119,6 +120,17 @@ const CATS: Record<Lang, Record<"ann" | "com" | "ref", string>> = {
   ru: { ann: "📢 ОБЪЯВЛЕНИЯ", com: "💬 СООБЩЕСТВО", ref: "📚 СПРАВКА" },
   ja: { ann: "📢 お知らせ", com: "💬 コミュニティ", ref: "📚 資料" },
 };
+
+/**
+ * Folder style: a category reads as the parent folder (┏━━ ANNOUNCEMENTS) and
+ * its channels as branches under it (┣📢・announcements). Every channel gets the
+ * same branch: members see different channels, so a closing ┗ would land mid-list.
+ */
+const FOLDER = "┏━━ ";
+const BRANCH = "┣";
+const CATS = Object.fromEntries(
+  LANGS.map((lang) => [lang, Object.fromEntries(Object.entries(CATS_EMOJI[lang]).map(([k, v]) => [k, FOLDER + v.replace(/^\S+\s+/u, "")]))]),
+) as Record<Lang, Record<"ann" | "com" | "ref", string>>;
 
 const NAMES: Record<Lang, Record<Kind, string>> = {
   en: { announcements: "📢・announcements", flagship: "🟢🟢・alphanumetrix", investor: "💼・investor-signals", daytrade: "🤖・bot-alerts", "lock-flagship": "", "lock-investor": "", "lock-daytrade": "", "lock-crypto": "", "lock-stocks": "", "lock-commodities": "", teaser: "🔒・trade-signals", signals: "⚡・trade-alerts", verify: "✅・verify", btcgate: "🔒・bitcoin", tradegate: "🔒・trading-group", general: "💬・general", trader: "📈・trader-chat", bitcoin: "🟠・bitcoin", crypto: "🪙・crypto", stocks: "📊・stocks", commodities: "🛢️・commodities", memes: "😂・memes", help: "☎️・help-desk", start: "🧭・server-guide", guides: "📕・setup-guides", strategies: "📗・trading-strategies", forums: "🧵・forums" },
@@ -187,10 +199,13 @@ const PICKER: Spec = { name: "🌐・choose-language", parent: null, lang: "all"
 const SPECS: Spec[] = [PICKER, { name: "verify-preview", parent: null, lang: "all", tier: "ops" }];
 for (const lang of LANGS) {
   for (const l of LAYOUT) {
-    const name = NAMES[lang][l.kind];
+    const plain = NAMES[lang][l.kind];
+    const name = l.top ? plain : BRANCH + plain;
     const legacy = lang === "en"
-      ? [{ name, parent: EN_OLD[l.kind] ?? null }, ...(l.kind === "start" ? [{ name: "📍・start-here", parent: null }] : [])]
-      : [{ name, parent: OLD_CATS[lang as Exclude<Lang, "en">] }];
+      ? [{ name: plain, parent: EN_OLD[l.kind] ?? null }, ...(l.kind === "start" ? [{ name: "📍・start-here", parent: null }] : [])]
+      : [{ name: plain, parent: OLD_CATS[lang as Exclude<Lang, "en">] }];
+    // Before the folder style the channel carried no branch.
+    if (!l.top) legacy.push({ name: plain, parent: CATS[lang][l.cat] }, { name: plain, parent: CATS_EMOJI[lang][l.cat] });
     if (l.kind === "start") legacy.push({ name: START_OLD[lang], parent: CATS[lang][l.cat] }, { name: `═🧭・${bare(START_OLD[lang])}・🧭═`, parent: null }, { name: `【${bare(START_OLD[lang])}】`, parent: null });
     if (l.kind === "tradegate") legacy.push({ name: NAMES[lang].btcgate, parent: CATS[lang][l.cat] });
     // Memes wore 🐸 before 😂, which reads as "funny" in every language.
@@ -204,11 +219,9 @@ for (const lang of LANGS) {
   }
 }
 
-const CATEGORY_SPECS: { name: string; lang: Lang; tier: Tier }[] = LANGS.flatMap((lang) => [
-  { name: CATS[lang].ann, lang, tier: "free" as Tier },
-  { name: CATS[lang].com, lang, tier: "free" as Tier },
-  { name: CATS[lang].ref, lang, tier: "free" as Tier },
-]);
+const CATEGORY_SPECS: { name: string; old: string; lang: Lang; tier: Tier }[] = LANGS.flatMap((lang) =>
+  (["ann", "com", "ref"] as const).map((k) => ({ name: CATS[lang][k], old: CATS_EMOJI[lang][k], lang, tier: "free" as Tier })),
+);
 
 /**
  * Roles whose ViewChannel the new tiers replace on the channels above. Their
@@ -235,8 +248,8 @@ interface Ctx {
 const log = (s: string) => console.log(s);
 
 /** Channel names compare equal across the flagship's state emoji, which /flagship changes. */
-const STATE = /^[🟢🟡🔴]{1,2}・/u;
-const sameName = (a: string, b: string) => a === b || (STATE.test(a) && STATE.test(b) && a.replace(STATE, "") === b.replace(STATE, ""));
+const STATE = /^(┣?)[🟢🟡🔴]{1,2}・/u;
+const sameName = (a: string, b: string) => a === b || (STATE.test(a) && STATE.test(b) && a.replace(STATE, "$1") === b.replace(STATE, "$1"));
 
 function findChannel(guild: Guild, spec: { name: string; parent: string | null }) {
   const parentId = spec.parent ? guild.channels.cache.find((c) => c.type === ChannelType.GuildCategory && c.name === spec.parent)?.id ?? "missing" : null;
@@ -317,6 +330,12 @@ async function stepChannels(ctx: Ctx) {
   const me = guild.members.me ?? (await guild.members.fetchMe());
   for (const c of CATEGORY_SPECS) {
     if (findCategory(guild, c.name)) continue;
+    const old = findCategory(guild, c.old);
+    if (old) {
+      log(`  rename category ${c.old} → ${c.name}`);
+      if (ctx.apply) await old.setName(c.name, "onboarding: folder style");
+      continue;
+    }
     log(`  create category ${c.name}`);
     if (ctx.apply) await guild.channels.create({ name: c.name, type: ChannelType.GuildCategory, permissionOverwrites: [{ id: guild.roles.everyone.id, deny: [P.ViewChannel] }], reason: "onboarding" });
   }
@@ -324,12 +343,15 @@ async function stepChannels(ctx: Ctx) {
 
   for (const s of SPECS) {
     if (s.tier === "ops") continue;
-    const parent = s.parent ? findCategory(guild, s.parent) : undefined;
+    // A dry run sees categories under their old names, before the rename above.
+    const parent = s.parent ? findCategory(guild, s.parent) ?? findCategory(guild, CATEGORY_SPECS.find((c) => c.name === s.parent)?.old ?? "") : undefined;
     const existing = locate(guild, s);
     if (existing) {
       if (!sameName(existing.name, s.name) || (existing.name !== s.name && !STATE.test(s.name))) {
-        log(`  rename #${existing.name} → #${s.name}`);
-        if (ctx.apply) await existing.setName(s.name, "onboarding: one layout per language");
+        // A state channel keeps the icon it shows now; only the rest of the name follows the layout.
+        const target = STATE.test(s.name) && STATE.test(existing.name) ? s.name.replace(STATE, `$1${existing.name.match(STATE)![0].replace(/^┣/, "")}`) : s.name;
+        log(`  rename #${existing.name} → #${target}`);
+        if (ctx.apply) await existing.setName(target, "onboarding: one layout per language");
       }
       if ((existing.parentId ?? null) !== (parent?.id ?? null)) {
         log(`  move #${existing.name} → ${s.parent ?? "top"}`);

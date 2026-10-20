@@ -22,8 +22,8 @@ export type FlagshipState = "strong-bull" | "lean-bull" | "lean-bear" | "strong-
 export const ICONS: Record<FlagshipState, string> = { "strong-bull": "🟢🟢", "lean-bull": "🟡🟢", "lean-bear": "🔴🟡", "strong-bear": "🔴🔴" };
 export const LABELS: Record<FlagshipState, string> = { "strong-bull": "Strong Bull Trend", "lean-bull": "Leaning Bullish", "lean-bear": "Leaning Bearish", "strong-bear": "Strong Bear Trend" };
 const BY_COUNT: FlagshipState[] = ["strong-bear", "lean-bear", "lean-bull", "strong-bull"];
-/** Any state prefix, old single-emoji ones included, so channels migrate on the first update. */
-export const STATE_PREFIX = /^[🟢🟡🔴]{1,2}・/u;
+/** Any state prefix, old single-emoji ones included, so channels migrate on the first update; behind the ┣ branch of the folder-style layout when there is one. */
+export const STATE_PREFIX = /^(┣?)[🟢🟡🔴]{1,2}・/u;
 
 interface Event { signal: string; direction: string; fired_at: string }
 
@@ -48,7 +48,7 @@ export async function applyFlagship(guild: Guild, state: FlagshipState, reason: 
   let changed = 0;
   const failed: string[] = [];
   for (const c of channels.values()) {
-    const name = c.name.replace(STATE_PREFIX, `${icon}・`);
+    const name = c.name.replace(STATE_PREFIX, `$1${icon}・`);
     if (name === c.name) continue;
     try {
       await c.setName(name, reason);

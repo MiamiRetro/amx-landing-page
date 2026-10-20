@@ -72,7 +72,7 @@ interface Spec {
  *
  *   (top level)     【server-guide】, above every category, bracketed so it reads as its own part
  *   ANNOUNCEMENTS   announcements · alphanumetrix · bot-alerts · signals · 🔒 trade-signals
- *   COMMUNITY       general · memes · help-desk · bitcoin · crypto · stocks · commodities · 🔒 trading-group
+ *   COMMUNITY       🔒 trading-group · general · memes · help-desk · bitcoin · crypto · stocks · commodities
  *   REFERENCE       setup-guides · trading-strategies · forums
  *
  * No voice channels: one per language is more rooms than anyone would use.
@@ -87,6 +87,8 @@ const LAYOUT: { cat: "ann" | "com" | "ref"; top?: true; kind: Kind; tier: Tier; 
   { cat: "ann", kind: "signals", tier: "member", readOnly: true },
   // One 🔒 trade-signals channel stands in for alphanumetrix, bot-alerts and trade-alerts.
   { cat: "ann", kind: "teaser", tier: "teaser", readOnly: true, panel: "locked" },
+  // One 🔒 trading-group channel, on top, stands in for bitcoin, crypto, stocks and commodities.
+  { cat: "com", kind: "tradegate", tier: "teaser", readOnly: true, panel: "locked" },
   // General and memes are open to everyone who picked a language; the 🔒 panels carry the Verify button.
   { cat: "com", kind: "general", tier: "free" },
   { cat: "com", kind: "memes", tier: "free" },
@@ -95,8 +97,6 @@ const LAYOUT: { cat: "ann" | "com" | "ref"; top?: true; kind: Kind; tier: Tier; 
   { cat: "com", kind: "crypto", tier: "member" },
   { cat: "com", kind: "stocks", tier: "member" },
   { cat: "com", kind: "commodities", tier: "member" },
-  // One 🔒 trading-group channel stands in for bitcoin, crypto, stocks and commodities.
-  { cat: "com", kind: "tradegate", tier: "teaser", readOnly: true, panel: "locked" },
   { cat: "ref", kind: "guides", tier: "member", type: "forum" },
   { cat: "ref", kind: "strategies", tier: "member", type: "forum" },
   { cat: "ref", kind: "forums", tier: "member", type: "forum" },

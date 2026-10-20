@@ -57,6 +57,11 @@ export function supportPanel(lang: Lang = "en") {
   };
 }
 
+/** A link button to the thread: easier to find than a mention for someone new to Discord. */
+function goTo(lang: Lang, thread: ThreadChannel) {
+  return [new ActionRowBuilder<ButtonBuilder>().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setURL(thread.url).setLabel(SUPPORT_TEXT[lang].goButton).setEmoji("🛟"))];
+}
+
 function threadButtons(lang: Lang, human = true) {
   const t = SUPPORT_TEXT[lang];
   const row = new ActionRowBuilder<ButtonBuilder>();
@@ -145,7 +150,7 @@ export class SupportDesk {
       if (s.userId !== i.user.id) continue;
       const existing = await this.guild.channels.fetch(id).catch(() => null);
       if (existing?.isThread() && !existing.archived) {
-        return void i.reply({ content: fill(t.already, { link: existing.url }), flags: MessageFlags.Ephemeral });
+        return void i.reply({ content: fill(t.already, { link: `<#${existing.id}>` }), components: goTo(lang, existing), flags: MessageFlags.Ephemeral });
       }
       this.threads.delete(id);
     }
@@ -163,7 +168,7 @@ export class SupportDesk {
     await thread.send({ content: fill(t.intro, { user: `<@${i.user.id}>` }), components: threadButtons(lang), allowedMentions: { users: [i.user.id] } });
     this.threads.set(thread.id, { userId: i.user.id, lang, misses: 0, answers: 0, handedOff: false, busy: false });
     log.info("support thread opened", { thread: thread.id, user: i.user.id, lang });
-    await i.editReply(fill(t.opened, { link: thread.url }));
+    await i.editReply({ content: fill(t.opened, { link: `<#${thread.id}>` }), components: goTo(lang, thread) });
   }
 
   async onMessage(m: Message) {

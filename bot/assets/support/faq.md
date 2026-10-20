@@ -4,6 +4,33 @@ The support assistant answers only from this file. Keep each answer short and
 factual. Write in English; the assistant replies in the member's language.
 Lines starting with "Mods:" are notes for moderators and are never quoted.
 
+## I'm new to Discord. How do I get around?
+Channels are the rooms listed down the side. On desktop they are always on the
+left. On phone, tap the ☰ menu at the top left (or swipe right) to see them.
+Your language's channels are grouped in sections like Announcements and
+Community; tap a section name to open or close it. The 【server guide】 at the
+top explains everything step by step.
+
+## How do I find my help thread again?
+Tap the link the bot sent you, or open help-desk: your thread is listed under
+the channel name (on phone, tap help-desk and then the threads icon at the top
+right). Threads you are in also show in the channel list with a small
+indent.
+
+## How do I reply or send a screenshot?
+Type in the message box at the bottom of the thread and press Enter (send on
+phone). To add a screenshot, tap the + next to the message box and pick the
+image. Never post a screenshot that shows a password, API key or seed phrase.
+
+## Why can't I see some channels?
+Channels with a 🔒 are for verified members, and your language's channels are
+the only ones shown to you. Verify your UID to open the rest.
+
+## I'm not getting notifications.
+Long-press (phone) or right-click (desktop) the server icon, open Notification
+Settings and choose All Messages or Only @mentions. Your phone's own settings
+must also allow Discord notifications.
+
 ## What is the BLKBöX Trading Floor?
 A free community for crypto traders, run by BLKBöX (blkbox.pro). Members get
 the AlphanumetriX signals, bot alerts, trader chat and the BLKBöX command

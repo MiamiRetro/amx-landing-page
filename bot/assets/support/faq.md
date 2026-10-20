@@ -15,8 +15,8 @@ Each entry is a "## question" heading followed by its answer. Optional lines:
 Also asked: how does Discord work, where is everything, I'm lost, how do I use this app
 Channels are the rooms listed down the side. On desktop they are always on the
 left. On phone, tap the ☰ menu at the top left (or swipe right) to see them.
-Your language's channels are grouped in sections like Announcements and
-Community; tap a section name to open or close it. The 🧭 SERVER-GUIDE channel at the
+Your language's channels are grouped in sections like Signals & Alerts and
+Trading Floor; tap a section name to open or close it. The 🧭 SERVER-GUIDE channel at the
 top explains everything step by step.
 Guide: discord-mobile
 
@@ -40,7 +40,7 @@ Guide: discord-desktop
 ## What is a channel, a category and a thread?
 Also asked: what does # mean, what's the difference between channels and threads
 A channel is one chat room, shown with a # or an icon. A category is a
-folder of channels, like Announcements or Community. A thread is a smaller
+folder of channels, like Signals & Alerts or Trading Floor. A thread is a smaller
 side conversation inside a channel; your help thread is one of these.
 
 ## Which channel should I go to first?
@@ -60,7 +60,7 @@ Also asked: channel list explained, what are all these channels for
 Announcements carries news from the team. General is open chat and memes is
 for fun. help-desk is where you open a help thread. The 🔒 channels hold the
 signals and the trading group, and open once you verify your UID. The 🎓
-academy, at the very bottom of Community, holds setup guides, trading
+academy, at the very bottom of the Trading Floor, holds setup guides, trading
 strategies and video tutorials: everyone can read it, and verified members can
 post and reply.
 Guide: channel-map
@@ -407,7 +407,7 @@ open once you verify your UID.
 
 ## What is in the academy?
 Also asked: reference, forums, tutorials, setup guides, trading strategies, videos
-The 🎓 academy is one forum at the bottom of Community. Each post has a tag:
+The 🎓 academy is one forum at the bottom of the Trading Floor. Each post has a tag:
 Setup guide (the tools step by step), Strategy (how the team uses the
 signals), Video tutorial, Question and Discussion. Tap a tag at the top of the
 forum to see only those posts. Everyone can read it; verified members can post

@@ -1,4 +1,5 @@
 import {
+  ChannelType,
   EmbedBuilder,
   MessageType,
   type APIEmbed,
@@ -287,6 +288,22 @@ export class Mirror {
    * (also its starter message id) as mirror_message_id, so a thread's twins are
    * mirrorsOf(sourceThreadId), and a mirrored thread finds its source with sourceOf.
    */
+  /**
+   * A post's tags in a twin forum. Every language's forum lists its tags in the
+   * same order (the onboarding script creates them that way), so a tag maps by
+   * position, whatever its translated name.
+   */
+  private twinTags(thread: ThreadChannel, targetForumId: string): string[] {
+    const source = thread.parent;
+    const target = this.d.guild.channels.cache.get(targetForumId);
+    if (!source || source.type !== ChannelType.GuildForum || !target || target.type !== ChannelType.GuildForum) return [];
+    const from = source.availableTags, to = target.availableTags;
+    return thread.appliedTags
+      .map((id) => from.findIndex((t) => t.id === id))
+      .map((i) => (i >= 0 ? to[i]?.id : undefined))
+      .filter((id): id is string => !!id);
+  }
+
   private async mirrorForum(message: Message) {
     const thread = message.channel as ThreadChannel;
     const forumId = thread.parentId!;
@@ -356,6 +373,8 @@ export class Mirror {
           else {
             const t = title && translations && d.member.lang !== hit.member.lang ? translations[d.member.lang]?.[0] ?? title.text : title?.text ?? thread.name;
             opts.threadName = detokenize(t, title?.entities ?? []).slice(0, 100);
+            const tags = this.twinTags(thread, d.member.channel_id);
+            if (tags.length) opts.appliedTags = tags;
           }
           const sent = await hook.send(opts);
           threadId ??= sent.channel_id;

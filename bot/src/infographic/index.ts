@@ -8,7 +8,7 @@ import { Renderer } from "./render.js";
 import { applyStrings, flattenStrings, type Extraction } from "./schema.js";
 
 /** Mirror groups whose forums carry tutorials worth re-rendering. */
-export const TUTORIAL_GROUPS = new Set(["setup-guides", "trading-strategies"]);
+export const TUTORIAL_GROUPS = new Set(["setup-guides", "trading-strategies", "academy"]);
 export const MAX_IMAGES_PER_MESSAGE = 4;
 
 export function infographicsEnabled(env: NodeJS.ProcessEnv = process.env): boolean {

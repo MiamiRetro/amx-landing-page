@@ -101,6 +101,10 @@
       [
         "☎️ hỗ-trợ",
         "Nhận hỗ trợ trong luồng riêng"
+      ],
+      [
+        "🎓 học-viện",
+        "Hướng dẫn, chiến lược và video"
       ]
     ],
     "lockedItems": [
@@ -119,10 +123,6 @@
       [
         "🟠 nhóm-giao-dịch",
         "Bitcoin, crypto, cổ phiếu, hàng hóa"
-      ],
-      [
-        "📚 TÀI LIỆU",
-        "Hướng dẫn cài đặt và chiến lược"
       ]
     ]
   },

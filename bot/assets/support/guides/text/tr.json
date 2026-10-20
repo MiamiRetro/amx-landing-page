@@ -101,6 +101,10 @@
       [
         "☎️ yardım",
         "Özel alt başlıkta yardım"
+      ],
+      [
+        "🎓 akademi",
+        "Rehberler, stratejiler ve videolar"
       ]
     ],
     "lockedItems": [
@@ -119,10 +123,6 @@
       [
         "🟠 trading-grubu",
         "Bitcoin, kripto, hisse, emtia"
-      ],
-      [
-        "📚 KAYNAKLAR",
-        "Kurulum rehberleri ve stratejiler"
       ]
     ]
   },

@@ -101,6 +101,10 @@
       [
         "☎️ bantuan",
         "Bantuan di thread pribadi"
+      ],
+      [
+        "🎓 akademi",
+        "Panduan, strategi dan video"
       ]
     ],
     "lockedItems": [
@@ -119,10 +123,6 @@
       [
         "🟠 grup-trading",
         "Bitcoin, kripto, saham, komoditas"
-      ],
-      [
-        "📚 REFERENSI",
-        "Panduan setup dan strategi"
       ]
     ]
   },

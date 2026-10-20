@@ -59,8 +59,10 @@ Guide: channel-map
 Also asked: channel list explained, what are all these channels for
 Announcements carries news from the team. General is open chat and memes is
 for fun. help-desk is where you open a help thread. The 🔒 channels hold the
-signals and the trading group, and open once you verify your UID. Reference
-holds setup guides and trading strategies for verified members.
+signals and the trading group, and open once you verify your UID. The 🎓
+academy, at the very bottom of Community, holds setup guides, trading
+strategies and video tutorials: everyone can read it, and verified members can
+post and reply.
 Guide: channel-map
 
 ## How do I find my help thread again?
@@ -214,8 +216,8 @@ Guide: verify
 ## What do I get after I verify?
 Also asked: what unlocks, benefits of verifying, what's in the locked channels
 The AlphanumetriX channel, bot alerts and trade alerts, the trading group
-chats (bitcoin, crypto, stocks, commodities), and the setup guides and
-trading strategies forums.
+chats (bitcoin, crypto, stocks, commodities), and the right to post and reply
+in the 🎓 academy (everyone can read it).
 Guide: channel-map
 
 ## Where are the sign-up links?
@@ -403,10 +405,13 @@ Also asked: bitcoin channel, crypto channel, stocks, commodities
 The trading group is the bitcoin, crypto, stocks and commodities chats. They
 open once you verify your UID.
 
-## What is in setup guides and trading strategies?
-Also asked: reference, forums, tutorials
-Setup guides walk you through the tools step by step, and trading strategies
-covers how the team uses the signals. Both open once you verify.
+## What is in the academy?
+Also asked: reference, forums, tutorials, setup guides, trading strategies, videos
+The 🎓 academy is one forum at the bottom of Community. Each post has a tag:
+Setup guide (the tools step by step), Strategy (how the team uses the
+signals), Video tutorial, Question and Discussion. Tap a tag at the top of the
+forum to see only those posts. Everyone can read it; verified members can post
+and reply.
 
 ## Can I ask questions about a trade?
 Also asked: what do you think about this coin, chart review

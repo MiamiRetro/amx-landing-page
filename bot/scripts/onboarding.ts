@@ -32,6 +32,7 @@ import { connect } from "../src/lib/client.js";
 import { startHereMessages } from "../src/startHere.js";
 import { LANG_ROLE_NAMES } from "../src/roles.js";
 import { verifyPanel } from "../src/verify/panel.js";
+import { supportPanel } from "../src/support/desk.js";
 
 type Tier =
   | "picker" //    @everyone only; every language role denied
@@ -61,7 +62,7 @@ interface Spec {
   topic?: string;
   /** Where this channel lived before the restructure; it is moved from there instead of recreated. */
   legacy?: { name: string; parent: string | null }[];
-  panel?: "picker" | "verify" | "bitcoin" | "start" | "locked";
+  panel?: "picker" | "verify" | "bitcoin" | "start" | "locked" | "support";
   /** For a lock channel: the name of the channel it stands in for, shown on its Verify panel. */
   topic?: string;
 }
@@ -92,7 +93,7 @@ const LAYOUT: { cat: "ann" | "com" | "ref"; top?: true; kind: Kind; tier: Tier; 
   // General and memes are open to everyone who picked a language; the 🔒 panels carry the Verify button.
   { cat: "com", kind: "general", tier: "free" },
   { cat: "com", kind: "memes", tier: "free" },
-  { cat: "com", kind: "help", tier: "free" },
+  { cat: "com", kind: "help", tier: "free", panel: "support" },
   { cat: "com", kind: "bitcoin", tier: "member" },
   { cat: "com", kind: "crypto", tier: "member" },
   { cat: "com", kind: "stocks", tier: "member" },
@@ -210,7 +211,8 @@ const CATEGORY_SPECS: { name: string; lang: Lang; tier: Tier }[] = LANGS.flatMap
  */
 const REPLACED_ROLE_NAMES = ["Member", "Members", "New Member", "Muted Member"];
 
-const BOT_ALLOW = [P.ViewChannel, P.SendMessages, P.ReadMessageHistory, P.ManageMessages, P.ManageWebhooks, P.EmbedLinks, P.AttachFiles];
+// Threads: the help-desk opens a private support thread per member and adds staff to it.
+const BOT_ALLOW = [P.ViewChannel, P.SendMessages, P.ReadMessageHistory, P.ManageMessages, P.ManageWebhooks, P.EmbedLinks, P.AttachFiles, P.CreatePrivateThreads, P.SendMessagesInThreads, P.ManageThreads];
 
 const TRANSLATE_PNG = join(dirname(fileURLToPath(import.meta.url)), "..", "assets", "emoji", "translate.png");
 
@@ -600,6 +602,10 @@ async function stepPanels(ctx: Ctx) {
       for (const msg of startHereMessages({ picker: true, translateEmoji: tr.toString(), helpDeskUrl })) await ch.send(msg);
     } else if (s.panel === "locked") {
       await ch.send(verifyPanel(lang, "locked", s.topic));
+    } else if (s.panel === "support") {
+      const msg = await ch.send(supportPanel(lang));
+      await msg.pin("help-desk support panel").catch(() => {});
+      await ctx.db.setSetting(guild.id, `support:channel:${lang}`, ch.id);
     } else if (s.panel === "start") {
       for (const msg of startHereMessages({ helpDeskUrl, lang })) await ch.send(msg);
     } else await ch.send(verifyPanel(lang, s.panel));

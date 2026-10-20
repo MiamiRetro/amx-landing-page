@@ -18,6 +18,7 @@ import { handleVerifyButton, handleVerifySubmit, VERIFY_BUTTON, VERIFY_MODAL } f
 import { checkProviders, HealthWatch } from "./verify/health.js";
 import { VipTracker } from "./vip/tracker.js";
 import { FlagshipWatch } from "./flagship.js";
+import { SupportDesk, SUPPORT_PREFIX } from "./support/desk.js";
 
 async function main() {
   setLogLevel(config.logLevel());
@@ -50,6 +51,7 @@ async function main() {
   let verify: VerifyService | null = null;
   let vip: VipTracker | null = null;
   let invites: InviteTracker | null = null;
+  let support: SupportDesk | null = null;
   const funnel = new Funnel(db, guildId);
 
   client.once(Events.ClientReady, async (c) => {
@@ -64,6 +66,7 @@ async function main() {
 
       roles = new LanguageRoles(guild, db, funnel);
       await roles.load();
+      support = new SupportDesk(guild, db, roles);
 
       // Invite use counts, so a join can be traced to the link it came through.
       // Without Manage Server this stays empty and joins go unattributed.
@@ -127,7 +130,10 @@ async function main() {
     }
   });
 
-  client.on(Events.MessageCreate, (m) => mirror?.onCreate(m));
+  client.on(Events.MessageCreate, (m) => {
+    mirror?.onCreate(m);
+    support?.onMessage(m);
+  });
   client.on(Events.MessageUpdate, (_old, m) => mirror?.onUpdate(m));
   client.on(Events.MessageDelete, (m) => mirror?.onDelete(m));
   client.on(Events.MessageBulkDelete, (ms) => ms.forEach((m) => mirror?.onDelete(m)));
@@ -136,6 +142,7 @@ async function main() {
     if (i.guildId !== guildId) return;
     if (!mirror || !groups || !roles || !verify) return;
     if (i.isButton() && i.customId.startsWith(PICKER_PREFIX)) return void handlePickerButton(i, roles);
+    if (i.isButton() && i.customId.startsWith(SUPPORT_PREFIX)) return void support?.handleButton(i);
     if (verify) {
       const v = verify, r = roles;
       if (i.isButton() && i.customId === VERIFY_BUTTON) {

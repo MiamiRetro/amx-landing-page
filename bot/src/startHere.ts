@@ -18,6 +18,7 @@ import {
 import { PICKER_PREFIX } from "./picker.js";
 import type { Lang } from "./config.js";
 import { guideText } from "./i18n/guide.js";
+import { SUPPORT_OPEN } from "./support/desk.js";
 
 /** Brand from blkbox.pro: navy, Sora, cyan and emerald accents, white wordmark. */
 const GREEN = 0x22d3ee; // site cyan
@@ -225,7 +226,7 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean;
     .addActionRowComponents(
       row(
         link(t.helpButton, opts.helpDeskUrl, "☎️"),
-        new ButtonBuilder().setStyle(ButtonStyle.Success).setLabel(t.ticketButton).setEmoji("🎟️").setCustomId("placeholder:ticket").setDisabled(true),
+        new ButtonBuilder().setStyle(ButtonStyle.Success).setLabel(t.ticketButton).setEmoji("🎟️").setCustomId(SUPPORT_OPEN),
       ),
     );
 

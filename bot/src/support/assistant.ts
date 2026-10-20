@@ -28,7 +28,12 @@ export type Answer = z.infer<typeof Answer>;
 export interface Turn {
   from: "member" | "assistant" | "moderator";
   text: string;
+  /** Screenshots the member attached, as URLs the model can fetch. */
+  images?: string[];
 }
+
+/** Screenshots sent to the model per answer, newest first; older ones stay in the thread for the moderators. */
+const MAX_IMAGES = 3;
 
 export function systemPrompt(faq: string, lang: Lang) {
   return [
@@ -46,6 +51,7 @@ export function systemPrompt(faq: string, lang: Lang) {
     "When you do answer, you may end by mentioning the \"Talk to a mod\" button if they still need a person.",
     "Set answered to true only when your reply fully answers the question from the FAQ.",
     "Never quote lines that start with \"Mods:\"; they are notes for moderators.",
+    "Members may attach screenshots (an exchange error, their account page) or links. Use them to understand the problem, but never repeat a UID, email or balance you read from one.",
     "summary: one line in English for the moderators saying what the member needs.",
     "",
     "<faq>",
@@ -65,12 +71,19 @@ export class SupportAssistant {
   }
 
   async answer(lang: Lang, turns: Turn[]): Promise<Answer> {
-    const transcript = turns.map((t) => `${t.from}: ${t.text}`).join("\n");
+    const transcript = turns.map((t) => `${t.from}: ${t.text}${t.images?.length ? ` [${t.images.length} screenshot(s) attached]` : ""}`).join("\n");
+    const images = turns.flatMap((t) => t.images ?? []).slice(-MAX_IMAGES);
     const response = await this.client.messages.parse({
       model: this.model,
       max_tokens: 1024,
       system: systemPrompt(this.faq, lang),
-      messages: [{ role: "user", content: `The help thread so far, oldest first. Answer the member's latest message.\n\n<thread>\n${transcript}\n</thread>` }],
+      messages: [{
+        role: "user",
+        content: [
+          ...images.map((url) => ({ type: "image" as const, source: { type: "url" as const, url } })),
+          { type: "text" as const, text: `The help thread so far, oldest first. Answer the member's latest message.${images.length ? " The member's most recent screenshots are attached above." : ""}\n\n<thread>\n${transcript}\n</thread>` },
+        ],
+      }],
       output_config: { format: zodOutputFormat(Answer) },
     });
     if (response.stop_reason === "refusal") return { reply: "", answered: false, handoff: true, summary: "assistant declined to answer" };

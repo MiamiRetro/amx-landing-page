@@ -177,15 +177,20 @@ export class SupportDesk {
       await thread.setName(`${HANDED} ${thread.name.slice(OPEN.length).trim()}`.slice(0, 90)).catch(() => {});
       return;
     }
-    if (state.busy || !m.content.trim()) return;
+    const shots = (x: Message) => [...x.attachments.values()].filter((a) => a.contentType?.startsWith("image/")).map((a) => a.url);
+    if (state.busy || (!m.content.trim() && shots(m).length === 0)) return;
     if (!this.assistant) return this.handoff(thread, state, "assistant not configured", SUPPORT_TEXT[state.lang].unavailable);
     state.busy = true;
     try {
       await thread.sendTyping().catch(() => {});
       const history = [...(await thread.messages.fetch({ limit: 20 })).values()].reverse();
       const turns: Turn[] = history
-        .filter((x) => x.content.trim())
-        .map((x) => ({ from: x.author.id === this.botUserId ? "assistant" : x.author.id === state.userId ? "member" : "moderator", text: x.content }));
+        .filter((x) => x.content.trim() || shots(x).length)
+        .map((x) => ({
+          from: x.author.id === this.botUserId ? "assistant" : x.author.id === state.userId ? "member" : "moderator",
+          text: x.content,
+          images: x.author.id === state.userId ? shots(x) : undefined,
+        }));
       const a = await this.assistant.answer(state.lang, turns);
       state.answers++;
       if (!a.answered) state.misses++;

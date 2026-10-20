@@ -40,3 +40,13 @@ test("an answer goes back as parsed, and a refusal hands off", async () => {
   const r = await new SupportAssistant("test", fake(null, "refusal") as never, "faq").answer("en", [{ from: "member", text: "?" }]);
   assert.equal(r.handoff, true);
 });
+
+test("the member's latest screenshots go to the model as images", async () => {
+  let sent: any;
+  const client = { messages: { parse: async (p: unknown) => ((sent = p), { stop_reason: "end_turn", parsed_output: { reply: "ok", answered: true, handoff: false, summary: "" } }) } };
+  const urls = ["https://cdn/1.png", "https://cdn/2.png", "https://cdn/3.png", "https://cdn/4.png"];
+  await new SupportAssistant("test", client as never, "faq").answer("en", [{ from: "member", text: "this error", images: urls }]);
+  const content = sent.messages[0].content;
+  assert.deepEqual(content.filter((c: any) => c.type === "image").map((c: any) => c.source.url), urls.slice(-3));
+  assert.match(content.at(-1).text, /4 screenshot\(s\) attached/);
+});

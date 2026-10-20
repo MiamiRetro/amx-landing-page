@@ -40,6 +40,7 @@ type Tier =
   | "teaser" //    language role only, read-only
   | "free" //      both tiers
   | "trader" //    both see it, only members talk
+  | "help" //      both see it; members talk, everyone writes in their own help thread with links and screenshots
   | "member" //    members only
   | "ops"; //      nobody but staff and the bot
 
@@ -93,7 +94,7 @@ const LAYOUT: { cat: "ann" | "com" | "ref"; top?: true; kind: Kind; tier: Tier; 
   // General and memes are open to everyone who picked a language; the 🔒 panels carry the Verify button.
   { cat: "com", kind: "general", tier: "free" },
   { cat: "com", kind: "memes", tier: "free" },
-  { cat: "com", kind: "help", tier: "free", panel: "support" },
+  { cat: "com", kind: "help", tier: "help", panel: "support" },
   { cat: "com", kind: "bitcoin", tier: "member" },
   { cat: "com", kind: "crypto", tier: "member" },
   { cat: "com", kind: "stocks", tier: "member" },
@@ -511,6 +512,12 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
         const allow = readOnly ? P.ViewChannel : P.ViewChannel | P.SendMessages | P.SendMessagesInThreads;
         base && set(base, OverwriteType.Role, allow, 0n);
         member && set(member, OverwriteType.Role, allow, 0n);
+      }
+      if (tier === "help") {
+        // Unverified members write only inside the private thread the Get help button opens for them.
+        const inThread = P.ViewChannel | P.ReadMessageHistory | P.SendMessagesInThreads | P.EmbedLinks | P.AttachFiles;
+        base && set(base, OverwriteType.Role, inThread, P.SendMessages | P.CreatePublicThreads | P.CreatePrivateThreads);
+        member && set(member, OverwriteType.Role, inThread | P.SendMessages, 0n);
       }
       if (tier === "trader") {
         base && set(base, OverwriteType.Role, P.ViewChannel, P.SendMessages | P.SendMessagesInThreads | P.CreatePublicThreads | P.AddReactions);

@@ -74,7 +74,7 @@ interface Spec {
  *
  *   (top level)     【server-guide】, above every category, bracketed so it reads as its own part
  *   ANNOUNCEMENTS   announcements · alphanumetrix · bot-alerts · signals · 🔒 trade-signals
- *   COMMUNITY       🔒 trading-group · general · memes · bitcoin · crypto · stocks · commodities · help-desk
+ *   COMMUNITY       🔒 trading-group · general · bitcoin · crypto · stocks · commodities · memes · help-desk
  *   REFERENCE       setup-guides · trading-strategies · forums
  *
  * No voice channels: one per language is more rooms than anyone would use.
@@ -93,12 +93,12 @@ const LAYOUT: { cat: "ann" | "com" | "ref"; top?: true; kind: Kind; tier: Tier; 
   { cat: "com", kind: "tradegate", tier: "teaser", readOnly: true, panel: "locked" },
   // General and memes are open to everyone who picked a language; the 🔒 panels carry the Verify button.
   { cat: "com", kind: "general", tier: "free" },
-  { cat: "com", kind: "memes", tier: "free" },
   { cat: "com", kind: "bitcoin", tier: "member" },
   { cat: "com", kind: "crypto", tier: "member" },
   { cat: "com", kind: "stocks", tier: "member" },
   { cat: "com", kind: "commodities", tier: "member" },
-  // Help-desk last in Community.
+  { cat: "com", kind: "memes", tier: "free" },
+  // Help-desk last in Community, memes just above it.
   { cat: "com", kind: "help", tier: "help", readOnly: true, panel: "support" },
   { cat: "ref", kind: "guides", tier: "member", type: "forum" },
   { cat: "ref", kind: "strategies", tier: "member", type: "forum" },

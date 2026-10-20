@@ -809,9 +809,8 @@ async function stepPanels(ctx: Ctx) {
     } else if (s.panel === "locked") {
       await ch.send(verifyPanel(lang, "locked", s.topic));
     } else if (s.panel === "support") {
-      // Pinned, so the button is still there once the chat has scrolled it away.
-      const panel = await ch.send(supportPanel(lang));
-      await panel.pin("onboarding: help-desk panel").catch((e) => log(`  ! could not pin the help panel in #${s.name}: ${e}`));
+      // Not pinned: nobody can post in help-desk, so the panel is the only message there.
+      await ch.send(supportPanel(lang));
       // The bot opens each language's help threads here, whichever button they came from.
       await ctx.db.setSetting(guild.id, `support_channel:${lang}`, ch.id);
     } else if (s.panel === "start") {

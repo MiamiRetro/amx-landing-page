@@ -40,7 +40,7 @@ type Tier =
   | "teaser" //    language role only, read-only
   | "free" //      both tiers
   | "trader" //    both see it, only members talk
-  | "help" //      both see it; members talk, everyone writes in their own help thread with links and screenshots
+  | "help" //      both see it; nobody talks in the channel, everyone writes in their own help thread with links and screenshots
   | "member" //    members only
   | "ops"; //      nobody but staff and the bot
 
@@ -94,7 +94,7 @@ const LAYOUT: { cat: "ann" | "com" | "ref"; top?: true; kind: Kind; tier: Tier; 
   // General and memes are open to everyone who picked a language; the 🔒 panels carry the Verify button.
   { cat: "com", kind: "general", tier: "free" },
   { cat: "com", kind: "memes", tier: "free" },
-  { cat: "com", kind: "help", tier: "help", panel: "support" },
+  { cat: "com", kind: "help", tier: "help", readOnly: true, panel: "support" },
   { cat: "com", kind: "bitcoin", tier: "member" },
   { cat: "com", kind: "crypto", tier: "member" },
   { cat: "com", kind: "stocks", tier: "member" },
@@ -514,10 +514,11 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
         member && set(member, OverwriteType.Role, allow, 0n);
       }
       if (tier === "help") {
-        // Unverified members write only inside the private thread the Get help button opens for them.
+        // Members write only inside the private thread the Get help button opens for them, never in the channel.
         const inThread = P.ViewChannel | P.ReadMessageHistory | P.SendMessagesInThreads | P.EmbedLinks | P.AttachFiles;
-        base && set(base, OverwriteType.Role, inThread, P.SendMessages | P.CreatePublicThreads | P.CreatePrivateThreads);
-        member && set(member, OverwriteType.Role, inThread | P.SendMessages, 0n);
+        const noChat = P.SendMessages | P.CreatePublicThreads | P.CreatePrivateThreads;
+        base && set(base, OverwriteType.Role, inThread, noChat);
+        member && set(member, OverwriteType.Role, inThread, noChat);
       }
       if (tier === "trader") {
         base && set(base, OverwriteType.Role, P.ViewChannel, P.SendMessages | P.SendMessagesInThreads | P.CreatePublicThreads | P.AddReactions);

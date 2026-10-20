@@ -20,6 +20,7 @@ import { VipTracker } from "./vip/tracker.js";
 import { FlagshipWatch } from "./flagship.js";
 import { SupportAssistant } from "./support/assistant.js";
 import { SupportDesk, SUPPORT_PREFIX } from "./support/desk.js";
+import { SupportReview } from "./support/review.js";
 
 async function main() {
   setLogLevel(config.logLevel());
@@ -53,6 +54,7 @@ async function main() {
   let vip: VipTracker | null = null;
   let invites: InviteTracker | null = null;
   let support: SupportDesk | null = null;
+  let review: SupportReview | null = null;
   const funnel = new Funnel(db, guildId);
 
   client.once(Events.ClientReady, async (c) => {
@@ -72,6 +74,13 @@ async function main() {
       const assistant = process.env.ANTHROPIC_API_KEY && process.env.SUPPORT_ASSISTANT !== "off" ? new SupportAssistant() : null;
       support = new SupportDesk(guild, db, roles, c.user.id, assistant);
       log.info("support desk ready", { assistant: assistant?.model ?? "off" });
+      if (SupportReview.enabled()) {
+        const desk = support;
+        review = new SupportReview(guild, db, c.user.id, assistant, (m) => desk.isMod(m));
+        const learned = await review.loadLearned().catch((e) => { log.warn("learned faq load failed", errInfo(e)); return 0; });
+        review.schedule();
+        log.info("support review scheduled", { learned });
+      }
 
       // Invite use counts, so a join can be traced to the link it came through.
       // Without Manage Server this stays empty and joins go unattributed.
@@ -138,6 +147,7 @@ async function main() {
   client.on(Events.MessageCreate, (m) => {
     mirror?.onCreate(m);
     void support?.onMessage(m).catch((e) => log.error("support message failed", errInfo(e)));
+    void review?.onMessage(m).catch((e) => log.error("support review reply failed", errInfo(e)));
   });
   client.on(Events.MessageUpdate, (_old, m) => mirror?.onUpdate(m));
   client.on(Events.MessageDelete, (m) => mirror?.onDelete(m));

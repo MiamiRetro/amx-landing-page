@@ -153,6 +153,17 @@ export class Db {
     unwrap(await this.sb.from("settings").upsert({ guild_id: guildId, key, value }, { onConflict: "guild_id,key" }), "set setting");
   }
 
+  /** Every setting whose key starts with `prefix`, e.g. all learned FAQ entries. */
+  async listSettings(guildId: string, prefix: string): Promise<{ key: string; value: string }[]> {
+    const r = await this.sb.from("settings").select("key, value").eq("guild_id", guildId).like("key", `${prefix}%`);
+    if (r.error) throw new Error(`list settings: ${r.error.message}`);
+    return (r.data ?? []) as { key: string; value: string }[];
+  }
+
+  async deleteSetting(guildId: string, key: string) {
+    unwrap(await this.sb.from("settings").delete().eq("guild_id", guildId).eq("key", key), "delete setting");
+  }
+
   async getLangPref(guildId: string, userId: string): Promise<Lang | null> {
     const r = await this.sb.from("language_prefs").select("lang").eq("guild_id", guildId).eq("user_id", userId).maybeSingle();
     if (r.error) throw new Error(`get lang pref: ${r.error.message}`);

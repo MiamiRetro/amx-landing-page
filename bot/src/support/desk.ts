@@ -92,7 +92,7 @@ export class SupportDesk {
     return this.guild.roles.cache.filter((r) => names.includes(r.name.toLowerCase())).map((r) => r.id);
   }
 
-  private isMod(member: GuildMember) {
+  isMod(member: GuildMember) {
     const mods = new Set(this.modRoleIds());
     return member.permissions.has(PermissionFlagsBits.ManageThreads) || member.roles.cache.some((r) => mods.has(r.id));
   }

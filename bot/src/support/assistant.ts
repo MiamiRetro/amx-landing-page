@@ -71,10 +71,16 @@ export function systemPrompt(faq: string, lang: Lang) {
 export class SupportAssistant {
   private client: Anthropic;
   private faq: string;
+  /** Entries moderators added through the weekly review, kept in the database, not the file. */
+  private learned = "";
 
   constructor(readonly model = process.env.SUPPORT_MODEL?.trim() || "claude-haiku-5-5", client?: Anthropic, faq?: string) {
     this.client = client ?? new Anthropic();
     this.faq = faq ?? loadFaq();
+  }
+
+  setLearned(entries: string[]) {
+    this.learned = entries.join("\n\n");
   }
 
   async answer(lang: Lang, turns: Turn[]): Promise<Answer> {
@@ -86,7 +92,7 @@ export class SupportAssistant {
       model: this.model,
       max_tokens: 1024,
       // The FAQ is the bulk of every call and the same each time, so it is cached.
-      system: [{ type: "text", text: systemPrompt(this.faq, lang), cache_control: { type: "ephemeral" } }],
+      system: [{ type: "text", text: systemPrompt(this.learned ? `${this.faq}\n\n# Added by the moderators\n\n${this.learned}` : this.faq, lang), cache_control: { type: "ephemeral" } }],
       messages: [{
         role: "user",
         content: [

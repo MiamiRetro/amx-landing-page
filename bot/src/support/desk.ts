@@ -69,7 +69,7 @@ const SYSTEM = `You are the BLKBöX help-desk assistant inside the BLKBöX Disco
 Rules:
 - Answer only from the FAQ below. Do not guess, and do not use outside knowledge about BLKBöX, exchanges or the server.
 - If the FAQ does not answer the question, or the member asks for a person, wants to report a user, or raises a bug, a payment, an account problem or anything only staff can check, set handoff to true. Then the reply is one or two sentences saying a moderator will take over here, with no other facts and no questions.
-- When the FAQ answers it, set handoff to false. If staff might still be needed, end by pointing to the "Talk to a moderator" button below instead of asking whether they want one.
+- When the FAQ answers it, set handoff to false. If staff might still be needed, end by pointing to the "{BUTTON}" button below instead of asking whether they want one.
 - Never state something the FAQ does not say, even to correct the member.
 - Never give financial or trading advice, price predictions or opinions on what to buy or sell. Say it is not something you can help with.
 - Never ask for passwords, seed phrases, API keys or personal documents. A UID is fine.
@@ -90,7 +90,7 @@ export async function askAssistant(client: Anthropic, model: string, lang: Lang,
   const response = await client.messages.parse({
     model,
     max_tokens: 1024,
-    system: [{ type: "text", text: SYSTEM.replace("{LANG}", LANG_NAMES[lang]) + faq, cache_control: { type: "ephemeral" } }],
+    system: [{ type: "text", text: SYSTEM.replace("{LANG}", LANG_NAMES[lang]).replace("{BUTTON}", SUPPORT_TEXT[lang].humanButton) + faq, cache_control: { type: "ephemeral" } }],
     messages: turns,
     output_config: { format: zodOutputFormat(Reply) },
   });

@@ -236,7 +236,7 @@ export function verifyPanel(lang: Lang = "en", variant: "verify" | "bitcoin" | "
     content: [`## ${variant === "verify" ? "" : "🔒 "}${t.title}`, ...lead, "", `-# ${t.note}`].join("\n"),
     components: [
       new ActionRowBuilder<ButtonBuilder>().addComponents(
-        new ButtonBuilder().setCustomId(VERIFY_BUTTON).setStyle(ButtonStyle.Success).setLabel(t.button).setEmoji("🔑"),
+        new ButtonBuilder().setCustomId(VERIFY_BUTTON).setStyle(ButtonStyle.Primary).setLabel(t.button).setEmoji("🔑"),
       ),
     ],
     files: uidGuide(),

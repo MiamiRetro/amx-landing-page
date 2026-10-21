@@ -69,8 +69,8 @@ function goTo(lang: Lang, thread: ThreadChannel) {
 function threadButtons(lang: Lang, human = false) {
   const t = SUPPORT_TEXT[lang];
   const row = new ActionRowBuilder<ButtonBuilder>();
-  if (human) row.addComponents(new ButtonBuilder().setCustomId(SUPPORT_HUMAN).setStyle(ButtonStyle.Secondary).setLabel(t.humanButton).setEmoji("🙋"));
-  row.addComponents(new ButtonBuilder().setCustomId(SUPPORT_CLOSE).setStyle(ButtonStyle.Danger).setLabel(t.closeButton));
+  if (human) row.addComponents(new ButtonBuilder().setCustomId(SUPPORT_HUMAN).setStyle(ButtonStyle.Primary).setLabel(t.humanButton).setEmoji("🙋"));
+  row.addComponents(new ButtonBuilder().setCustomId(SUPPORT_CLOSE).setStyle(ButtonStyle.Primary).setLabel(t.closeButton));
   return [row];
 }
 

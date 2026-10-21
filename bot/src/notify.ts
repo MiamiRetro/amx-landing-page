@@ -237,7 +237,7 @@ const VERIFIED_ONLY: NotifyTopic[] = ["alphanumetrix", "botalerts", "tradealerts
 
 /** The button that opens the picker; it sits on the server guide. */
 export function notifyButton(lang: Lang) {
-  return new ButtonBuilder().setCustomId(NOTIFY_OPEN).setStyle(ButtonStyle.Success).setLabel(NOTIFY_TEXT[lang].button).setEmoji("🔔");
+  return new ButtonBuilder().setCustomId(NOTIFY_OPEN).setStyle(ButtonStyle.Primary).setLabel(NOTIFY_TEXT[lang].button).setEmoji("🔔");
 }
 
 export class NotifyCenter {

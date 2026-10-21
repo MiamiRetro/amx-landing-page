@@ -78,7 +78,7 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean;
     .addMediaGalleryComponents(banner("hero.png"));
 
   // Discord only offers four button colours (blurple, grey, green, red) and link buttons are always grey.
-  // Green is the closest to the site emerald, so it marks the actions members take on the page.
+  // Every action is blurple, Discord's only blue; links (references) stay grey. Green clashed with the brand.
   const language = new ContainerBuilder()
     .setAccentColor(GREEN)
     .addMediaGalleryComponents(banner("language.png"))
@@ -94,18 +94,18 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean;
     )
     .addActionRowComponents(
       row(
-        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}en`).setLabel("English").setEmoji("🇬🇧").setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}zh`).setLabel("中文").setEmoji("🇨🇳").setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}ko`).setLabel("한국어").setEmoji("🇰🇷").setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}id`).setLabel("Bahasa Indonesia").setEmoji("🇮🇩").setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}vi`).setLabel("Tiếng Việt").setEmoji("🇻🇳").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}en`).setLabel("English").setEmoji("🇬🇧").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}zh`).setLabel("中文").setEmoji("🇨🇳").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}ko`).setLabel("한국어").setEmoji("🇰🇷").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}id`).setLabel("Bahasa Indonesia").setEmoji("🇮🇩").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}vi`).setLabel("Tiếng Việt").setEmoji("🇻🇳").setStyle(ButtonStyle.Primary),
       ),
       row(
-        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}es`).setLabel("Español").setEmoji("🇪🇸").setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}pt`).setLabel("Português").setEmoji("🇧🇷").setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}tr`).setLabel("Türkçe").setEmoji("🇹🇷").setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}ru`).setLabel("Русский").setEmoji("🇷🇺").setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}ja`).setLabel("日本語").setEmoji("🇯🇵").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}es`).setLabel("Español").setEmoji("🇪🇸").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}pt`).setLabel("Português").setEmoji("🇧🇷").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}tr`).setLabel("Türkçe").setEmoji("🇹🇷").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}ru`).setLabel("Русский").setEmoji("🇷🇺").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}ja`).setLabel("日本語").setEmoji("🇯🇵").setStyle(ButtonStyle.Primary),
       ),
     );
 
@@ -148,7 +148,7 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean;
     .addTextDisplayComponents(text(`${t.step3Title}\n${t.step3Body}\n${t.step3Note}`))
     .addActionRowComponents(
       row(
-        new ButtonBuilder().setCustomId(VERIFY_BUTTON).setStyle(ButtonStyle.Success).setLabel(t.step3Button).setEmoji("🔑"),
+        new ButtonBuilder().setCustomId(VERIFY_BUTTON).setStyle(ButtonStyle.Primary).setLabel(t.step3Button).setEmoji("🔑"),
         link(t.appButton, "https://app.blkbox.pro", E.BLK),
       ),
     );

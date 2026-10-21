@@ -133,7 +133,7 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean;
     .addSeparatorComponents(divider())
     .addTextDisplayComponents(
       text(`${t.step2Title}\n${t.step2Body}`),
-      text([t.whichTitle, t.regionEurope, t.regionAsia, t.regionElse, t.exchangeNote].join("\n")),
+      text([t.whichTitle, t.regionAsia, t.regionEurope, t.regionElse, t.exchangeNote].join("\n")),
     )
     // Link buttons are always grey in Discord, so the colour sits in this strip just above them.
     .addMediaGalleryComponents(banner("exchanges.png"))

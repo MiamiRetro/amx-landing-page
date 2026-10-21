@@ -235,13 +235,14 @@ sign-up links.
 ## Which exchange should I pick?
 Also asked: best exchange, which exchange is easiest, recommend an exchange, which exchange works in my country
 Pick by where you live:
-- Japan or Hong Kong: Blofin (Bitget doesn't accept Japan or Hong Kong, and Bybit has stopped taking new users in Japan).
-- Europe, the UK, Russia, Kazakhstan, Thailand or Malaysia: Bybit or Blofin (Bitget doesn't accept these, including France, Germany and Austria).
+- Europe (EU), Japan or Hong Kong: Blofin. Bybit serves the EU through a separate company, Bybit EU, that our links don't cover; Bitget doesn't accept Japan, Hong Kong, France, Germany or Austria; Bybit has stopped taking new users in Japan.
+- The UK, Russia, Kazakhstan, Thailand or Malaysia: Bybit or Blofin (Bitget doesn't accept these).
 - India or the United Arab Emirates: Bybit or Bitget (Blofin doesn't accept these).
 - Belarus: Bybit.
 - Uzbekistan: Bitget or Blofin.
 - Anywhere else (for example Korea, Indonesia, Vietnam, Turkey, Brazil, Latin America, Taiwan): any of them; Bybit is the easiest start.
 Blofin needs no ID check; Bybit and Bitget need one.
+Country not listed here? Check the exchange's sign-up page for your country.
 Mods: from each exchange's own terms as of 21 Oct 2026 (Bybit Service Restricted Countries, Bitget Terms of Use "Prohibited Countries", Blofin Terms of Use "Restricted Location"). Recheck before changing.
 
 ## Do I need to do an ID check (KYC)?

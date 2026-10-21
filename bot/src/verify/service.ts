@@ -25,7 +25,7 @@ export interface VerifyResult {
   remaining?: number;
 }
 
-const MAX_ATTEMPTS = Number(process.env.VERIFY_MAX_ATTEMPTS ?? 5);
+const MAX_ATTEMPTS = Number(process.env.VERIFY_MAX_ATTEMPTS ?? 10);
 const WINDOW_MIN = Number(process.env.VERIFY_WINDOW_MIN ?? 15);
 /** Exchange UIDs are short numeric or alphanumeric ids; anything else is a typo or a probe. */
 export const UID_RE = /^[A-Za-z0-9_-]{4,32}$/;

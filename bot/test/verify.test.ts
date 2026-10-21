@@ -102,12 +102,12 @@ test("guessing at uids runs out of attempts", async () => {
   const { db } = fakeDb();
   const svc = service(db, provider("bybit", "no"));
   const outcomes: string[] = [];
-  for (let n = 0; n < 7; n++) {
-    const res = await svc.verify({ userId: "u1", alreadyMember: false, exchange: "bybit", uid: `1000000${n}` });
+  for (let n = 0; n < 12; n++) {
+    const res = await svc.verify({ userId: "u1", alreadyMember: false, exchange: "bybit", uid: `100000${String(n).padStart(2, "0")}` });
     outcomes.push(res.outcome);
   }
-  assert.deepEqual(outcomes.slice(0, 5), Array(5).fill("not_referred"));
-  assert.deepEqual(outcomes.slice(5), ["rate_limited", "rate_limited"]);
+  assert.deepEqual(outcomes.slice(0, 10), Array(10).fill("not_referred"));
+  assert.deepEqual(outcomes.slice(10), ["rate_limited", "rate_limited"]);
 });
 
 test("an exchange outage is reported as an error, never as a rejection", async () => {

@@ -806,7 +806,9 @@ async function stepPanels(ctx: Ctx) {
     if (!ch) { log(`  ! no #${s.name} for its panel`); continue; }
     log(`  post ${s.panel} panel in #${s.name}`);
     if (!ctx.apply) continue;
-    const old = (await ch.messages.fetch({ limit: 50 })).filter((m) => m.author.id === me.id);
+    // Any bot's panels go, not just ours: a panel posted by another bot account (the test server's
+    // old shared bot) has buttons only that bot can answer. Webhook posts (mirrored chat) stay.
+    const old = (await ch.messages.fetch({ limit: 50 })).filter((m) => m.author.bot && !m.webhookId);
     for (const m of old.values()) await m.delete().catch(() => {});
     const lang: Lang = s.lang === "all" ? "en" : s.lang;
     const help = findChannel(guild, SPECS.find((x) => x.lang === lang && x.kind === "help")!);

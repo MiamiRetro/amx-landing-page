@@ -1,6 +1,6 @@
 import type { Db } from "../db/index.js";
 import { ProviderError, type AffiliateProvider, type ExchangeId } from "./types.js";
-import { UidClaimedError } from "./providers/backend.js";
+import { UidClaimedError, UidInvalidError, UidRevokedError } from "./providers/backend.js";
 
 export type Outcome =
   | "verified"
@@ -9,6 +9,7 @@ export type Outcome =
   | "not_referred"
   | "not_configured"
   | "bad_uid"
+  | "revoked"
   | "rate_limited"
   | "provider_error";
 
@@ -124,6 +125,14 @@ export class VerifyService {
       if (e instanceof UidClaimedError) {
         await record("already_claimed", e.message);
         return { ...base, outcome: "already_claimed", remaining };
+      }
+      if (e instanceof UidRevokedError) {
+        await record("revoked", e.message);
+        return { ...base, outcome: "revoked", remaining };
+      }
+      if (e instanceof UidInvalidError) {
+        await record("bad_uid", e.message);
+        return { ...base, outcome: "bad_uid", remaining };
       }
       const error = e instanceof ProviderError ? e.message : e instanceof Error ? e.message : String(e);
       await record("provider_error", error);

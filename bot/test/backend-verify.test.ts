@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { BackendVerifier, UidClaimedError } from "../src/verify/providers/backend.js";
+import { BackendVerifier, UidClaimedError, UidInvalidError, UidRevokedError } from "../src/verify/providers/backend.js";
 import { ProviderError } from "../src/verify/types.js";
 
 process.env.VERIFY_BACKEND_URL = "https://api.example/exchange-accounts/verify";
@@ -47,4 +47,14 @@ test("an exchange outage or an unknown 403 is an error to retry, not a no", asyn
   await assert.rejects(new BackendVerifier("bybit").lookup("12345678", ctx), (e: unknown) => e instanceof ProviderError && !(e instanceof UidClaimedError));
   reply(403, { success: false, error: { type: "FORBIDDEN", code: "FORBIDDEN", message: "bad key" }, meta });
   await assert.rejects(new BackendVerifier("bybit").lookup("12345678", ctx), (e: unknown) => e instanceof ProviderError && !(e instanceof UidClaimedError));
+});
+
+test("403 ACCOUNT_REVOKED is the member's own UID, switched off", async () => {
+  reply(403, { success: false, error: { type: "FORBIDDEN", code: "ACCOUNT_REVOKED", message: "revoked" }, meta });
+  await assert.rejects(new BackendVerifier("bybit").lookup("12345678", ctx), UidRevokedError);
+});
+
+test("400 VALIDATION means the UID itself was refused", async () => {
+  reply(400, { success: false, error: { type: "VALIDATION", code: "VALIDATION", message: "exchangeUserId must be numeric" }, meta });
+  await assert.rejects(new BackendVerifier("bybit").lookup("abc", ctx), UidInvalidError);
 });

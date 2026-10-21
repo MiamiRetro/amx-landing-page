@@ -343,6 +343,14 @@ async function reply(
       };
     case "rate_limited":
       return { content: "That is a lot of tries in a short time. Wait fifteen minutes and have another go, or ask in help-desk and someone will check it with you." };
+    case "revoked":
+      return {
+        content: [
+          `## That ${label} UID has been switched off`,
+          "",
+          "It is linked to you, but it was revoked on our side, so it can't unlock the server right now. Tap 🛟 Get help in help-desk and the team will look into it with you.",
+        ].join("\n"),
+      };
     case "already_claimed":
       return {
         content: [

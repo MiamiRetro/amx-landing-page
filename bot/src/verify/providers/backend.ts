@@ -10,8 +10,13 @@ import { EXCHANGE_LABELS, ProviderError, type AffiliateLookup, type AffiliatePro
  *   → { success, data: { verified }, error?: { type, code, message }, meta }
  *
  * Only main-account UIDs verify; a sub-account UID comes back verified: false.
- * 409 means the UID is already linked to someone else; 403 is a refusal with a
- * code saying why; exchange outages carry EXCHANGE_UNREACHABLE / EXCHANGE_ERROR.
+ * Errors, from the API's developer:
+ *   400 VALIDATION                 body invalid: UID not numeric or over 32 digits, unknown exchange
+ *   401 UNAUTHENTICATED            our x-api-key is missing or wrong
+ *   403 ACCOUNT_REVOKED            the UID is this member's, but revoked
+ *   409 UID_LINKED_TO_OTHER_USER   the UID belongs to another Discord or BLKBöX user
+ *   504 EXCHANGE_UNREACHABLE       the exchange timed out or rate-limited us
+ *   500 EXCHANGE_ERROR / INTERNAL  something broke on their side
  */
 
 interface BackendReply {
@@ -29,8 +34,24 @@ export class UidClaimedError extends ProviderError {
   }
 }
 
+/** The API refused the UID itself (not numeric, too long): the member typed something that isn't a UID. */
+export class UidInvalidError extends ProviderError {
+  constructor(message: string) {
+    super(message, 400);
+    this.name = "UidInvalidError";
+  }
+}
+
+/** The UID is this member's, but the BLKBöX side revoked it. */
+export class UidRevokedError extends ProviderError {
+  constructor(message: string) {
+    super(message, 403);
+    this.name = "UidRevokedError";
+  }
+}
+
 /** Codes that mean "not one of ours" rather than "couldn't check". */
-const NOT_REFERRED = new Set(["NOT_PARTNER_ACCOUNT", "ACCOUNT_REVOKED", "UNSUPPORTED_ACCOUNT_TYPE"]);
+const NOT_REFERRED = new Set(["NOT_PARTNER_ACCOUNT", "UNSUPPORTED_ACCOUNT_TYPE"]);
 const CLAIMED = new Set(["UID_LINKED_TO_OTHER_USER", "UID_VERIFIED_ON_DISCORD", "ACCOUNT_ALREADY_CONNECTED", "DIFFERENT_EXCHANGE_ACCOUNT"]);
 
 export class BackendVerifier implements AffiliateProvider {
@@ -75,6 +96,8 @@ export class BackendVerifier implements AffiliateProvider {
       return { referred: body.data.verified, detail: { via: "blkbox-api", requestId: body.meta?.requestId } };
     }
     if (res.status === 409 || CLAIMED.has(code)) throw new UidClaimedError(code || "CONFLICT", `UID already linked: ${why}`);
+    if (code === "ACCOUNT_REVOKED") throw new UidRevokedError(`UID revoked: ${why}`);
+    if (res.status === 400 && code === "VALIDATION") throw new UidInvalidError(`UID rejected: ${why}`);
     if (NOT_REFERRED.has(code)) return { referred: false, detail: { code, message: body?.error?.message } };
     // A 403 without a known code is our key being refused, not the member's UID.
     throw new ProviderError(`BLKBöX API ${why}`, res.status, text.slice(0, 500));

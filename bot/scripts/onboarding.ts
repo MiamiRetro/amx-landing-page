@@ -697,7 +697,8 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
       if (tier === "verify" || tier === "teaser") base && set(base, OverwriteType.Role, P.ViewChannel | P.ReadMessageHistory, 0n);
       if (tier === "free") {
         // An open channel allows Send outright, so a leftover @everyone deny can't mute it.
-        const allow = readOnly ? P.ViewChannel : P.ViewChannel | P.SendMessages | P.SendMessagesInThreads;
+        // History allowed outright too (unless the channel hides it), so an old @everyone history deny can't hide the backlog.
+        const allow = (readOnly ? P.ViewChannel : P.ViewChannel | P.SendMessages | P.SendMessagesInThreads) | (noHistory ? 0n : P.ReadMessageHistory);
         const deny = noHistory ? P.ReadMessageHistory : 0n;
         base && set(base, OverwriteType.Role, allow, deny);
         member && set(member, OverwriteType.Role, allow, deny);
@@ -711,9 +712,9 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
       }
       if (tier === "trader") {
         base && set(base, OverwriteType.Role, P.ViewChannel, P.SendMessages | P.SendMessagesInThreads | P.CreatePublicThreads | P.AddReactions);
-        member && set(member, OverwriteType.Role, P.ViewChannel, 0n);
+        member && set(member, OverwriteType.Role, P.ViewChannel | P.ReadMessageHistory, 0n);
       }
-      if (tier === "member") member && set(member, OverwriteType.Role, P.ViewChannel, 0n);
+      if (tier === "member") member && set(member, OverwriteType.Role, P.ViewChannel | P.ReadMessageHistory, 0n);
     }
   }
   if (readOnly) set(everyone, OverwriteType.Role, 0n, P.SendMessages);

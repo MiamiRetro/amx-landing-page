@@ -261,10 +261,12 @@ Also asked: MEXC, Toobit, when will MEXC work
 They are coming soon, and the server guide will show their buttons as soon as
 they are live. There is no date yet.
 
-## Can I join from the United States or Canada?
-Also asked: USA, US, Canada, American, I'm in the US
-Every partner exchange excludes US and Canadian residents in its own terms, so
-we can't verify accounts from there yet. We are working on an option.
+## The exchanges won't let me sign up from where I live
+Also asked: USA, US, Canada, American, I'm in the US, not available in my region, my country isn't supported, region not supported
+Our partner exchanges aren't available in every region yet, so we can't verify
+accounts from there for now. We're working on it, and we'll announce it here
+as soon as there's an option for you.
+Mods: none of the partner exchanges accept the US, Canada, Singapore or mainland China (their own terms, 21 Oct 2026). Answer without naming countries, and never suggest getting around that.
 
 ## Can I use a VPN to sign up?
 Also asked: VPN, my country is blocked, restricted region

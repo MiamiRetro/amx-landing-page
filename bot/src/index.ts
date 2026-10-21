@@ -13,6 +13,7 @@ import { handlePickerButton, PICKER_PREFIX } from "./picker.js";
 import { providerFromSpec, Translator } from "./translate/index.js";
 import { InfographicLocalizer, infographicsEnabled } from "./infographic/index.js";
 import { buildProviders } from "./verify/providers/index.js";
+import { buildBackendVerifiers } from "./verify/providers/backend.js";
 import { VerifyService } from "./verify/service.js";
 import { handleVerifyButton, handleVerifySubmit, VERIFY_BUTTON, VERIFY_MODAL } from "./verify/panel.js";
 import { checkProviders, HealthWatch } from "./verify/health.js";
@@ -91,7 +92,10 @@ async function main() {
       await invites.refresh().catch((e) => log.warn("invite cache failed", errInfo(e)));
 
       const affiliates = buildProviders();
-      verify = new VerifyService(db, guildId, affiliates);
+      // UID checks go through the BLKBöX app API when it's configured; the exchange keys stay for health checks and VIP tiers.
+      const backend = buildBackendVerifiers([...affiliates.keys()]);
+      verify = new VerifyService(db, guildId, backend ?? affiliates);
+      if (backend) log.info("uid checks via BLKBöX API", { url: process.env.VERIFY_BACKEND_URL, keySet: [...backend.values()].every((p) => p.configured()) });
       vip = new VipTracker(guild, db, affiliates);
       // The weekly check needs Bybit, which blocks some hosting regions. It runs
       // from the Mac Studio (scripts/vip-run.ts under launchd) unless VIP_SCHEDULE=1.

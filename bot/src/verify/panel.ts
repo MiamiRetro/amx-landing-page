@@ -358,7 +358,7 @@ async function reply(
           "",
           "Two things are usually behind this.",
           "",
-          "**The UID is wrong.** Check it in your exchange profile and paste it again. It is the account number, not your username or email.",
+          "**The UID is wrong, or it's a sub-account.** Check it in your exchange profile and paste it again. Use your **main account** UID: sub-account UIDs can't be verified. It is the account number, not your username or email.",
           "",
           `**The account was not opened through our link.** The server only opens for accounts that signed up under BLKBöX. If you already had a ${label} account, or you signed up somewhere else, it will not show up for us and we cannot let you in on it.`,
           "",

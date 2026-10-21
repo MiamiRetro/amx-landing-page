@@ -1,5 +1,6 @@
 import type { Db } from "../db/index.js";
 import { ProviderError, type AffiliateProvider, type ExchangeId } from "./types.js";
+import { UidClaimedError } from "./providers/backend.js";
 
 export type Outcome =
   | "verified"
@@ -102,7 +103,7 @@ export class VerifyService {
     }
 
     try {
-      const res = await provider.lookup(uid);
+      const res = await provider.lookup(uid, { discordUserId: args.userId });
       if (!res.referred) {
         await record("not_referred");
         return { ...base, outcome: "not_referred", remaining };
@@ -119,6 +120,11 @@ export class VerifyService {
       await record("verified");
       return { ...base, outcome: "verified", remaining };
     } catch (e) {
+      // The app API keeps its own record of who holds which UID, across Discord and the app.
+      if (e instanceof UidClaimedError) {
+        await record("already_claimed", e.message);
+        return { ...base, outcome: "already_claimed", remaining };
+      }
       const error = e instanceof ProviderError ? e.message : e instanceof Error ? e.message : String(e);
       await record("provider_error", error);
       return { ...base, outcome: "provider_error", error, remaining };

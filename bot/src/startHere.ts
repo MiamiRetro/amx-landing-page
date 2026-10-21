@@ -63,46 +63,6 @@ const RULES = [
   "**Moderators have the final say.**",
 ].join("\n");
 
-/** Message links to the guide's sections, filled in once the guide is posted. */
-export interface GuideLinks {
-  rules: string;
-  start: string;
-  notify: string;
-  community: string;
-}
-
-/** The guide's messages in posting order; the onboarding panels step uses it to link the jump-to card. */
-export const GUIDE_SECTIONS = ["welcome", "nav", "rules", "start", "notify", "community"] as const;
-
-/**
- * The jump-to card under the hero: link buttons to each section (once their
- * message ids are known) and the three things people come for.
- */
-export function guideNav(lang: Lang, links?: GuideLinks) {
-  const t = guideText(lang);
-  const card = new ContainerBuilder()
-    .setAccentColor(GREEN)
-    .addTextDisplayComponents(text(t.navTitle), text(t.navBody));
-  if (links) {
-    card.addActionRowComponents(
-      row(
-        link(t.navRules, links.rules, "📜"),
-        link(t.navStart, links.start, "🚀"),
-        link(t.navNotify, links.notify, "🔔"),
-        link(t.navCommunity, links.community, "🤝"),
-      ),
-    );
-  }
-  card.addActionRowComponents(
-    row(
-      new ButtonBuilder().setCustomId(VERIFY_BUTTON).setStyle(ButtonStyle.Success).setLabel(t.navVerify).setEmoji("🔑"),
-      new ButtonBuilder().setCustomId(SUPPORT_OPEN).setStyle(ButtonStyle.Primary).setLabel(t.navHelp).setEmoji("🛟"),
-      notifyButton(lang),
-    ),
-  );
-  return { components: [card], flags: MessageFlags.IsComponentsV2 as const };
-}
-
 /** One branded card per section, built with Discord's layout components. */
 /**
  * `translateEmoji` is the server's :translate: emoji markup (`<:translate:id>`),
@@ -162,63 +122,18 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean;
       ),
     );
 
+  // Three short steps. The picker already covered the language and the terms, so nothing here repeats them.
   const start = new ContainerBuilder()
     .setAccentColor(GREEN)
     .addMediaGalleryComponents(banner("start.png"))
-    .addTextDisplayComponents(
-      text(t.stepsTitle),
-      text(t.stepsIntro),
-    )
+    .addTextDisplayComponents(text(`${t.stepsTitle}\n${t.stepsIntro}`))
     .addSeparatorComponents(divider())
-    .addTextDisplayComponents(
-      text(t.step1Title),
-      text(t.step1Body),
-    )
+    .addTextDisplayComponents(text(`${t.step1Title}\n${t.step1Body}`))
     .addActionRowComponents(row(link(t.step1Button, "https://www.blkbox.pro/signup", E.Glow)))
     .addSeparatorComponents(divider())
     .addTextDisplayComponents(
-      text(t.step2Title),
-      text(
-        [
-          t.step2Why1,
-          "",
-          t.step2Why2,
-          "",
-          t.step2Why3,
-        ].join("\n"),
-      ),
-      text(
-        [
-          t.startHereTitle,
-          t.regionEurope,
-          t.regionKorea,
-          t.regionIndonesia,
-          t.regionJapan,
-          t.regionElse,
-        ].join("\n"),
-      ),
-      text(
-        [
-          t.whoTitle,
-          "",
-          t.whoBybit,
-          "\ud83c\uddec\ud83c\udde7 \ud83c\uddea\ud83c\uddfa \ud83c\uddef\ud83c\uddf5 \ud83c\uddf0\ud83c\uddf7 \ud83c\uddee\ud83c\udde9",
-          "",
-          t.whoBitget,
-          "\ud83c\uddec\ud83c\udde7 \ud83c\uddee\ud83c\udde9",
-          "",
-          t.whoBlofin,
-          "\ud83c\uddec\ud83c\udde7 \ud83c\uddea\ud83c\uddfa \ud83c\uddef\ud83c\uddf5 \ud83c\uddf0\ud83c\uddf7 \ud83c\uddee\ud83c\udde9",
-          "",
-          t.whoMexc,
-          "\ud83c\uddea\ud83c\uddfa \ud83c\uddef\ud83c\uddf5 \ud83c\uddf0\ud83c\uddf7 \ud83c\uddee\ud83c\udde9",
-          "",
-          t.whoToobit,
-          "\ud83c\uddea\ud83c\uddfa \ud83c\uddef\ud83c\uddf5 \ud83c\uddf0\ud83c\uddf7 \ud83c\uddee\ud83c\udde9",
-        ].join("\n"),
-      ),
-      text(t.usCanada),
-      text(t.availability),
+      text(`${t.step2Title}\n${t.step2Body}`),
+      text([t.whichTitle, t.regionEurope, t.regionAsia, t.regionElse, t.exchangeNote].join("\n")),
     )
     // Link buttons are always grey in Discord, so the colour sits in this strip just above them.
     .addMediaGalleryComponents(banner("exchanges.png"))
@@ -227,28 +142,28 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean;
         link("Bitget", "https://partner.bitget.com/bg/G91HYQ", E.Bitget),
         link("Blofin", "https://partner.blofin.com/d/BLKBox", E.Blofin),
         link("Bybit", "https://partner.bybit.com/b/90136", E.Bybit),
-        // Placeholders until the affiliate links exist.
-        new ButtonBuilder().setStyle(ButtonStyle.Secondary).setLabel(t.mexcSoon).setCustomId("placeholder:mexc").setDisabled(true),
-        new ButtonBuilder().setStyle(ButtonStyle.Secondary).setLabel(t.toobitSoon).setCustomId("placeholder:toobit").setDisabled(true),
       ),
     )
     .addSeparatorComponents(divider())
-    .addTextDisplayComponents(
-      text(t.step3Title),
-      text(t.step3Body),
-      text(t.step3Note),
-    )
-    .addActionRowComponents(row(link(t.step3Button, "https://app.blkbox.pro", E.BLK)));
+    .addTextDisplayComponents(text(`${t.step3Title}\n${t.step3Body}\n${t.step3Note}`))
+    .addActionRowComponents(
+      row(
+        new ButtonBuilder().setCustomId(VERIFY_BUTTON).setStyle(ButtonStyle.Success).setLabel(t.step3Button).setEmoji("🔑"),
+        link(t.appButton, "https://app.blkbox.pro", E.BLK),
+      ),
+    );
 
+  // Follow, notifications, then help at the very bottom.
+  const n = NOTIFY_TEXT[opts.lang ?? "en"];
   const community = new ContainerBuilder()
     .setAccentColor(GREEN)
     .addMediaGalleryComponents(banner("community.png"))
     .addTextDisplayComponents(text(`### ${E.YT}  YouTube`))
     .addActionRowComponents(
       row(
-        link("Baloo's Crypto Jungle", "https://www.youtube.com/@TheFinancialSummit?Sub_Confirmation=1", E.YT),
-        link("Bear Trap TV", "https://www.youtube.com/channel/UCJG_wbsUX52Rr60FPm7Cnew?Sub_Confirmation=1", E.YT),
-        link("Tone Vays", "https://www.youtube.com/@tonevays", E.YT),
+        link("BLKBöX", "https://www.youtube.com/@TheFinancialSummit?sub_confirmation=1", E.YT),
+        link("Bear Trap TV", "https://www.youtube.com/@blkboxtrading?sub_confirmation=1", E.YT),
+        link("Tone Vays", "https://www.youtube.com/@tonevays?sub_confirmation=1", E.YT),
       ),
     )
     .addTextDisplayComponents(text(`### ${E.X}  X`))
@@ -261,15 +176,12 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean;
       ),
     )
     .addSeparatorComponents(divider())
-    .addTextDisplayComponents(
-      text(t.helpTitle),
-      text(t.helpBody),
-    )
+    .addTextDisplayComponents(text(`${n.title}\n${n.body}`))
+    .addActionRowComponents(row(notifyButton(opts.lang ?? "en")))
+    .addSeparatorComponents(divider())
+    .addTextDisplayComponents(text(`${t.helpTitle}\n${t.helpBody}`))
     .addActionRowComponents(
-      row(
-        link(t.helpButton, opts.helpDeskUrl, "☎️"),
-        new ButtonBuilder().setStyle(ButtonStyle.Success).setLabel(t.ticketButton).setEmoji("🎟️").setCustomId(SUPPORT_OPEN),
-      ),
+      row(new ButtonBuilder().setStyle(ButtonStyle.Primary).setLabel(t.helpButton).setEmoji("🛟").setCustomId(SUPPORT_OPEN)),
     );
 
   // The picker channel is the front door and the only thing a newcomer sees:
@@ -311,19 +223,11 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean;
     ];
   }
 
-  const n = NOTIFY_TEXT[opts.lang ?? "en"];
-  const notify = new ContainerBuilder()
-    .setAccentColor(GREEN)
-    .addTextDisplayComponents(text(n.title), text(n.body))
-    .addActionRowComponents(row(notifyButton(opts.lang ?? "en")));
-
-  // start-here is only seen after a language is picked, so it drops the picker. Order matches GUIDE_SECTIONS.
+  // start-here is only seen after a language is picked, so it drops the picker and the terms card.
   return [
     { components: [welcome], files: [asset("hero.png", opts.lang)], flags: V2 },
-    guideNav(opts.lang ?? "en"),
     { components: [rules], files: [asset("rules.png", opts.lang)], flags: V2 },
     { components: [start], files: [asset("start.png", opts.lang), asset("exchanges.png", opts.lang)], flags: V2 },
-    { components: [notify], flags: V2 },
     { components: [community], files: [asset("community.png", opts.lang)], flags: V2 },
   ];
 }

@@ -30,7 +30,7 @@ import { fileURLToPath } from "node:url";
 import { LANGS, type Lang } from "../src/config.js";
 import { Db } from "../src/db/index.js";
 import { connect } from "../src/lib/client.js";
-import { GUIDE_SECTIONS, guideNav, startHereMessages } from "../src/startHere.js";
+import { startHereMessages } from "../src/startHere.js";
 import { NOTIFY_ROLES, NOTIFY_TOPICS } from "../src/notify.js";
 import { guideChannelName } from "../src/i18n/guide.js";
 import { LANG_ROLE_NAMES } from "../src/roles.js";
@@ -814,12 +814,7 @@ async function stepPanels(ctx: Ctx) {
       // The bot opens each language's help threads here, whichever button they came from.
       await ctx.db.setSetting(guild.id, `support_channel:${lang}`, ch.id);
     } else if (s.panel === "start") {
-      // Post the guide, then point the jump-to card at the sections it just posted.
-      const sent: Message[] = [];
-      for (const msg of startHereMessages({ helpDeskUrl, lang })) sent.push(await ch.send(msg));
-      const url = (key: (typeof GUIDE_SECTIONS)[number]) => sent[GUIDE_SECTIONS.indexOf(key)]?.url ?? "";
-      const nav = sent[GUIDE_SECTIONS.indexOf("nav")];
-      if (nav) await nav.edit(guideNav(lang, { rules: url("rules"), start: url("start"), notify: url("notify"), community: url("community") }));
+      for (const msg of startHereMessages({ helpDeskUrl, lang })) await ch.send(msg);
     } else await ch.send(verifyPanel(lang, s.panel));
   }
 }

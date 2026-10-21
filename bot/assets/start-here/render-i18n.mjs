@@ -32,8 +32,8 @@ for (const lang of langs) {
   const t = JSON.parse(readFileSync(file, "utf8"));
   const specs = [
     { file: "hero.png", mode: "hero", w: 1200, h: 520, kicker: "BLKBöX Trading Floor", title: `${t.bannerHeroLine1}<br><span class="accent">${t.bannerHeroLine2}</span>`, sub: t.bannerHeroSub },
-    { file: "rules.png", w: 1200, h: 300, kicker: `${t.bannerStep} 2`, title: t.bannerRulesTitle, sub: t.bannerRulesSub },
-    { file: "start.png", w: 1200, h: 300, kicker: `${t.bannerStep} 3`, title: t.bannerStartTitle, sub: t.bannerStartSub },
+    { file: "rules.png", w: 1200, h: 300, kicker: t.bannerRulesKicker, title: t.bannerRulesTitle, sub: t.bannerRulesSub },
+    { file: "start.png", w: 1200, h: 300, kicker: t.bannerStartKicker, title: t.bannerStartTitle, sub: t.bannerStartSub },
     { file: "community.png", w: 1200, h: 300, kicker: t.bannerCommunityKicker, title: t.bannerCommunityTitle.replace("&", "&amp;"), sub: t.bannerCommunitySub, sm: true },
   ];
   mkdirSync(lang, { recursive: true });

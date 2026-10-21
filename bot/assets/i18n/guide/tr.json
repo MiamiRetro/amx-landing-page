@@ -14,7 +14,7 @@
   "regionEurope": "🇬🇧 🇪🇺 🇷🇺 🇰🇿 🇹🇭 🇲🇾  Avrupa, Birleşik Krallık, Rusya, Kazakistan, Tayland, Malezya → Bybit veya Blofin",
   "regionAsia": "🇯🇵 🇭🇰  Japonya ve Hong Kong → Blofin",
   "regionElse": "🌍  Diğer tüm ülkeler → hangisini isterseniz, en kolay başlangıç Bybit",
-  "exchangeNote": "-# ABD, Kanada, Singapur ve Çin anakarasında kullanılamaz. Hindistan ve BAE'de Bybit veya Bitget kullanın. Bybit ve Bitget kimlik doğrulaması ister, Blofin istemez. MEXC ve Toobit yakında geliyor. Kimin kayıt olabileceğini her borsanın kendi şartları belirler. Ortaklık bağlantıları.",
+  "exchangeNote": "-# Hindistan'da ve BAE'de Bybit veya Bitget kullanın. Bybit ve Bitget kimlik doğrulaması ister, Blofin istemez. MEXC ve Toobit çok yakında geliyor. Kimlerin kaydolabileceğine her borsanın kendi şartları karar verir. Affiliate bağlantıları.",
   "step3Title": "### 3 · UID'nizi doğrulayın",
   "step3Body": "Düğmeye dokunun ve borsa hesabınızdaki UID'yi yapıştırın. Kilitli tüm kanallar hemen açılır.",
   "step3Note": "-# Bitget, Blofin ve Bybit UID'leri kabul edilir. Sinyalleri ve işlem günlüğünüzü açmak için aynı UID'yi uygulamaya da ekleyin.",

@@ -162,7 +162,7 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean;
     .addActionRowComponents(
       row(
         link("BLKBöX", "https://www.youtube.com/@TheFinancialSummit?sub_confirmation=1", E.YT),
-        link("Bear Trap TV", "https://www.youtube.com/@blkboxtrading?sub_confirmation=1", E.YT),
+        link("Baloo's Crypto Jungle", "https://www.youtube.com/@blkboxtrading?sub_confirmation=1", E.YT),
         link("Tone Vays", "https://www.youtube.com/@tonevays?sub_confirmation=1", E.YT),
       ),
     )

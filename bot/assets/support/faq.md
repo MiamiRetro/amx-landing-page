@@ -179,7 +179,7 @@ server guide.
 ## Where can I follow BLKBöX outside Discord?
 Also asked: YouTube, Twitter, X, socials
 The server guide's Follow and get help card links the YouTube channels
-(Baloo's Crypto Jungle, Bear Trap TV, Tone Vays) and X accounts (Baloo, Matt,
+(BLKBöX, Baloo's Crypto Jungle, Tone Vays) and X accounts (Baloo, Matt,
 Tone Vays, BLKBöX at x.com/blkboxbot).
 
 ## What are the rules?
@@ -241,7 +241,6 @@ Pick by where you live:
 - Belarus: Bybit.
 - Uzbekistan: Bitget or Blofin.
 - Anywhere else (for example Korea, Indonesia, Vietnam, Turkey, Brazil, Latin America, Taiwan): any of them; Bybit is the easiest start.
-None of them accept the United States, Canada, Singapore or mainland China.
 Blofin needs no ID check; Bybit and Bitget need one.
 Mods: from each exchange's own terms as of 21 Oct 2026 (Bybit Service Restricted Countries, Bitget Terms of Use "Prohibited Countries", Blofin Terms of Use "Restricted Location"). Recheck before changing.
 
@@ -265,8 +264,7 @@ they are live. There is no date yet.
 ## Can I join from the United States or Canada?
 Also asked: USA, US, Canada, American, I'm in the US
 Every partner exchange excludes US and Canadian residents in its own terms, so
-we can't verify accounts from there yet. We are working on an option. The same
-goes for Singapore and mainland China.
+we can't verify accounts from there yet. We are working on an option.
 
 ## Can I use a VPN to sign up?
 Also asked: VPN, my country is blocked, restricted region
@@ -277,9 +275,7 @@ country before you sign up.
 ## Is my country supported?
 Also asked: is the exchange available in my country, restricted countries, banned countries
 It depends on the exchange; see "Which exchange should I pick?" for the list
-by country. None of our partner exchanges accept the United States, Canada,
-Singapore or mainland China, so we can't verify accounts from there yet. Each
-exchange's own terms are the last word and can change.
+by country. Each exchange's own terms are the last word and can change.
 
 # Verifying your UID
 

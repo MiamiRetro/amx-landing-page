@@ -14,7 +14,7 @@
   "regionEurope": "🇬🇧 🇪🇺 🇷🇺 🇰🇿 🇹🇭 🇲🇾  유럽, 영국, 러시아, 카자흐스탄, 태국, 말레이시아 → Bybit 또는 Blofin",
   "regionAsia": "🇯🇵 🇭🇰  일본, 홍콩 → Blofin",
   "regionElse": "🌍  그 외 지역 → 어느 거래소든 괜찮아요. Bybit이 가장 쉽게 시작할 수 있어요",
-  "exchangeNote": "-# 미국, 캐나다, 싱가포르, 중국 본토에서는 이용할 수 없어요. 인도와 아랍에미리트에서는 Bybit 또는 Bitget을 이용해 주세요. Bybit과 Bitget은 신분 확인이 필요하고, Blofin은 필요하지 않아요. MEXC와 Toobit은 곧 지원될 예정이에요. 가입 가능 여부는 각 거래소의 약관에 따라 결정돼요. 제휴 링크입니다.",
+  "exchangeNote": "-# 인도와 아랍에미리트에서는 Bybit 또는 Bitget을 이용해 주세요. Bybit과 Bitget은 신분 확인(ID 인증)을 요구하지만, Blofin은 요구하지 않아요. MEXC와 Toobit은 곧 지원될 예정이에요. 가입 가능 여부는 각 거래소의 자체 약관에 따라 결정돼요. 제휴 링크예요.",
   "step3Title": "### 3 · UID 인증하기",
   "step3Body": "버튼을 누르고 거래소 계정의 UID를 붙여넣어 주세요. 잠겨 있던 모든 채널이 바로 열려요.",
   "step3Note": "-# Bitget, Blofin, Bybit의 UID를 사용할 수 있어요. 앱에도 같은 UID를 추가하면 시그널과 매매 일지가 활성화돼요.",

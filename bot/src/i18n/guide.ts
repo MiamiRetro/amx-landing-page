@@ -32,7 +32,7 @@ export const GUIDE_EN = {
   regionEurope: "🇬🇧 🇪🇺 🇷🇺 🇰🇿 🇹🇭 🇲🇾  Europe, UK, Russia, Kazakhstan, Thailand, Malaysia → Bybit or Blofin",
   regionAsia: "🇯🇵 🇭🇰  Japan and Hong Kong → Blofin",
   regionElse: "🌍  Anywhere else → any of them, Bybit is the easiest start",
-  exchangeNote: "-# Not open in the US, Canada, Singapore or mainland China. In India and the UAE, use Bybit or Bitget. Bybit and Bitget ask for an ID check, Blofin doesn't. MEXC and Toobit are coming soon. Each exchange's own terms decide who can sign up. Affiliate links.",
+  exchangeNote: "-# In India and the UAE, use Bybit or Bitget. Bybit and Bitget ask for an ID check, Blofin doesn't. MEXC and Toobit are coming soon. Each exchange's own terms decide who can sign up. Affiliate links.",
   step3Title: "### 3 · Verify your UID",
   step3Body: "Tap the button and paste the UID from your exchange account. Every locked channel opens straight away.",
   step3Note: "-# Bitget, Blofin and Bybit UIDs are accepted. Add the same UID in the app to turn on signals and your trade journal.",

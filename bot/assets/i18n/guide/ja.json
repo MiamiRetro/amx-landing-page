@@ -14,7 +14,7 @@
   "regionEurope": "🇬🇧 🇪🇺 🇷🇺 🇰🇿 🇹🇭 🇲🇾  ヨーロッパ、イギリス、ロシア、カザフスタン、タイ、マレーシア → Bybit または Blofin",
   "regionAsia": "🇯🇵 🇭🇰  日本と香港 → Blofin",
   "regionElse": "🌍  その他の地域 → どれでもOKです。最も始めやすいのは Bybit です",
-  "exchangeNote": "-# アメリカ、カナダ、シンガポール、中国本土では利用できません。インドとUAEでは Bybit または Bitget をご利用ください。Bybit と Bitget では本人確認(ID確認)が必要ですが、Blofin では不要です。MEXC と Toobit は近日対応予定です。登録できるかどうかは、各取引所の利用規約によって決まります。アフィリエイトリンクを含みます。",
+  "exchangeNote": "-# インドとアラブ首長国連邦では、BybitまたはBitgetをご利用ください。BybitとBitgetは本人確認(ID確認)が必要ですが、Blofinは不要です。MEXCとToobitは近日対応予定です。登録できる方は、各取引所の利用規約によって決まります。アフィリエイトリンクです。",
   "step3Title": "### 3 · UIDを認証",
   "step3Body": "ボタンを押して、取引所アカウントのUIDを貼り付けてください。ロックされているチャンネルがすべてすぐに開きます。",
   "step3Note": "-# Bitget、Blofin、BybitのUIDに対応しています。アプリにも同じUIDを追加すると、シグナルとトレードジャーナルが有効になります。",

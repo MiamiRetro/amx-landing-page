@@ -62,6 +62,8 @@ interface Spec {
   tier: Tier;
   kind?: Kind;
   readOnly?: boolean;
+  /** Members see only messages sent while they're there, not the backlog. */
+  noHistory?: boolean;
   type?: "text" | "voice" | "forum";
   topic?: string;
   /** Where this channel lived before the restructure; it is moved from there instead of recreated. */
@@ -83,7 +85,7 @@ interface Spec {
  * No voice channels: one per language is more rooms than anyone would use.
  */
 // Members see the real channel, unverified members see its 🔒 stand-in with the Verify button; each sees one set.
-const LAYOUT: { cat: "ann" | "com" | "ref"; top?: true; kind: Kind; tier: Tier; readOnly?: boolean; type?: "voice" | "forum"; panel?: Spec["panel"]; lockFor?: Kind }[] = [
+const LAYOUT: { cat: "ann" | "com" | "ref"; top?: true; kind: Kind; tier: Tier; readOnly?: boolean; noHistory?: true; type?: "voice" | "forum"; panel?: Spec["panel"]; lockFor?: Kind }[] = [
   // Outside every category, so it sits above them all; each language role sees only its own.
   { cat: "ann", top: true, kind: "start", tier: "free", readOnly: true, panel: "start" },
   { cat: "ann", kind: "announcements", tier: "free", readOnly: true },
@@ -92,19 +94,19 @@ const LAYOUT: { cat: "ann" | "com" | "ref"; top?: true; kind: Kind; tier: Tier; 
   { cat: "ann", kind: "signals", tier: "member", readOnly: true },
   // One 🔒 trade-signals channel stands in for alphanumetrix, bot-alerts and trade-alerts.
   { cat: "ann", kind: "teaser", tier: "teaser", readOnly: true, panel: "locked" },
-  // One 🔒 trading-group channel, on top, stands in for bitcoin, crypto, stocks and commodities.
-  { cat: "com", kind: "tradegate", tier: "teaser", readOnly: true, panel: "locked" },
-  // General and memes are open to everyone who picked a language; the 🔒 panels carry the Verify button.
+  // General and memes are open to everyone who picked a language, without the backlog; the 🔒 panels carry the Verify button.
   { cat: "com", kind: "bitcoin", tier: "member" },
   { cat: "com", kind: "crypto", tier: "member" },
   { cat: "com", kind: "stocks", tier: "member" },
   { cat: "com", kind: "commodities", tier: "member" },
-  { cat: "com", kind: "general", tier: "free" },
-  { cat: "com", kind: "memes", tier: "free" },
-  // Help-desk last in Community, memes just above it.
+  { cat: "com", kind: "general", tier: "free", noHistory: true },
+  { cat: "com", kind: "memes", tier: "free", noHistory: true },
   { cat: "com", kind: "help", tier: "help", readOnly: true, panel: "support" },
-  // One forum for guides, strategies, videos and questions, under help-desk: everyone reads, verified members post.
-  { cat: "com", kind: "academy", tier: "trader", type: "forum" },
+  // One forum for guides, strategies, videos and questions, under help-desk, for verified members.
+  { cat: "com", kind: "academy", tier: "member", type: "forum" },
+  // One 🔒 trading-group channel, at the bottom, stands in for bitcoin, crypto, stocks and commodities.
+  // Unverified members see it last (┗), verified members see the academy last.
+  { cat: "com", kind: "tradegate", tier: "teaser", readOnly: true, panel: "locked" },
 ];
 
 /** The categories as they were named with an emoji; renamed in place to the folder style below. */
@@ -286,7 +288,7 @@ for (const lang of LANGS) {
       legacy.push({ name: DAYTRADE_OLD[lang], parent: CATS[lang][l.cat] });
     }
     const topic = l.lockFor ? bare(NAMES[lang][l.lockFor]) : l.panel === "locked" ? bare(name) : undefined;
-    SPECS.push({ name, parent: l.top ? null : CATS[lang][l.cat], lang, tier: l.tier, kind: l.kind, readOnly: l.readOnly, type: l.type, panel: l.panel, topic, legacy });
+    SPECS.push({ name, parent: l.top ? null : CATS[lang][l.cat], lang, tier: l.tier, kind: l.kind, readOnly: l.readOnly, noHistory: l.noHistory, type: l.type, panel: l.panel, topic, legacy });
   }
 }
 
@@ -655,7 +657,7 @@ async function stepCleanup(ctx: Ctx) {
 }
 
 /** The overwrites a channel ends up with: its staff overwrites kept, the tier's language roles laid on top. */
-function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChannel, lang: Lang | "all", tier: Tier, readOnly: boolean): OverwriteResolvable[] {
+function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChannel, lang: Lang | "all", tier: Tier, readOnly: boolean, noHistory = false): OverwriteResolvable[] {
   const { guild } = ctx;
   const me = guild.members.me!;
   const langRoleIds = new Set(LANGS.flatMap((l) => [ctx.role(l, "base"), ctx.role(l, "member")]).filter((x): x is string => !!x));
@@ -668,6 +670,8 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
     if (replaced.has(o.id) || o.id === guild.roles.everyone.id) {
       allow &= ~P.ViewChannel;
       deny &= ~P.ViewChannel;
+      // A leftover history allow on an old member role would bring the backlog back.
+      if (noHistory) allow &= ~P.ReadMessageHistory;
       if (allow === 0n && deny === 0n) continue;
     }
     out.set(o.id, { id: o.id, type: o.type, allow, deny });
@@ -689,12 +693,14 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
     set(everyone, OverwriteType.Role, 0n, P.ViewChannel);
     for (const l of langs) {
       const base = role(l, "base"), member = role(l, "member");
-      if (tier === "verify" || tier === "teaser") base && set(base, OverwriteType.Role, P.ViewChannel, 0n);
+      // History on, so the Verify panel posted before they arrived is there to read.
+      if (tier === "verify" || tier === "teaser") base && set(base, OverwriteType.Role, P.ViewChannel | P.ReadMessageHistory, 0n);
       if (tier === "free") {
         // An open channel allows Send outright, so a leftover @everyone deny can't mute it.
         const allow = readOnly ? P.ViewChannel : P.ViewChannel | P.SendMessages | P.SendMessagesInThreads;
-        base && set(base, OverwriteType.Role, allow, 0n);
-        member && set(member, OverwriteType.Role, allow, 0n);
+        const deny = noHistory ? P.ReadMessageHistory : 0n;
+        base && set(base, OverwriteType.Role, allow, deny);
+        member && set(member, OverwriteType.Role, allow, deny);
       }
       if (tier === "help") {
         // Members write only inside the private thread the Get help button opens for them, never in the channel.
@@ -723,7 +729,8 @@ function describe(guild: Guild, ows: OverwriteResolvable[]) {
       const a = BigInt((o.allow as bigint) ?? 0n), d = BigInt((o.deny as bigint) ?? 0n);
       const v = a & P.ViewChannel ? "+view" : d & P.ViewChannel ? "-view" : "";
       const s = d & P.SendMessages ? " -send" : "";
-      return v || s ? `${name}${v ? " " + v : ""}${s}` : null;
+      const h = a & P.ReadMessageHistory ? " +history" : d & P.ReadMessageHistory ? " -history" : "";
+      return v || s || h ? `${name}${v ? " " + v : ""}${s}${h}` : null;
     })
     .filter(Boolean)
     .join(", ");
@@ -742,7 +749,7 @@ async function stepPerms(ctx: Ctx) {
   for (const s of [...SPECS.slice(1), PICKER]) {
     const ch = findChannel(guild, s);
     if (!ch) { log(`  ! skip #${s.name} (missing)`); continue; }
-    const ows = overwritesFor(ctx, ch, s.lang, s.tier, !!s.readOnly);
+    const ows = overwritesFor(ctx, ch, s.lang, s.tier, !!s.readOnly, !!s.noHistory);
     log(`  #${s.name} [${s.tier}] ${describe(guild, ows)}`);
     if (ctx.apply) await ch.permissionOverwrites.set(ows, "onboarding: language tiers");
   }

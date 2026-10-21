@@ -99,10 +99,6 @@
       [
         "☎️ help-desk",
         "Get help in a private thread"
-      ],
-      [
-        "🎓 academy",
-        "Guides, strategies and videos"
       ]
     ],
     "locked": "Opens when you verify",
@@ -122,6 +118,10 @@
       [
         "🟠 trading group",
         "Bitcoin, crypto, stocks, commodities"
+      ],
+      [
+        "🎓 academy",
+        "Guides, strategies and videos"
       ]
     ],
     "foot": "Until you verify, these show as <b>🔒 trade-signals</b> and <b>🔒 trading-group</b>."

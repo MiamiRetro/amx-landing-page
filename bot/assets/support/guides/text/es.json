@@ -101,10 +101,6 @@
       [
         "☎️ ayuda",
         "Ayuda en un hilo privado"
-      ],
-      [
-        "🎓 academia",
-        "Guías, estrategias y videos"
       ]
     ],
     "lockedItems": [
@@ -123,6 +119,10 @@
       [
         "🟠 grupo-trading",
         "Bitcoin, cripto, acciones, materias primas"
+      ],
+      [
+        "🎓 academia",
+        "Guías, estrategias y videos"
       ]
     ]
   },

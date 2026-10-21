@@ -30,7 +30,7 @@ import { fileURLToPath } from "node:url";
 import { LANGS, type Lang } from "../src/config.js";
 import { Db } from "../src/db/index.js";
 import { connect } from "../src/lib/client.js";
-import { startHereMessages } from "../src/startHere.js";
+import { startHereMessages, useAppEmojis } from "../src/startHere.js";
 import { NOTIFY_ROLES, NOTIFY_TOPICS } from "../src/notify.js";
 import { guideChannelName } from "../src/i18n/guide.js";
 import { LANG_ROLE_NAMES } from "../src/roles.js";
@@ -798,6 +798,8 @@ async function stepNotify(ctx: Ctx) {
 
 async function stepPanels(ctx: Ctx) {
   const { guild } = ctx;
+  // The guide's custom emoji come from this bot app's own copies, so they show whichever server it's in.
+  useAppEmojis([...(await guild.client.application!.emojis.fetch()).values()]);
   const me = guild.members.me!;
   const emojis = await guild.emojis.fetch();
   let tr = emojis.find((e) => e.name === "translate");

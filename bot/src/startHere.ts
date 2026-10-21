@@ -26,8 +26,13 @@ import { guideText } from "./i18n/guide.js";
 const GREEN = 0x22d3ee; // site cyan
 const ASSETS = join(dirname(fileURLToPath(import.meta.url)), "..", "assets", "start-here");
 
-/** Server emoji used on the page. */
-const E = {
+/**
+ * Custom emoji used on the page. These ids are the live server's; a bot can
+ * only show emoji from servers it's in, so each bot app also carries copies as
+ * application emoji (scripts/app-emojis.ts uploads them) and useAppEmojis()
+ * swaps those in by name before the guide is posted.
+ */
+const E: Record<"BLK" | "Glow" | "YT" | "X" | "Bitget" | "Blofin" | "Bybit", string> = {
   BLK: "<:BLK:1266575686454480936>",
   Glow: "<:BLKglow:1551825660584927232>",
   YT: "<:YT:1314772706402504754>",
@@ -36,6 +41,18 @@ const E = {
   Blofin: "<:blofin:1229192127666458724>",
   Bybit: "<:bybit:1314770880923959407>",
 };
+
+/** The guide's emoji as name → live-server id, for copying them into a bot app. */
+export const GUIDE_EMOJI = Object.fromEntries(Object.values(E).map((m) => { const [, name, id] = /^<:(\w+):(\d+)>$/.exec(m)!; return [name, id]; })) as Record<string, string>;
+
+/** Uses the bot app's own copies of the guide emoji (matched by name) wherever it has them. */
+export function useAppEmojis(app: { name: string | null; id: string }[]) {
+  for (const key of Object.keys(E) as (keyof typeof E)[]) {
+    const name = /^<:(\w+):/.exec(E[key])![1];
+    const own = app.find((e) => e.name === name);
+    if (own) E[key] = `<:${name}:${own.id}>`;
+  }
+}
 
 const link = (label: string, url: string, emoji?: string) => {
   const b = new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel(label).setURL(url);

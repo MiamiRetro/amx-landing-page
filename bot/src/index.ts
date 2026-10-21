@@ -94,7 +94,7 @@ async function main() {
       const affiliates = buildProviders();
       // UID checks go through the BLKBöX app API when it's configured; the exchange keys stay for health checks and VIP tiers.
       const backend = buildBackendVerifiers([...affiliates.keys()]);
-      verify = new VerifyService(db, guildId, backend ?? affiliates);
+      verify = new VerifyService(db, guildId, backend ?? affiliates, !!backend);
       if (backend) log.info("uid checks via BLKBöX API", { url: process.env.VERIFY_BACKEND_URL, keySet: [...backend.values()].every((p) => p.configured()) });
       vip = new VipTracker(guild, db, affiliates);
       // The weekly check needs Bybit, which blocks some hosting regions. It runs

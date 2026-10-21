@@ -45,6 +45,12 @@ export class VerifyService {
     private db: Db,
     private guildId: string,
     private providers: Map<ExchangeId, AffiliateProvider>,
+    /**
+     * The provider keeps the record of who holds which UID (the BLKBöX app API),
+     * so it decides "already linked", not our own table: a UID released there
+     * must be usable here straight away.
+     */
+    private providerOwnsUids = false,
   ) {}
 
   provider(exchange: ExchangeId) {
@@ -86,7 +92,7 @@ export class VerifyService {
     const remaining = Math.max(0, MAX_ATTEMPTS - used - 1);
 
     const held = await this.db.verificationByUid(args.exchange, uid);
-    if (held && held.discord_user_id !== args.userId) {
+    if (held && held.discord_user_id !== args.userId && !this.providerOwnsUids) {
       await record("already_claimed");
       return { ...base, outcome: "already_claimed", claimedBy: held.discord_user_id, remaining };
     }
@@ -111,7 +117,13 @@ export class VerifyService {
       }
       // The same person may already hold this UID from another server sharing
       // the database (the test server); one row per UID, so keep theirs.
-      if (!held) await this.db.saveVerification({
+      // The API gave this UID to this member. Our row for it, if another member in this
+      // server held it, moves across; a row from another server sharing the table is left alone.
+      if (held && held.discord_user_id !== args.userId && this.providerOwnsUids && held.guild_id === this.guildId) {
+        await this.db.removeVerification(held.guild_id, held.discord_user_id);
+      }
+      const keep = held && (held.discord_user_id === args.userId || held.guild_id !== this.guildId);
+      if (!keep) await this.db.saveVerification({
         guild_id: this.guildId,
         discord_user_id: args.userId,
         exchange: args.exchange,

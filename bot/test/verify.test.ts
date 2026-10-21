@@ -20,6 +20,10 @@ function fakeDb(seed: Verification[] = []) {
     async logAttempt(row: { discord_user_id: string; outcome: string }) {
       attempts.push({ userId: row.discord_user_id, outcome: row.outcome, at: Date.now() });
     },
+    async removeVerification(g: string, userId: string) {
+      const i = rows.findIndex((r) => r.guild_id === g && r.discord_user_id === userId);
+      if (i >= 0) rows.splice(i, 1);
+    },
     async attemptsSince(_g: string, userId: string, since: Date) {
       return attempts.filter((a) => a.userId === userId && a.at >= since.getTime()).length;
     },
@@ -203,4 +207,20 @@ test("a UID the same member already holds verifies without a second row", async 
   const res = await service(db, provider("bybit", "yes")).verify({ userId: "u1", alreadyMember: false, exchange: "bybit", uid: "12345678" });
   assert.equal(res.outcome, "verified");
   assert.equal(rows.length, 1);
+});
+
+test("when the app API owns UIDs, a UID it released moves to the new member", async () => {
+  const { db, rows } = fakeDb([{ guild_id: GUILD, discord_user_id: "old", exchange: "bybit", uid: "12345678", detail: null, verified_at: "" }]);
+  const p = provider("bybit", "yes");
+  const res = await new VerifyService(db, GUILD, new Map([[p.id, p]]), true).verify({ userId: "new", alreadyMember: false, exchange: "bybit", uid: "12345678" });
+  assert.equal(res.outcome, "verified", "the API, not our table, decides who holds it");
+  assert.deepEqual(rows.map((r) => r.discord_user_id), ["new"]);
+});
+
+test("when the app API owns UIDs, a row from another server sharing the table is left alone", async () => {
+  const { db, rows } = fakeDb([{ guild_id: "live", discord_user_id: "someone", exchange: "bybit", uid: "12345678", detail: null, verified_at: "" }]);
+  const p = provider("bybit", "yes");
+  const res = await new VerifyService(db, GUILD, new Map([[p.id, p]]), true).verify({ userId: "new", alreadyMember: false, exchange: "bybit", uid: "12345678" });
+  assert.equal(res.outcome, "verified");
+  assert.deepEqual(rows.map((r) => `${r.guild_id}:${r.discord_user_id}`), ["live:someone"]);
 });

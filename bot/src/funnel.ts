@@ -8,7 +8,7 @@ import { log, errInfo } from "./log.js";
  * One row per step in `funnel_events`. Writes are fire-and-forget, so a slow
  * or missing table never gets in the way of someone joining.
  */
-export type FunnelEvent = "join" | "leave" | "language_picked" | "verify_opened" | "verify_result" | "verified" | "language_changed_by_mod";
+export type FunnelEvent = "join" | "leave" | "language_picked" | "verify_opened" | "verify_result" | "verified" | "language_changed_by_mod" | "language_changed_in_support";
 
 export interface FunnelRow {
   discord_user_id: string;

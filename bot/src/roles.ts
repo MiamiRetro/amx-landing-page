@@ -16,8 +16,9 @@ import { log, errInfo } from "./log.js";
  * of the pair. Every channel then needs one allow per tier, the verify channel
  * hides itself once the swap happens, and the picker hides behind any of them.
  *
- * The choice is final for the member. Only a moderator can move someone to
- * another language, with `/language`.
+ * The choice is final for the member. A moderator can move someone to
+ * another language with `/language`; the help-desk lets a member who picked
+ * the wrong one switch once themselves (see support/switch.ts).
  */
 export interface LangRolePair {
   base: string;
@@ -163,6 +164,22 @@ export class LanguageRoles {
     await this.apply(member, lang);
     this.funnel?.record(member.id, "language_changed_by_mod", { lang });
     return `${member.displayName} is now on ${LANG_ROLE_NAMES[lang].base}${this.holdsMembership(member) ? " (verified)" : ""}.`;
+  }
+
+  /**
+   * A member fixing a wrong pick from their help thread. Same move as a
+   * moderator's, at the same tier, so a verified member stays verified.
+   * The once-only limit lives with the help-desk, which offers it.
+   */
+  async switchSelf(member: GuildMember, lang: Lang): Promise<{ from: Lang | null; verified: boolean } | null> {
+    await this.ensureLoaded();
+    if (!this.pairs.has(lang)) return null;
+    const from = this.langOf(member);
+    await this.db.setLangPref(this.guild.id, member.id, lang);
+    await this.apply(member, lang);
+    log.info("language switched from help-desk", { user: member.id, from, lang });
+    this.funnel?.record(member.id, "language_changed_in_support", { lang, detail: { from } });
+    return { from, verified: this.holdsMembership(member) };
   }
 
   /** Puts the member on exactly one language role: the pair for `lang`, at the tier their membership implies. */

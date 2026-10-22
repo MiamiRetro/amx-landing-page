@@ -6,6 +6,8 @@ import { existsSync } from "node:fs";
 import { SUPPORT_OPEN, supportPanel } from "../src/support/desk.js";
 import { GUIDES, guideFile } from "../src/support/guides.js";
 import { SUPPORT_TEXT } from "../src/support/text.js";
+import { confirmButtons, SWITCH_CANCEL, SWITCH_CONFIRM, SWITCH_PICK, SWITCH_TEXT, switchButtons } from "../src/support/switch.js";
+import { pickerMessage } from "../src/picker.js";
 
 test("the FAQ ships with the bot and goes into the prompt whole", () => {
   const faq = loadFaq();
@@ -35,7 +37,7 @@ test("the panel carries the open button in the member's language", () => {
 });
 
 test("an answer goes back as parsed, and a refusal hands off", async () => {
-  const reply = { reply: "Press Verify my UID in any 🔒 channel.", answered: true, handoff: false, offerHuman: false, summary: "how to verify", guides: ["verify"] };
+  const reply = { reply: "Press Verify my UID in any 🔒 channel.", answered: true, handoff: false, offerHuman: false, summary: "how to verify", guides: ["verify"], wrongLanguage: false, switchTo: null };
   const fake = (out: unknown, stop = "end_turn") => ({ messages: { parse: async () => ({ stop_reason: stop, parsed_output: out }) } });
   const a = await new SupportAssistant("test", fake(reply) as never, "faq").answer("en", [{ from: "member", text: "how do I verify?" }]);
   assert.deepEqual(a, Answer.parse(reply));
@@ -73,4 +75,52 @@ test("guides come back once each, at most two, and earlier ones show in the thre
   assert.deepEqual(a.guides, ["verify", "uid"]);
   assert.match(sent.messages[0].content.at(-1).text, /\[guide: verify\]/);
   assert.equal(sent.system[0].cache_control.type, "ephemeral");
+});
+
+test("the prompt asks the assistant to spot a member on the wrong language", () => {
+  const prompt = systemPrompt("faq", "en");
+  assert.match(prompt, /wrongLanguage/);
+  assert.match(prompt, /don't speak or understand English/);
+});
+
+test("a switch to the thread's own language is no switch", async () => {
+  const out = { reply: "ok", answered: true, handoff: false, offerHuman: false, summary: "", guides: [], wrongLanguage: true, switchTo: "ko" };
+  const client = { messages: { parse: async () => ({ stop_reason: "end_turn", parsed_output: out }) } };
+  const a = await new SupportAssistant("test", client as never, "faq").answer("ko", [{ from: "member", text: "안녕하세요" }]);
+  assert.equal(a.switchTo, null);
+  const b = await new SupportAssistant("test", client as never, "faq").answer("en", [{ from: "member", text: "안녕하세요" }]);
+  assert.equal(b.switchTo, "ko");
+  assert.equal(b.wrongLanguage, true);
+});
+
+test("the language buttons leave out the current language and put the suggested one first", () => {
+  const rows = switchButtons("en", "zh").map((r) => r.toJSON().components as { custom_id: string }[]);
+  assert.ok(rows.every((r) => r.length <= 5));
+  const ids = rows.flat().map((b) => b.custom_id);
+  assert.equal(ids.length, LANGS.length - 1);
+  assert.equal(ids[0], `${SWITCH_PICK}zh`);
+  assert.ok(!ids.includes(`${SWITCH_PICK}en`));
+  const unsure = switchButtons("ja", null).flatMap((r) => r.toJSON().components as { custom_id: string }[]).map((b) => b.custom_id);
+  assert.equal(unsure[0], `${SWITCH_PICK}en`);
+  // All of them land in the help-desk's button handler, not the picker's.
+  for (const id of [...ids, `${SWITCH_CONFIRM}zh`, `${SWITCH_CANCEL}zh`]) assert.ok(id.startsWith("support:"));
+  const confirm = confirmButtons("ru")[0].toJSON().components as { custom_id: string; label: string }[];
+  assert.deepEqual(confirm.map((b) => b.custom_id), [`${SWITCH_CONFIRM}ru`, `${SWITCH_CANCEL}ru`]);
+  assert.equal(confirm[0].label, SWITCH_TEXT.ru.confirmButton);
+});
+
+test("every language has every language-switch string, with its placeholders", () => {
+  const keys = Object.keys(SWITCH_TEXT.en) as (keyof typeof SWITCH_TEXT.en)[];
+  for (const lang of LANGS) {
+    for (const k of keys) assert.ok(SWITCH_TEXT[lang][k]?.trim(), `${lang}.${k}`);
+    assert.match(SWITCH_TEXT[lang].confirm, /\{lang\}/, `${lang}.confirm`);
+    assert.match(SWITCH_TEXT[lang].switched, /\{link\}/, `${lang}.switched`);
+    assert.match(SWITCH_TEXT[lang].moved, /\{link\}/, `${lang}.moved`);
+    assert.match(SWITCH_TEXT[lang].intro, /\{user\}/, `${lang}.intro`);
+  }
+});
+
+test("the picker still offers all ten languages in order", () => {
+  const ids = pickerMessage().components.flatMap((r) => r.toJSON().components as { custom_id: string }[]).map((b) => b.custom_id);
+  assert.deepEqual(ids, LANGS.map((l) => `lang:${l}`));
 });

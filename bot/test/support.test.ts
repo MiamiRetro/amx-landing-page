@@ -139,3 +139,11 @@ test("the script check spots a sentence in another writing system", () => {
   assert.equal(scriptMismatch("ok thx", "ja"), null);
   assert.equal(scriptMismatch("hola, no hablo inglés", "en"), null);
 });
+
+test("an answer gives up after the timeout instead of the SDK's ten minutes", async () => {
+  let opts: any;
+  const client = { messages: { parse: async (_p: unknown, o: unknown) => ((opts = o), { stop_reason: "end_turn", parsed_output: { reply: "ok", answered: true, handoff: false, offerHuman: false, summary: "", guides: [], wrongLanguage: false, switchTo: null } }) } };
+  await new SupportAssistant("test", client as never, "faq").answer("en", [{ from: "member", text: "hi" }]);
+  assert.equal(opts.timeout, 30_000);
+  assert.equal(opts.maxRetries, 1);
+});

@@ -197,13 +197,15 @@ export class SupportDesk {
       return;
     }
     if (state.busy || (!m.content.trim() && shots(m).length === 0)) return;
-    if (!this.assistant) return this.handoff(thread, state, "assistant not configured", SUPPORT_TEXT[state.lang].unavailable);
+    // With the assistant unreachable, the "offline, a moderator is coming" line still goes in the language they wrote in when the script shows it.
+    const offline = SUPPORT_TEXT[scriptMismatch(m.content, state.lang) ?? state.lang].unavailable;
+    if (!this.assistant) return this.handoff(thread, state, "assistant not configured", offline);
     state.busy = true;
     try {
       await this.reply(thread, state, await this.turnsOf(thread, state));
     } catch (e) {
       log.error("support answer failed", { thread: thread.id, ...errInfo(e) });
-      await this.handoff(thread, state, `assistant error; member asked: ${m.content.slice(0, 200)}`, SUPPORT_TEXT[state.lang].unavailable);
+      await this.handoff(thread, state, `assistant unreachable (${e instanceof Error ? e.message.slice(0, 80) : "error"}); member asked: ${m.content.slice(0, 200)}`, offline);
     } finally {
       state.busy = false;
     }

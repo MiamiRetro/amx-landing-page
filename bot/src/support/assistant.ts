@@ -44,6 +44,12 @@ export interface Turn {
   guides?: string[];
 }
 
+/**
+ * How long a member waits for an answer before the thread goes to a moderator.
+ * The SDK's own default is ten minutes with two retries, which reads as the bot being dead.
+ */
+const ANSWER_TIMEOUT_MS = Number(process.env.SUPPORT_TIMEOUT_SEC ?? 30) * 1000;
+
 /** Screenshots sent to the model per answer, newest first; older ones stay in the thread for the moderators. */
 const MAX_IMAGES = 3;
 
@@ -110,7 +116,7 @@ export class SupportAssistant {
         ],
       }],
       output_config: { format: zodOutputFormat(Answer) },
-    });
+    }, { timeout: ANSWER_TIMEOUT_MS, maxRetries: 1 });
     if (response.stop_reason === "refusal") return { reply: "", answered: false, handoff: true, offerHuman: true, summary: "assistant declined to answer", guides: [], wrongLanguage: false, switchTo: null };
     const parsed = response.parsed_output;
     if (!parsed) throw new Error("support answer did not parse as JSON");

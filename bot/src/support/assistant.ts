@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
-import { LANG_NAMES, type Lang } from "../config.js";
+import { LANG_NAMES, LANGS, type Lang } from "../config.js";
 import { GUIDES, MAX_GUIDES } from "./guides.js";
 import { SUPPORT_TEXT } from "./text.js";
 
@@ -28,6 +28,10 @@ export const Answer = z.object({
   summary: z.string(),
   /** Infographics to attach, named on the "Guide:" lines of the FAQ entries the reply used. */
   guides: z.array(z.enum(GUIDES)),
+  /** The member seems to be on the wrong server language, so the bot shows the language buttons. */
+  wrongLanguage: z.boolean(),
+  /** The language they write in or ask for, when it can be told. Shown first among the buttons. */
+  switchTo: z.enum(LANGS).nullable(),
 });
 export type Answer = z.infer<typeof Answer>;
 
@@ -46,7 +50,8 @@ const MAX_IMAGES = 3;
 export function systemPrompt(faq: string, lang: Lang) {
   return [
     "You are the support assistant in the help-desk of the BLKBöX Trading Floor, a Discord server for crypto traders.",
-    `Reply in ${LANG_NAMES[lang]}, in two to four short sentences, friendly and plain. Discord markdown is fine.`,
+    `The member's server language is ${LANG_NAMES[lang]} (${lang}). Reply in ${LANG_NAMES[lang]}, in two to four short sentences, friendly and plain. Discord markdown is fine.`,
+    `wrongLanguage and switchTo: the member may have picked the wrong server language. Set wrongLanguage to true when their latest message is written in another language than ${LANG_NAMES[lang]}, or they say they don't speak or understand ${LANG_NAMES[lang]}, picked the wrong language, or want another one. Set switchTo to the code of the language they write in or ask for (${LANGS.join(", ")}), or null when you can't tell which. Then reply in that language (or in ${LANG_NAMES[lang]} with a short English line too when you can't tell), and answer what they asked if you can. The bot shows the language buttons under your reply, so don't describe them. Leave wrongLanguage false when they write in ${LANG_NAMES[lang]}, or use only a word or a trading term from another language. If the language they want isn't in the list, leave wrongLanguage false and offer a moderator.`,
     "Use the polite form of address where the language has one (Korean 존댓말, Japanese です/ます, Vietnamese bạn, Russian вы, Turkish siz, never slang pronouns).",
     "Answer only from the FAQ below. Never invent features, prices, links, dates or policies, and never give trading or financial advice.",
     "Never ask for passwords, API keys, seed phrases or personal documents. A UID is fine.",
@@ -106,9 +111,9 @@ export class SupportAssistant {
       }],
       output_config: { format: zodOutputFormat(Answer) },
     });
-    if (response.stop_reason === "refusal") return { reply: "", answered: false, handoff: true, offerHuman: true, summary: "assistant declined to answer", guides: [] };
+    if (response.stop_reason === "refusal") return { reply: "", answered: false, handoff: true, offerHuman: true, summary: "assistant declined to answer", guides: [], wrongLanguage: false, switchTo: null };
     const parsed = response.parsed_output;
     if (!parsed) throw new Error("support answer did not parse as JSON");
-    return { ...parsed, guides: [...new Set(parsed.guides)].slice(0, MAX_GUIDES) };
+    return { ...parsed, guides: [...new Set(parsed.guides)].slice(0, MAX_GUIDES), switchTo: parsed.switchTo === lang ? null : parsed.switchTo };
   }
 }

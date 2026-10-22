@@ -1,8 +1,22 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, type ButtonInteraction, type TextChannel } from "discord.js";
-import { isLang, type Lang } from "./config.js";
+import { isLang, LANGS, type Lang } from "./config.js";
 import type { LanguageRoles } from "./roles.js";
 
 export const PICKER_PREFIX = "lang:";
+
+/** Each language's button: its own name and a flag. The picker and the help-desk language switch share them. */
+export const LANG_BUTTONS: Record<Lang, { label: string; emoji: string }> = {
+  en: { label: "English", emoji: "🇬🇧" },
+  zh: { label: "中文", emoji: "🇨🇳" },
+  ko: { label: "한국어", emoji: "🇰🇷" },
+  id: { label: "Bahasa Indonesia", emoji: "🇮🇩" },
+  vi: { label: "Tiếng Việt", emoji: "🇻🇳" },
+  es: { label: "Español", emoji: "🇪🇸" },
+  pt: { label: "Português", emoji: "🇧🇷" },
+  tr: { label: "Türkçe", emoji: "🇹🇷" },
+  ru: { label: "Русский", emoji: "🇷🇺" },
+  ja: { label: "日本語", emoji: "🇯🇵" },
+};
 
 /** The language picker message: one embed, four buttons. Posted by the bot user so it is never mirrored. */
 export function pickerMessage() {
@@ -21,21 +35,10 @@ export function pickerMessage() {
         "-# Your choice is final. A moderator can change it later if you need.",
       ].join("\n"),
     );
-  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder().setCustomId(`${PICKER_PREFIX}en`).setLabel("English").setEmoji("🇬🇧").setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId(`${PICKER_PREFIX}zh`).setLabel("中文").setEmoji("🇨🇳").setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId(`${PICKER_PREFIX}ko`).setLabel("한국어").setEmoji("🇰🇷").setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId(`${PICKER_PREFIX}id`).setLabel("Bahasa Indonesia").setEmoji("🇮🇩").setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId(`${PICKER_PREFIX}vi`).setLabel("Tiếng Việt").setEmoji("🇻🇳").setStyle(ButtonStyle.Primary),
-  );
+  const button = (l: Lang) => new ButtonBuilder().setCustomId(`${PICKER_PREFIX}${l}`).setLabel(LANG_BUTTONS[l].label).setEmoji(LANG_BUTTONS[l].emoji).setStyle(ButtonStyle.Primary);
+  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(LANGS.slice(0, 5).map(button));
   // Discord allows five buttons per row.
-  const row2 = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder().setCustomId(`${PICKER_PREFIX}es`).setLabel("Español").setEmoji("🇪🇸").setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId(`${PICKER_PREFIX}pt`).setLabel("Português").setEmoji("🇧🇷").setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId(`${PICKER_PREFIX}tr`).setLabel("Türkçe").setEmoji("🇹🇷").setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId(`${PICKER_PREFIX}ru`).setLabel("Русский").setEmoji("🇷🇺").setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId(`${PICKER_PREFIX}ja`).setLabel("日本語").setEmoji("🇯🇵").setStyle(ButtonStyle.Primary),
-  );
+  const row2 = new ActionRowBuilder<ButtonBuilder>().addComponents(LANGS.slice(5).map(button));
   return { embeds: [embed], components: [row, row2] };
 }
 

@@ -133,7 +133,8 @@ alter table verifications enable row level security;
 alter table verification_attempts enable row level security;
 
 -- Onboarding funnel: one row per step a member takes (join, language_picked,
--- verify_opened, verify_result, verified, leave, language_changed_by_mod).
+-- verify_opened, verify_result, verified, leave, language_changed_by_mod,
+-- language_changed_in_support).
 -- invite_code is the invite a join came through, null when it cannot be told.
 create table if not exists funnel_events (
   id bigserial primary key,

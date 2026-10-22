@@ -133,10 +133,14 @@ When you join, the choose-language channel has a button for each language.
 Press yours and that language's channels open.
 
 ## How do I change my language?
-Also asked: switch language, wrong language, I want English
+Also asked: switch language, wrong language, I want English, I don't speak this
 Your language is locked once you pick it, so the server stays consistent for
-you. A moderator can change it for you. Ask for a moderator here.
-Mods: /language member.
+you. If you picked the wrong one, say so here in the language you want (or
+just write in it) and tap your language on the buttons that appear. You can
+do this yourself once; your help thread moves to the new language, and if you
+are verified you stay verified. After that a moderator can change it for you.
+Mods: /language member. Self-switches are logged in mod-chat for verified
+members and in /funnel as language_changed_in_support.
 
 ## Why are messages in my language?
 Also asked: auto translate, why is chat translated, who translates

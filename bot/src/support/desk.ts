@@ -19,7 +19,7 @@ import { log, errInfo } from "../log.js";
 import type { LanguageRoles } from "../roles.js";
 import type { SupportAssistant, Turn } from "./assistant.js";
 import { guideFile } from "./guides.js";
-import { confirmButtons, langName, SWITCH_CANCEL, SWITCH_CONFIRM, SWITCH_PICK, SWITCH_TEXT, switchButtons, switchKey } from "./switch.js";
+import { confirmButtons, langName, scriptMismatch, SWITCH_CANCEL, SWITCH_CONFIRM, SWITCH_PICK, SWITCH_TEXT, switchButtons, switchKey } from "./switch.js";
 import { SUPPORT_TEXT } from "./text.js";
 
 export const SUPPORT_OPEN = "support:open";
@@ -231,7 +231,11 @@ export class SupportDesk {
     state.answers++;
     if (!a.answered) state.misses++;
     // Wrong language: the language buttons, once per thread and once per member; after that a moderator.
-    const wrongLang = a.wrongLanguage && !state.langOffered && !a.handoff;
+    // The script check backs up the model, which can miss it (English in a Japanese thread).
+    const latest = [...turns].reverse().find((t) => t.from === "member")?.text ?? "";
+    const byScript = scriptMismatch(latest, state.lang);
+    const suggested = a.switchTo ?? byScript;
+    const wrongLang = (a.wrongLanguage || !!byScript) && !state.langOffered && !a.handoff;
     const switchUsed = wrongLang && !!(await this.db.getSetting(this.guild.id, switchKey(state.userId)));
     if (wrongLang) state.langOffered = true;
     // Only a safety report brings the moderators in straight away; otherwise the member gets the button when it's needed.
@@ -239,13 +243,13 @@ export class SupportDesk {
     const nudge = !state.offered && !a.offerHuman && !switchUsed && (state.misses >= OFFER_AFTER_MISSES || state.answers >= OFFER_AFTER_ANSWERS);
     state.offered ||= a.offerHuman || nudge || switchUsed;
     const files = a.guides.map((g) => ({ attachment: guideFile(g, state.lang), name: `guide-${g}.png` }));
-    const offerLang = a.switchTo ?? state.lang;
+    const offerLang = suggested ?? state.lang;
     const content = [a.reply.trim(), nudge ? SUPPORT_TEXT[state.lang].offerHint : "", switchUsed ? SWITCH_TEXT[offerLang].used : ""].filter(Boolean).join("\n\n");
     if (content) await thread.send({ content: content.slice(0, 1900), files, components: threadButtons(state.lang, state.offered && !handoff), allowedMentions: { parse: [] } });
     if (wrongLang && !switchUsed) {
-      await thread.send({ content: `🌐 ${SWITCH_TEXT[offerLang].offer}`, components: switchButtons(state.lang, a.switchTo), allowedMentions: { parse: [] } });
+      await thread.send({ content: `🌐 ${SWITCH_TEXT[offerLang].offer}`, components: switchButtons(state.lang, suggested), allowedMentions: { parse: [] } });
     }
-    log.info("support answer", { thread: thread.id, answered: a.answered, offered: state.offered, handoff, guides: a.guides, wrongLanguage: a.wrongLanguage, switchTo: a.switchTo, model: this.assistant.model });
+    log.info("support answer", { thread: thread.id, answered: a.answered, offered: state.offered, handoff, guides: a.guides, wrongLanguage: a.wrongLanguage, byScript, switchTo: suggested, model: this.assistant.model });
     if (handoff) await this.handoff(thread, state, a.summary || [...turns].reverse().find((t) => t.from === "member")?.text.slice(0, 200) || "");
   }
 

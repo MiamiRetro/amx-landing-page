@@ -6,7 +6,7 @@ import { existsSync } from "node:fs";
 import { SUPPORT_OPEN, supportPanel } from "../src/support/desk.js";
 import { GUIDES, guideFile } from "../src/support/guides.js";
 import { SUPPORT_TEXT } from "../src/support/text.js";
-import { confirmButtons, SWITCH_CANCEL, SWITCH_CONFIRM, SWITCH_PICK, SWITCH_TEXT, switchButtons } from "../src/support/switch.js";
+import { confirmButtons, scriptMismatch, SWITCH_CANCEL, SWITCH_CONFIRM, SWITCH_PICK, SWITCH_TEXT, switchButtons } from "../src/support/switch.js";
 import { pickerMessage } from "../src/picker.js";
 
 test("the FAQ ships with the bot and goes into the prompt whole", () => {
@@ -123,4 +123,17 @@ test("every language has every language-switch string, with its placeholders", (
 test("the picker still offers all ten languages in order", () => {
   const ids = pickerMessage().components.flatMap((r) => r.toJSON().components as { custom_id: string }[]).map((b) => b.custom_id);
   assert.deepEqual(ids, LANGS.map((l) => `lang:${l}`));
+});
+
+test("the script check spots a sentence in another writing system", () => {
+  assert.equal(scriptMismatch("hi i dont speak chinese", "ja"), "en");
+  assert.equal(scriptMismatch("我看不懂英文，请帮帮我", "en"), "zh");
+  assert.equal(scriptMismatch("영어를 못 해요 도와주세요", "en"), "ko");
+  assert.equal(scriptMismatch("Я не говорю по-английски", "en"), "ru");
+  assert.equal(scriptMismatch("日本語でお願いします", "zh"), "ja");
+  // Fits, or too little to tell.
+  assert.equal(scriptMismatch("BTC の UID はどこですか", "ja"), null);
+  assert.equal(scriptMismatch("UID 在哪里 https://example.com/long/link", "zh"), null);
+  assert.equal(scriptMismatch("ok thx", "ja"), null);
+  assert.equal(scriptMismatch("hola, no hablo inglés", "en"), null);
 });

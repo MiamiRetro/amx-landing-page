@@ -205,3 +205,40 @@ export function confirmButtons(lang: Lang) {
     new ButtonBuilder().setCustomId(`${SWITCH_CANCEL}${lang}`).setLabel(t.cancelButton).setStyle(ButtonStyle.Primary),
   )];
 }
+
+/** The writing system each language uses; the Latin-script languages can't be told apart this way. */
+const SCRIPT: Record<Lang, "latin" | "han" | "hangul" | "kana" | "cyrillic"> = {
+  en: "latin", id: "latin", vi: "latin", es: "latin", pt: "latin", tr: "latin",
+  zh: "han", ja: "kana", ko: "hangul", ru: "cyrillic",
+};
+
+const count = (text: string, re: RegExp) => text.match(re)?.length ?? 0;
+
+/**
+ * A check that doesn't depend on the model: the member wrote a real sentence
+ * with none of their server language's script in it (English in a Japanese
+ * thread, Korean in an English one). Returns the language the script points
+ * to (English for Latin script), or null when it fits or is too short to tell.
+ */
+export function scriptMismatch(text: string, lang: Lang): Lang | null {
+  // Links, mentions, emoji and code say nothing about the language.
+  const clean = text.replace(/<[^>]+>|https?:\/\/\S+|`[^`]*`|:\w+:/g, " ");
+  const n = {
+    hangul: count(clean, /[가-힯ᄀ-ᇿ]/g),
+    kana: count(clean, /[぀-ヿ]/g),
+    han: count(clean, /[一-鿿]/g),
+    cyrillic: count(clean, /[Ѐ-ӿ]/g),
+    latin: count(clean, /[a-zA-ZÀ-ɏ]/g),
+  };
+  const total = n.hangul + n.kana + n.han + n.cyrillic + n.latin;
+  if (total < 8) return null;
+  // Kana is Japanese only, so it gives Japanese away even next to the Han Chinese shares.
+  if (lang === "zh" && n.kana >= 2) return "ja";
+  const own = SCRIPT[lang] === "kana" ? n.kana + n.han : n[SCRIPT[lang]];
+  if (own > 0) return null;
+  if (n.hangul) return "ko";
+  if (n.kana) return "ja";
+  if (n.han) return "zh";
+  if (n.cyrillic) return "ru";
+  return "en";
+}

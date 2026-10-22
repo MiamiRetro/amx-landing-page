@@ -14,7 +14,8 @@ test("the FAQ ships with the bot and goes into the prompt whole", () => {
   assert.match(faq, /## How do I unlock the full server\?/);
   const prompt = systemPrompt(faq, "ko");
   assert.ok(prompt.includes(faq));
-  assert.match(prompt, /Reply in Korean/);
+  assert.match(prompt, /Always reply in the language the member's latest message is written in/);
+  assert.match(prompt, /server language is Korean/);
 });
 
 test("every language has every help-desk string, with its placeholders", () => {
@@ -81,6 +82,7 @@ test("the prompt asks the assistant to spot a member on the wrong language", () 
   const prompt = systemPrompt("faq", "en");
   assert.match(prompt, /wrongLanguage/);
   assert.match(prompt, /don't speak or understand English/);
+  assert.match(prompt, /"I don't speak Chinese" written in English is English/);
 });
 
 test("a switch to the thread's own language is no switch", async () => {

@@ -242,10 +242,11 @@ export class SupportDesk {
     const handoff = a.handoff || state.answers >= MAX_ANSWERS;
     const nudge = !state.offered && !a.offerHuman && !switchUsed && (state.misses >= OFFER_AFTER_MISSES || state.answers >= OFFER_AFTER_ANSWERS);
     state.offered ||= a.offerHuman || nudge || switchUsed;
-    const files = a.guides.map((g) => ({ attachment: guideFile(g, state.lang), name: `guide-${g}.png` }));
+    // The bot's own copy (buttons, hints, guides) goes in the language the member writes in, like the answer.
     const offerLang = suggested ?? state.lang;
-    const content = [a.reply.trim(), nudge ? SUPPORT_TEXT[state.lang].offerHint : "", switchUsed ? SWITCH_TEXT[offerLang].used : ""].filter(Boolean).join("\n\n");
-    if (content) await thread.send({ content: content.slice(0, 1900), files, components: threadButtons(state.lang, state.offered && !handoff), allowedMentions: { parse: [] } });
+    const files = a.guides.map((g) => ({ attachment: guideFile(g, offerLang), name: `guide-${g}.png` }));
+    const content = [a.reply.trim(), nudge ? SUPPORT_TEXT[offerLang].offerHint : "", switchUsed ? SWITCH_TEXT[offerLang].used : ""].filter(Boolean).join("\n\n");
+    if (content) await thread.send({ content: content.slice(0, 1900), files, components: threadButtons(offerLang, state.offered && !handoff), allowedMentions: { parse: [] } });
     if (wrongLang && !switchUsed) {
       await thread.send({ content: `🌐 ${SWITCH_TEXT[offerLang].offer}`, components: switchButtons(state.lang, suggested), allowedMentions: { parse: [] } });
     }

@@ -1,0 +1,150 @@
+{
+  "you": "Sen",
+  "typeHere": "Mesaj…",
+  "threadsLabel": "Alt başlıklar",
+  "exchange": "Borsa",
+  "submit": "Gönder",
+  "profile": "Profil",
+  "yourThread": "yardım alt başlığın",
+  "chGuide": "sunucu-rehberi",
+  "catAnn": "SİNYALLER & UYARILAR",
+  "catCom": "İŞLEM SALONU",
+  "chAnnouncements": "duyurular",
+  "chSignals": "işlem-sinyalleri",
+  "chGeneral": "sohbet",
+  "chHelp": "yardım",
+  "chMemes": "mizah",
+  "verifyModal": "UID'mi doğrula",
+  "verifyTitle": "Borsa UID'ni doğrula",
+  "verifyButton": "UID'mi doğrula",
+  "step2Card": "2 · Borsanı seç",
+  "mobile": {
+    "kicker": "Telefonda Discord",
+    "title": "Telefonda gezinme",
+    "sub": "Üç hareket yeter",
+    "s1": "Listeyi aç",
+    "s1p": "Sol üstteki ☰'a dokun ya da sağa kaydır, tüm kanalları gör.",
+    "s2": "Kanal seç",
+    "s2p": "Açmak için kanala dokun. Geri dönmek için yine sağa kaydır.",
+    "s3": "Alt başlıkları bul",
+    "s3p": "Kanalın sağ üstündeki alt başlık simgesine dokun."
+  },
+  "desktop": {
+    "kicker": "Bilgisayarda Discord",
+    "title": "Bilgisayarda gezinme",
+    "sub": "Uygulamada ve discord.com/app'te aynı",
+    "l1": "Sunucular",
+    "l1p": "Katıldığın tüm sunucular, en solda.",
+    "l2": "Kanallar",
+    "l2p": "Bu sunucunun kanalları. Açmak için tıkla. Alt başlıklar kanalın hemen altında.",
+    "l3": "Sohbet",
+    "l3p": "Açık kanal ya da alt başlıktaki mesajlar.",
+    "l4": "Mesaj kutusu",
+    "l4p": "Buraya yaz ve Enter'a bas. + ile ekran görüntüsü eklenir.",
+    "l5": "Alt başlıklar",
+    "l5p": "Bu kanaldaki tüm alt başlıklar, seninki dahil.",
+    "l6": "Üyeler",
+    "l6p": "Burada kimler var. Moderatörler en üstte."
+  },
+  "help": {
+    "kicker": "yardım",
+    "title": "Özel yardım alt başlığın",
+    "sub": "Yalnızca sen ve moderatörler görür",
+    "onlyYou": "Bunu yalnızca sen görüyorsun",
+    "s1": "Yardım al'a bas",
+    "s1p": "Yardım kanalında, sabitlenmiş mesajdaki Yardım al'a bas.",
+    "s2": "Bağlantıya dokun",
+    "s2p": "Doğrudan girmek için Yardım alt başlığımı aç'a dokun.",
+    "s3": "Sorunu yaz",
+    "s3p": "Sorunu yaz. Ekran görüntüsü için +'ya dokun.",
+    "foot": "Alt başlığını mı kaybettin? <b>yardım</b> kanalını aç ve <b>alt başlık simgesine</b> dokun ya da Yardım al'a yeniden bas.",
+    "panel": "Yardım mı lazım?",
+    "getHelp": "Yardım al",
+    "openThread": "Yardım alt başlığımı aç"
+  },
+  "verify": {
+    "kicker": "Bybit · Bitget · Blofin",
+    "title": "Tüm sunucuyu aç",
+    "sub": "Üç adım, yaklaşık iki dakika",
+    "s1": "Bağlantımızla kaydol",
+    "s1p": "Sunucu rehberini aç ve borsanın butonuna bas.",
+    "s2": "UID'ni kopyala",
+    "s2p": "Borsa uygulamasında profilini aç ve UID numarasını kopyala.",
+    "s3": "UID'mi doğrula",
+    "s3p": "Herhangi bir 🔒 kanalda UID'mi doğrula'ya bas, borsanı seç ve yapıştır.",
+    "foot": "Yalnızca <b>bizim bağlantılarımızla</b> açılan hesaplar doğrulanır. UID bir numaradır, asla şifre ya da API anahtarı değildir."
+  },
+  "map": {
+    "kicker": "Sunucu haritası",
+    "title": "Ne nerede",
+    "sub": "Dilindeki kanallar ve doğrulayınca açılanlar",
+    "open": "Şimdi açık",
+    "locked": "Doğrulayınca açılır",
+    "foot": "Doğrulayana kadar bunlar <b>🔒 işlem-sinyalleri</b> ve <b>🔒 trading-grubu</b> olarak görünür.",
+    "openItems": [
+      [
+        "🧭・𝐒𝐔𝐍𝐔𝐂𝐔-𝐑𝐄𝐇𝐁𝐄𝐑𝐈",
+        "Buradan başla: kurallar, kayıt, doğrulama"
+      ],
+      [
+        "📢 duyurular",
+        "Ekipten haberler"
+      ],
+      [
+        "💬 sohbet",
+        "Herkesle sohbet"
+      ],
+      [
+        "😂 mizah",
+        "Sadece eğlence"
+      ],
+      [
+        "☎️ yardım",
+        "Özel alt başlıkta yardım"
+      ]
+    ],
+    "lockedItems": [
+      [
+        "🟢 alphanumetrix",
+        "Amiral gemisi göstergenin durumu"
+      ],
+      [
+        "🤖 bot-uyarıları",
+        "BLKBöX botlarının uyarıları"
+      ],
+      [
+        "⚡ sinyaller",
+        "İşlem sinyalleri"
+      ],
+      [
+        "🟠 trading-grubu",
+        "Bitcoin, kripto, hisse, emtia"
+      ],
+      [
+        "🎓 akademi",
+        "Rehberler, stratejiler ve videolar"
+      ]
+    ]
+  },
+  "scams": {
+    "kicker": "Güvende kal",
+    "title": "Dolandırıcılığı fark et",
+    "sub": "Ekip sana asla önce DM atmaz",
+    "never": "Ekip asla",
+    "neverItems": [
+      "Şifreni, API anahtarını ya da 2FA kodunu istemez",
+      "Kurtarma ifadeni ya da cüzdanını istemez",
+      "Senin yerine işlem ya da paranı ikiye katlamayı önermez",
+      "Bir yere para göndermeni istemez"
+    ],
+    "do": "Bunun yerine",
+    "doItems": [
+      "Cevap verme. Hesabı engelle",
+      "Yardım alt başlığında bildir",
+      "Sunucu üyelerinden DM'yi kapat",
+      "Şifreleri değiştir ve 2FA'yı aç"
+    ],
+    "foot": "Emin değil misin? <b>yardım</b> kanalında sor. Gerçek moderatörler sana yalnızca burada, sunucuda yardım eder."
+  },
+  "chGuideName": "🧭・𝐒𝐔𝐍𝐔𝐂𝐔-𝐑𝐄𝐇𝐁𝐄𝐑𝐈"
+}

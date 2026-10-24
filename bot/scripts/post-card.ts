@@ -54,7 +54,10 @@ async function main() {
     if (!ch) throw new Error(`no channel "${channelName}" in ${guild.name}. Channels: ${guild.channels.cache.filter((c) => c?.type === ChannelType.GuildText).map((c) => c!.name).join(", ")}`);
 
     // The help-desk link has to resolve inside whichever server we are posting to.
-    const helpDesk = find("☎️・help-desk") ?? find("help-desk");
+    // Names can carry a tree prefix (┣☎️・help-desk), so match on the ending.
+    const helpDesk = guild.channels.cache.find(
+      (c): c is TextChannel => (c?.type === ChannelType.GuildText || c?.type === ChannelType.GuildAnnouncement) && /(^|・)help-desk$/.test(c.name),
+    );
     const helpDeskUrl = helpDesk ? `https://discord.com/channels/${guild.id}/${helpDesk.id}` : `https://discord.com/channels/${guild.id}`;
 
     const old = (await ch.messages.fetch({ limit: 50 })).filter((m) => m.author.id === me.id);

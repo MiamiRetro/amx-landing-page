@@ -68,6 +68,9 @@ const asset = (file: string, lang: Lang = "en") => {
   return new AttachmentBuilder(readFileSync(lang !== "en" && existsSync(own) ? own : join(ASSETS, file)), { name: file });
 };
 
+/** The guide only ever shows mentions as text: nothing in it pings or highlights the message for anyone. */
+const NO_PINGS = { parse: [] };
+
 const TERMS_URL = "https://momentous-bolt-1cc.notion.site/BLKB-X-Inc-Terms-of-Service-f0567f236cfe43f7b04a47ffa4ed3931?pvs=4";
 const PRIVACY_URL = "https://www.blkbox.pro/privacy-policy";
 const RULES = [
@@ -166,7 +169,7 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean;
     .addActionRowComponents(
       row(
         new ButtonBuilder().setCustomId(VERIFY_BUTTON).setStyle(ButtonStyle.Primary).setLabel(t.step3Button).setEmoji("🔑"),
-        link(t.appButton, "https://app.blkbox.pro", E.BLK),
+        link(t.appButton, "https://dash.blkbox.pro/", E.Glow),
       ),
     );
 
@@ -235,16 +238,16 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean;
       )
       .addActionRowComponents(row(link("Terms of Service", TERMS_URL, "📄"), link("Privacy Policy", PRIVACY_URL, "🔒")));
     return [
-      { components: [terms], files: [asset("rules.png")], flags: V2 },
-      { components: [language], files: [asset("language.png")], flags: V2 },
+      { components: [terms], files: [asset("rules.png")], flags: V2, allowedMentions: NO_PINGS },
+      { components: [language], files: [asset("language.png")], flags: V2, allowedMentions: NO_PINGS },
     ];
   }
 
   // start-here is only seen after a language is picked, so it drops the picker and the terms card.
   return [
-    { components: [welcome], files: [asset("hero.png", opts.lang)], flags: V2 },
-    { components: [rules], files: [asset("rules.png", opts.lang)], flags: V2 },
-    { components: [start], files: [asset("start.png", opts.lang), asset("exchanges.png", opts.lang)], flags: V2 },
-    { components: [community], files: [asset("community.png", opts.lang)], flags: V2 },
+    { components: [welcome], files: [asset("hero.png", opts.lang)], flags: V2, allowedMentions: NO_PINGS },
+    { components: [rules], files: [asset("rules.png", opts.lang)], flags: V2, allowedMentions: NO_PINGS },
+    { components: [start], files: [asset("start.png", opts.lang), asset("exchanges.png", opts.lang)], flags: V2, allowedMentions: NO_PINGS },
+    { components: [community], files: [asset("community.png", opts.lang)], flags: V2, allowedMentions: NO_PINGS },
   ];
 }

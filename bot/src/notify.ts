@@ -52,7 +52,7 @@ interface NotifyText {
 export const NOTIFY_TEXT: Record<Lang, NotifyText> = {
   en: {
     title: "### 🔔 Notifications",
-    body: "We never ping @everyone. Pick the pings you want, change them any time.",
+    body: "We never ping `@everyone`. Pick the pings you want, change them any time.",
     button: "Choose notifications",
     pick: "Pick what you want to be pinged for. Untick anything to stop it.",
     placeholder: "Choose your notifications",
@@ -70,7 +70,7 @@ export const NOTIFY_TEXT: Record<Lang, NotifyText> = {
   },
   zh: {
     title: "### 🔔 通知",
-    body: "我们从不使用 @everyone。选择你想接收的提醒，随时可以更改。",
+    body: "我们从不使用 `@everyone`。选择你想接收的提醒，随时可以更改。",
     button: "选择通知",
     pick: "选择你想被提醒的内容。取消勾选即可停止。",
     placeholder: "选择你的通知",
@@ -88,7 +88,7 @@ export const NOTIFY_TEXT: Record<Lang, NotifyText> = {
   },
   ko: {
     title: "### 🔔 알림",
-    body: "저희는 @everyone 알림을 쓰지 않아요. 받고 싶은 알림을 고르고 언제든 바꿀 수 있어요.",
+    body: "저희는 `@everyone` 알림을 쓰지 않아요. 받고 싶은 알림을 고르고 언제든 바꿀 수 있어요.",
     button: "알림 선택",
     pick: "알림을 받고 싶은 항목을 고르세요. 체크를 해제하면 꺼집니다.",
     placeholder: "알림 선택하기",
@@ -106,7 +106,7 @@ export const NOTIFY_TEXT: Record<Lang, NotifyText> = {
   },
   id: {
     title: "### 🔔 Notifikasi",
-    body: "Kami tidak pernah ping @everyone. Pilih notifikasi yang kamu mau, bisa diubah kapan saja.",
+    body: "Kami tidak pernah ping `@everyone`. Pilih notifikasi yang kamu mau, bisa diubah kapan saja.",
     button: "Pilih notifikasi",
     pick: "Pilih apa saja yang ingin kamu terima. Hapus centang untuk berhenti.",
     placeholder: "Pilih notifikasimu",
@@ -124,7 +124,7 @@ export const NOTIFY_TEXT: Record<Lang, NotifyText> = {
   },
   vi: {
     title: "### 🔔 Thông báo",
-    body: "Chúng tôi không bao giờ ping @everyone. Hãy chọn thông báo bạn muốn, đổi lúc nào cũng được.",
+    body: "Chúng tôi không bao giờ ping `@everyone`. Hãy chọn thông báo bạn muốn, đổi lúc nào cũng được.",
     button: "Chọn thông báo",
     pick: "Chọn những gì bạn muốn được báo. Bỏ chọn để tắt.",
     placeholder: "Chọn thông báo của bạn",
@@ -142,7 +142,7 @@ export const NOTIFY_TEXT: Record<Lang, NotifyText> = {
   },
   es: {
     title: "### 🔔 Notificaciones",
-    body: "Nunca usamos @everyone. Elige los avisos que quieres y cámbialos cuando quieras.",
+    body: "Nunca usamos `@everyone`. Elige los avisos que quieres y cámbialos cuando quieras.",
     button: "Elegir notificaciones",
     pick: "Elige de qué quieres recibir aviso. Desmarca algo para dejar de recibirlo.",
     placeholder: "Elige tus notificaciones",
@@ -160,7 +160,7 @@ export const NOTIFY_TEXT: Record<Lang, NotifyText> = {
   },
   pt: {
     title: "### 🔔 Notificações",
-    body: "Nunca usamos @everyone. Escolha os avisos que quer e mude quando quiser.",
+    body: "Nunca usamos `@everyone`. Escolha os avisos que quer e mude quando quiser.",
     button: "Escolher notificações",
     pick: "Escolha sobre o que quer ser avisado. Desmarque para parar.",
     placeholder: "Escolha suas notificações",
@@ -178,7 +178,7 @@ export const NOTIFY_TEXT: Record<Lang, NotifyText> = {
   },
   tr: {
     title: "### 🔔 Bildirimler",
-    body: "@everyone ile asla etiketlemiyoruz. İstediğiniz bildirimleri seçin, istediğiniz zaman değiştirin.",
+    body: "`@everyone` ile asla etiketlemiyoruz. İstediğiniz bildirimleri seçin, istediğiniz zaman değiştirin.",
     button: "Bildirimleri seç",
     pick: "Hangi konularda bildirim almak istediğinizi seçin. Durdurmak için işareti kaldırın.",
     placeholder: "Bildirimlerinizi seçin",
@@ -196,7 +196,7 @@ export const NOTIFY_TEXT: Record<Lang, NotifyText> = {
   },
   ru: {
     title: "### 🔔 Уведомления",
-    body: "Мы никогда не используем @everyone. Выберите нужные уведомления и меняйте их когда угодно.",
+    body: "Мы никогда не используем `@everyone`. Выберите нужные уведомления и меняйте их когда угодно.",
     button: "Выбрать уведомления",
     pick: "Выберите, о чём вас уведомлять. Снимите галочку, чтобы отключить.",
     placeholder: "Выберите уведомления",
@@ -214,7 +214,7 @@ export const NOTIFY_TEXT: Record<Lang, NotifyText> = {
   },
   ja: {
     title: "### 🔔 通知",
-    body: "@everyone での通知は使いません。受け取りたい通知を選び、いつでも変更できます。",
+    body: "`@everyone` での通知は使いません。受け取りたい通知を選び、いつでも変更できます。",
     button: "通知を選ぶ",
     pick: "通知を受け取りたい項目を選んでください。チェックを外すと止まります。",
     placeholder: "通知を選ぶ",

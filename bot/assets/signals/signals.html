@@ -11,8 +11,6 @@ body{background:var(--bg);overflow:hidden;font-family:Sora,sans-serif;color:#fff
 .grid{position:absolute;inset:0;background-image:linear-gradient(rgba(34,211,238,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(34,211,238,.06) 1px,transparent 1px);background-size:40px 40px;mask-image:radial-gradient(75% 90% at 50% 50%,#000 30%,transparent 100%);-webkit-mask-image:radial-gradient(75% 90% at 50% 50%,#000 30%,transparent 100%)}
 .bar{position:absolute;left:0;right:0;bottom:0;height:4px;background:linear-gradient(90deg,var(--cyan),var(--accent,#10b981) 55%,transparent)}
 #root{position:absolute;inset:0}
-.logo{position:absolute;width:40px;height:40px;background:url(../start-here/logo-white.svg) center/contain no-repeat;filter:drop-shadow(0 0 6px rgba(255,110,199,.7)) drop-shadow(0 0 14px rgba(123,47,247,.5))}
-.amx{position:absolute;filter:drop-shadow(0 4px 14px rgba(0,0,0,.5))}
 .housing{display:flex;gap:22px;padding:22px 26px;background:linear-gradient(180deg,#0d1d2a,#08131c);border:1px solid var(--line);border-radius:24px;box-shadow:0 18px 50px rgba(0,0,0,.45)}
 .lamp{display:flex;flex-direction:column;align-items:center;gap:12px}
 .bulb{border-radius:50%;position:relative;border:3px solid #0b1620}
@@ -33,7 +31,6 @@ body{background:var(--bg);overflow:hidden;font-family:Sora,sans-serif;color:#fff
 .arrow.g{background:radial-gradient(circle at 50% 40%,rgba(34,197,94,.35),rgba(34,197,94,.08) 70%);border:2px solid rgba(34,197,94,.6);color:#22c55e;box-shadow:0 0 44px rgba(34,197,94,.35)}
 .arrow.r{background:radial-gradient(circle at 50% 40%,rgba(239,68,68,.35),rgba(239,68,68,.08) 70%);border:2px solid rgba(239,68,68,.6);color:#ef4444;box-shadow:0 0 44px rgba(239,68,68,.35)}
 .num{font-weight:800;letter-spacing:-.01em}
-.pill{display:inline-flex;align-items:center;gap:10px;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:#0b1822;font-weight:800;width:max-content}
 </style></head><body>
 <div class="glow1"></div><div class="glow2"></div><div class="grid"></div><div class="bar"></div>
 <div id="root"></div>
@@ -59,30 +56,27 @@ function icon(name,s,color="#fff",down=false){
 const lampRow=(board,isNew,bulb,ico,dates)=>`<div class="housing">${NAMES.map(n=>{const b=board[n];const c=b.none?"o":b.bull?"g":"r";
   return `<div class="lamp"><div class="bulb ${c}${n===isNew?" new":""}" style="width:${bulb}px;height:${bulb}px"></div><div class="ico">${icon(n,ico,b.none?"#64748b":"#fff")}</div>${dates?`<div class="date" style="font-size:15px">${b.since??"—"}</div>`:""}</div>`}).join("")}</div>`;
 const meter=(count,w,h,d)=>`<div class="meter">${[0,1,2,3].map(i=>`<div class="seg s${i}${i===count?" on":""}" style="width:${w}px;height:${h}px">${PAIRS[i].map(c=>`<i style="width:${d}px;height:${d}px;background:${c};color:${c}"></i>`).join("")}</div>`).join("")}</div>`;
-const brand=(amxW)=>`<div class="logo" style="right:26px;top:22px"></div><img class="amx" src="../alphanumetrix/amx-footer.png" style="left:30px;bottom:18px;width:${amxW}px">`;
 
 function signal(s){
   const c=s.bull?"g":"r",col=s.bull?"#22c55e":"#ef4444";
   document.body.style.setProperty("--wash",s.bull?"rgba(34,197,94,.22)":"rgba(239,68,68,.22)");
   document.body.style.setProperty("--accent",col);
-  return `${brand(170)}
-  <div style="position:absolute;left:40px;top:40px;display:flex;align-items:center;gap:26px">
-    <div class="arrow ${c}" style="width:150px;height:150px;flex-direction:column;gap:8px"><div style="font-size:60px">${s.bull?"▲":"▼"}</div>${icon(s.name,44,col,!s.bull)}</div>
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <div class="pill" style="font-size:18px;color:var(--mute)">#${s.n}</div>
-      <div class="num" style="font-size:36px;display:flex;align-items:center;gap:12px"><svg width="34" height="34" viewBox="0 0 32 32" style="flex:none"><circle cx="16" cy="16" r="16" fill="#f7931a"/><path fill="#fff" d="M22.6 14c.3-2.1-1.3-3.2-3.5-4l.7-2.8-1.7-.4-.7 2.7-1.4-.3.7-2.7-1.7-.4-.7 2.8-1.1-.3-2.4-.6-.4 1.8 1.3.3c.7.2.8.6.8 1l-.8 3.2.2.1-.2-.1-1.1 4.5c-.1.2-.3.5-.8.4l-1.3-.3-.8 2 2.3.6 1.2.3-.7 2.9 1.7.4.7-2.8 1.4.3-.7 2.8 1.7.4.7-2.9c2.9.6 5.1.3 6-2.3.8-2.1 0-3.3-1.6-4.1 1.1-.3 2-1 2.2-2.6Zm-3.9 5.4c-.5 2.1-4.1 1-5.2.7l.9-3.7c1.2.3 4.9.9 4.3 3Zm.5-5.5c-.5 1.9-3.5.9-4.4.7l.8-3.3c1 .2 4.1.7 3.6 2.6Z"/></svg>${s.price.startsWith("~")?"~$"+s.price.slice(1):"$"+s.price}</div>
-      <div class="date" style="font-size:19px">${s.date}</div>
+  // Bare facts only: direction and symbol, price, date, and the three lights after the flip.
+  return `<div style="position:absolute;inset:0 40px 4px;display:flex;align-items:center;justify-content:space-between">
+    <div style="display:flex;align-items:center;gap:30px">
+      <div class="arrow ${c}" style="width:160px;height:160px;flex-direction:column;gap:10px"><div style="font-size:62px">${s.bull?"▲":"▼"}</div>${icon(s.name,48,col,!s.bull)}</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="num" style="font-size:40px;display:flex;align-items:center;gap:12px"><svg width="34" height="34" viewBox="0 0 32 32" style="flex:none"><circle cx="16" cy="16" r="16" fill="#f7931a"/><path fill="#fff" d="M22.6 14c.3-2.1-1.3-3.2-3.5-4l.7-2.8-1.7-.4-.7 2.7-1.4-.3.7-2.7-1.7-.4-.7 2.8-1.1-.3-2.4-.6-.4 1.8 1.3.3c.7.2.8.6.8 1l-.8 3.2.2.1-.2-.1-1.1 4.5c-.1.2-.3.5-.8.4l-1.3-.3-.8 2 2.3.6 1.2.3-.7 2.9 1.7.4.7-2.8 1.4.3-.7 2.8 1.7.4.7-2.9c2.9.6 5.1.3 6-2.3.8-2.1 0-3.3-1.6-4.1 1.1-.3 2-1 2.2-2.6Zm-3.9 5.4c-.5 2.1-4.1 1-5.2.7l.9-3.7c1.2.3 4.9.9 4.3 3Zm.5-5.5c-.5 1.9-3.5.9-4.4.7l.8-3.3c1 .2 4.1.7 3.6 2.6Z"/></svg>${s.price.startsWith("~")?"~$"+s.price.slice(1):"$"+s.price}</div>
+        <div class="date" style="font-size:22px">${s.date}</div>
+      </div>
     </div>
-  </div>
-  <div style="position:absolute;right:40px;top:76px;display:flex;flex-direction:column;align-items:center;gap:16px">
-    ${lampRow(s.board,s.name,52,30,false)}
-    <div style="display:flex;align-items:center;gap:12px">${meter(s.count,50,28,10)}<div class="num" style="font-size:22px;color:${SC[s.count]}">${s.count}/3</div></div>
+    ${lampRow(s.board,s.name,58,32,false)}
   </div>`;
 }
 
 function board(s){
   document.body.style.setProperty("--wash",s.count>=2?"rgba(34,197,94,.2)":"rgba(239,68,68,.18)");
-  return `<div class="logo" style="right:26px;top:22px"></div><img class="amx" src="../alphanumetrix/amx-footer.png" style="left:30px;top:24px;width:170px">
+  return `
   <div style="position:absolute;left:0;right:0;top:36px;display:flex;flex-direction:column;align-items:center;gap:24px">
     ${lampRow(s.board,null,100,40,true)}
     <div style="display:flex;align-items:center;gap:16px">${meter(s.count,88,44,15)}<div class="num" style="font-size:32px;color:${SC[s.count]}">${s.count}/3</div></div>
@@ -105,8 +99,7 @@ function chart(s){
     let ly=e.bull?yy+46:yy-46;const st=e.bull?42:-42;while(placed.some(p=>Math.abs(p.x-xx)<58&&Math.abs(p.y-ly)<36))ly+=st;placed.push({x:xx,y:ly});
     g+=`<line x1="${xx}" x2="${xx}" y1="${yy}" y2="${ly}" stroke="${c}" stroke-width="2" stroke-dasharray="3 3"/><circle cx="${xx}" cy="${yy}" r="6.5" fill="${c}" stroke="#050d14" stroke-width="3"/>`;
     tags+=`<div style="position:absolute;left:${Math.max(L+2,xx-27)}px;top:${ly-16}px;width:54px;height:32px;border-radius:10px;background:#050d14;border:2px solid ${c};display:flex;align-items:center;justify-content:center;gap:3px;color:${c};font-weight:800;font-size:13px">${e.bull?"▲":"▼"}${icon(e.name,18,c,!e.bull)}</div>`});
-  return `<div class="logo" style="right:26px;top:22px;width:36px;height:36px"></div><img class="amx" src="../alphanumetrix/amx-footer.png" style="left:${L}px;top:20px;width:170px">
-  <svg width="${W}" height="${H}" style="position:absolute;left:0;top:0;font-family:Sora"><defs><linearGradient id="ar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#22d3ee" stop-opacity=".25"/><stop offset="1" stop-color="#22d3ee" stop-opacity="0"/></linearGradient></defs>${g}</svg>${tags}`;
+  return `  <svg width="${W}" height="${H}" style="position:absolute;left:0;top:0;font-family:Sora"><defs><linearGradient id="ar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#22d3ee" stop-opacity=".25"/><stop offset="1" stop-color="#22d3ee" stop-opacity="0"/></linearGradient></defs>${g}</svg>${tags}`;
 }
 window.draw=(s)=>{document.body.style.width=s.w+"px";document.body.style.height=s.h+"px";document.getElementById("root").innerHTML=({board,signal,chart})[s.mode](s);};
 </script></body></html>

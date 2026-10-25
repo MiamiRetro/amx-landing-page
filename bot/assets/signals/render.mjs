@@ -18,7 +18,7 @@ for (const e of events) {
   const count = NAMES.filter((n) => board[n].bull).length;
   e.count = count;
   if (regimes.at(-1)?.from === e.fired) regimes.at(-1).count = count; else regimes.push({ from: e.fired, count });
-  specs.push({ file: `signal-${e.n}.png`, mode: "signal", w: 900, h: 300, ...e, board: structuredClone(board), date: e.confirmed ?? e.fired });
+  specs.push({ file: `signal-${e.n}.png`, mode: "signal", w: 900, h: 240, ...e, board: structuredClone(board), date: e.confirmed ?? e.fired });
 }
 specs.push({ file: "board.png", mode: "board", w: 900, h: 340, board, count: events.at(-1).count });
 const closes = Object.fromEntries(prices);

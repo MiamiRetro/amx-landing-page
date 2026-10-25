@@ -115,7 +115,7 @@ export function cardSpec(events: SignalEvent[], i: number) {
   const e = events[i];
   const { board, count } = boardAfter(events.slice(0, i + 1));
   const price = e.price === null ? "" : Math.round(e.price).toLocaleString("en-US");
-  return { mode: "signal", w: 900, h: 300, n: e.n, name: e.name, bull: e.bull, price, date: e.confirmed ?? e.fired, board, count };
+  return { mode: "signal", w: 900, h: 240, n: e.n, name: e.name, bull: e.bull, price, date: e.confirmed ?? e.fired, board, count };
 }
 export function boardSpec(events: SignalEvent[]) {
   return { mode: "board", w: 900, h: 340, ...boardAfter(events) };

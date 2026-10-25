@@ -42,12 +42,19 @@ const NAMES=["Weekly Diamond","3-Day Cross","Wave Flip"];
 const SC=["#ef4444","#f59e0b","#a3e635","#22c55e"];
 // The model's four readings as light pairs: 🔴🔴 🔴🟡 🟡🟢 🟢🟢
 const PAIRS=[["#ef4444","#ef4444"],["#ef4444","#f59e0b"],["#f59e0b","#22c55e"],["#22c55e","#22c55e"]];
-/** One icon per signal, so no names are needed: a diamond, two crossing lines, a wave. */
-function icon(name,s,color="#fff"){
-  const sw=Math.max(2.4,s/10)*24/s;
-  if(name==="Weekly Diamond") return `<svg width="${s}" height="${s}" viewBox="0 0 24 24"><path d="M12 2 22 12 12 22 2 12Z" fill="${color}" opacity=".2"/><path d="M12 2 22 12 12 22 2 12Z" fill="none" stroke="${color}" stroke-width="${sw}" stroke-linejoin="round"/></svg>`;
-  if(name==="3-Day Cross") return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round"><path d="M2 19C8 17 13 9 22 5"/><path d="M2 6C9 7 14 14 22 18" opacity=".5"/><circle cx="12" cy="11.6" r="2.4" fill="${color}" stroke="none"/></svg>`;
-  return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12c2.5-6 5.5-6 8 0s5.5 6 8 0"/><path d="M18.5 7.5l3 2.5-3 2.5"/></svg>`;
+/** One icon per signal, so no names are needed: a cut gem, two moving averages crossing, an ocean wave curl. */
+function icon(name,s,color="#fff",down=false){
+  const sw=Math.max(1.6,s/14)*24/s;
+  if(name==="Weekly Diamond") return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" stroke="${color}" stroke-width="${sw}" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M6.5 3.5h11L22 9.2 12 21.5 2 9.2Z" fill="${color}" fill-opacity=".22"/>
+    <path d="M6.5 3.5 12 9.2 17.5 3.5M2 9.2h20M8.6 9.2 12 21.5 15.4 9.2" fill="none"/>
+    <path d="M6.5 3.5 2 9.2h6.6Z" fill="${color}" fill-opacity=".45" stroke="none"/><path d="M12 9.2 17.5 3.5 22 9.2Z" fill="${color}" fill-opacity=".12" stroke="none"/></svg>`;
+  if(name==="3-Day Cross") return `<svg width="${s}" height="${s}" viewBox="0 0 24 24"${down?' style="transform:scaleY(-1)"':""} fill="none" stroke="${color}" stroke-width="${sw*1.15}" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2 6.5C7 7 9.5 10 12 12.5S17 17 22 17.5" stroke-opacity=".45"/>
+    <path d="M2 19C7.5 18 10 14 12 11.5S16 6.5 20.5 5.2"/><path d="M16.8 4.2 21 5 19.2 8.9"/></svg>`;
+  return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" stroke="${color}" stroke-width="${sw}" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M2 18.5C4.5 18.5 5.5 16 6.5 13 8 8.5 11 4.5 15.5 4.5c3.4 0 6 2.3 6 5.2 0 2.2-1.7 3.8-3.8 3.8-1.8 0-3.1-1.3-3.1-2.9 0-1.3 1-2.2 2.2-2.2-2.8-.3-5 2.4-5.6 6.1-.4 2.2-.2 3.4.6 4.0H2Z" fill="${color}" fill-opacity=".25"/>
+    <path d="M2 22c2-1.2 4-1.2 6 0s4 1.2 6 0 4-1.2 6 0" fill="none"/></svg>`;
 }
 const lampRow=(board,isNew,bulb,ico,dates)=>`<div class="housing">${NAMES.map(n=>{const b=board[n];const c=b.none?"o":b.bull?"g":"r";
   return `<div class="lamp"><div class="bulb ${c}${n===isNew?" new":""}" style="width:${bulb}px;height:${bulb}px"></div><div class="ico">${icon(n,ico,b.none?"#64748b":"#fff")}</div>${dates?`<div class="date" style="font-size:15px">${b.since??"—"}</div>`:""}</div>`}).join("")}</div>`;
@@ -60,7 +67,7 @@ function signal(s){
   document.body.style.setProperty("--accent",col);
   return `${brand(170)}
   <div style="position:absolute;left:40px;top:40px;display:flex;align-items:center;gap:26px">
-    <div class="arrow ${c}" style="width:150px;height:150px;flex-direction:column;gap:8px"><div style="font-size:60px">${s.bull?"▲":"▼"}</div>${icon(s.name,44,col)}</div>
+    <div class="arrow ${c}" style="width:150px;height:150px;flex-direction:column;gap:8px"><div style="font-size:60px">${s.bull?"▲":"▼"}</div>${icon(s.name,44,col,!s.bull)}</div>
     <div style="display:flex;flex-direction:column;gap:10px">
       <div class="pill" style="font-size:18px;color:var(--mute)">#${s.n}</div>
       <div class="num" style="font-size:36px;display:flex;align-items:center;gap:12px"><svg width="34" height="34" viewBox="0 0 32 32" style="flex:none"><circle cx="16" cy="16" r="16" fill="#f7931a"/><path fill="#fff" d="M22.6 14c.3-2.1-1.3-3.2-3.5-4l.7-2.8-1.7-.4-.7 2.7-1.4-.3.7-2.7-1.7-.4-.7 2.8-1.1-.3-2.4-.6-.4 1.8 1.3.3c.7.2.8.6.8 1l-.8 3.2.2.1-.2-.1-1.1 4.5c-.1.2-.3.5-.8.4l-1.3-.3-.8 2 2.3.6 1.2.3-.7 2.9 1.7.4.7-2.8 1.4.3-.7 2.8 1.7.4.7-2.9c2.9.6 5.1.3 6-2.3.8-2.1 0-3.3-1.6-4.1 1.1-.3 2-1 2.2-2.6Zm-3.9 5.4c-.5 2.1-4.1 1-5.2.7l.9-3.7c1.2.3 4.9.9 4.3 3Zm.5-5.5c-.5 1.9-3.5.9-4.4.7l.8-3.3c1 .2 4.1.7 3.6 2.6Z"/></svg>${s.price.startsWith("~")?"~$"+s.price.slice(1):"$"+s.price}</div>
@@ -68,7 +75,7 @@ function signal(s){
     </div>
   </div>
   <div style="position:absolute;right:40px;top:76px;display:flex;flex-direction:column;align-items:center;gap:16px">
-    ${lampRow(s.board,s.name,52,26,false)}
+    ${lampRow(s.board,s.name,52,30,false)}
     <div style="display:flex;align-items:center;gap:12px">${meter(s.count,50,28,10)}<div class="num" style="font-size:22px;color:${SC[s.count]}">${s.count}/3</div></div>
   </div>`;
 }
@@ -77,7 +84,7 @@ function board(s){
   document.body.style.setProperty("--wash",s.count>=2?"rgba(34,197,94,.2)":"rgba(239,68,68,.18)");
   return `<div class="logo" style="right:26px;top:22px"></div><img class="amx" src="../alphanumetrix/amx-footer.png" style="left:30px;top:24px;width:170px">
   <div style="position:absolute;left:0;right:0;top:36px;display:flex;flex-direction:column;align-items:center;gap:24px">
-    ${lampRow(s.board,null,100,34,true)}
+    ${lampRow(s.board,null,100,40,true)}
     <div style="display:flex;align-items:center;gap:16px">${meter(s.count,88,44,15)}<div class="num" style="font-size:32px;color:${SC[s.count]}">${s.count}/3</div></div>
   </div>`;
 }
@@ -97,7 +104,7 @@ function chart(s){
   s.events.forEach(e=>{const xx=x(e.date),yy=y(e.close),c=e.bull?"#22c55e":"#ef4444";
     let ly=e.bull?yy+46:yy-46;const st=e.bull?42:-42;while(placed.some(p=>Math.abs(p.x-xx)<58&&Math.abs(p.y-ly)<36))ly+=st;placed.push({x:xx,y:ly});
     g+=`<line x1="${xx}" x2="${xx}" y1="${yy}" y2="${ly}" stroke="${c}" stroke-width="2" stroke-dasharray="3 3"/><circle cx="${xx}" cy="${yy}" r="6.5" fill="${c}" stroke="#050d14" stroke-width="3"/>`;
-    tags+=`<div style="position:absolute;left:${Math.max(L+2,xx-27)}px;top:${ly-16}px;width:54px;height:32px;border-radius:10px;background:#050d14;border:2px solid ${c};display:flex;align-items:center;justify-content:center;gap:3px;color:${c};font-weight:800;font-size:13px">${e.bull?"▲":"▼"}${icon(e.name,18,c)}</div>`});
+    tags+=`<div style="position:absolute;left:${Math.max(L+2,xx-27)}px;top:${ly-16}px;width:54px;height:32px;border-radius:10px;background:#050d14;border:2px solid ${c};display:flex;align-items:center;justify-content:center;gap:3px;color:${c};font-weight:800;font-size:13px">${e.bull?"▲":"▼"}${icon(e.name,18,c,!e.bull)}</div>`});
   return `<div class="logo" style="right:26px;top:22px;width:36px;height:36px"></div><img class="amx" src="../alphanumetrix/amx-footer.png" style="left:${L}px;top:20px;width:170px">
   <svg width="${W}" height="${H}" style="position:absolute;left:0;top:0;font-family:Sora"><defs><linearGradient id="ar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#22d3ee" stop-opacity=".25"/><stop offset="1" stop-color="#22d3ee" stop-opacity="0"/></linearGradient></defs>${g}</svg>${tags}`;
 }

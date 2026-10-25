@@ -49,9 +49,9 @@ const signal = (n: number, bull: boolean, name: string, when: string, date: stri
 const POSTS: Post[] = [
   { file: "timeline.png", embed: { color: CYAN, title: "🚦 The AlphanumetriX 3-light system",
     description: "Our flagship BTC model reads three signals. Each one is a light, 🟢 bullish or 🔴 bearish, and the more lights agree, the stronger the trend.\n\n" +
-      "◇ **Weekly Diamond**: the big-picture signal. It fires about once per market cycle, and every time it has fired so far, it has marked the cycle bottom.\n" +
-      "✕ **3-Day Cross**: a crossover on the 3-day chart that confirms the medium-term trend.\n" +
-      "∿ **Wave Flip**: fires when the AlphanumetriX wave changes direction, usually the first of the three to react.",
+      "💎 **Weekly Diamond**: the big-picture signal. It fires about once per market cycle, and every time it has fired so far, it has marked the cycle bottom.\n" +
+      "📈 **3-Day Cross**: a crossover on the 3-day chart that confirms the medium-term trend.\n" +
+      "🌊 **Wave Flip**: fires when the AlphanumetriX wave changes direction, usually the first of the three to react.",
     fields: [
       { name: "🚦 Reading the lights", value: "🔴🔴 0/3 · Strong Bear Trend\n🔴🟡 1/3 · Leaning Bearish\n🟡🟢 2/3 · Leaning Bullish\n🟢🟢 3/3 · Strong Bull Trend" },
       { name: "📈 Reading the chart", value: "The line is BTC's daily close. Each tag is a signal flip (▲ bullish, ▼ bearish), and the colored band underneath is the model's reading at the time. Every signal on record follows below, oldest first." },
@@ -65,7 +65,7 @@ const POSTS: Post[] = [
   signal(6, true, "Wave Flip", "confirmed", "2026-08-21", "$73,010.81", "The first bullish flip since June, with BTC about 19.6% above the June bearish cross. Two of three are green again.", model("🟡🟢", "Leaning Bullish", 2)),
   signal(7, true, "3-Day Cross", "confirmed", "2026-08-23", "$77,088.42", "Full alignment again: all three lights are green. Since then BTC has traded as high as $86.6k (Sep 21). The risk to watch is any one light turning red.", model("🟢🟢", "Strong Bull Trend", 3)),
   { file: "board.png", embed: { color: GREEN, title: "🚦 Where the model stands now",
-    description: `🟢 ◇ **Weekly Diamond**: bullish since ${t("2026-02-09")}\n🟢 ✕ **3-Day Cross**: bullish since ${t("2026-08-23")}\n🟢 ∿ **Wave Flip**: bullish since ${t("2026-08-21")}\n\n` +
+    description: `🟢 💎 **Weekly Diamond**: bullish since ${t("2026-02-09")}\n🟢 📈 **3-Day Cross**: bullish since ${t("2026-08-23")}\n🟢 🌊 **Wave Flip**: bullish since ${t("2026-08-21")}\n\n` +
       "**3 of 3 bullish → 🟢🟢 Strong Bull Trend.** Historically, trend continuation has been the high-probability outcome from this setup.",
     fields: [{ name: "📊 Live model", value: "https://dash.blkbox.pro" }],
     footer: { text: FOOTER } } },

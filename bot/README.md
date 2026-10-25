@@ -47,6 +47,8 @@ Create a project (or reuse one), open the SQL editor, paste `src/db/schema.sql`,
 | `SUPPORT_MODEL` | Model for the help-desk assistant (default `claude-haiku-5-5`). It answers only from `assets/support/faq.md` and attaches the infographics its entries name (`assets/support/guides/`, re-render with `node assets/support/guides/render.mjs`); `SUPPORT_ASSISTANT=off` sends every thread straight to a moderator |
 | `SUPPORT_MOD_ROLES` | Comma-separated roles added to a help thread on handoff (default `Moderators`) |
 | `SUPPORT_ALERT_CHANNEL_ID` | Where handoffs are announced; falls back to `VERIFY_ALERT_CHANNEL_ID` |
+| `FLAGSHIP_SUPABASE_URL`, `FLAGSHIP_SUPABASE_KEY` | Read access (service role) to the dashboard's `blkbox.tradingview_signal_events`. Turns on the AlphanumetriX channel icon that follows the model |
+| `SIGNAL_FEED` | `1` posts each new BTC signal as a card in every language's AlphanumetriX channel and refreshes the pinned board in place (`src/signals`). Needs the two above; post the history once with `scripts/post-signals.ts` first |
 | `HEARTBEAT_URL` | Pinged every `HEARTBEAT_MIN` (5) minutes while connected, for an outside monitor such as healthchecks.io to alert on silence |
 
 ### 4. Run locally
@@ -84,6 +86,7 @@ Pages the bot posts, each re-run replacing its own earlier messages (`--preview`
 | `npx tsx scripts/post-start-here.ts --channel "📍・start-here"` | The start-here cards: welcome, language, rules, exchanges by country, links |
 | `npx tsx scripts/post-picker.ts --channel "📍・start-here"` | Language picker buttons |
 | `npm run verify:panel -- --channel "✅・verify"` | The **Verify my UID** panel |
+| `npx tsx scripts/post-signals.ts --guild <id>` | The AlphanumetriX signal history in every language: explainer and timeline, one card per signal, the pinned 3-light board (images from `node assets/signals/render.mjs`) |
 
 Webhooks are created on first use, one per channel, named "AMX Mirror". Deleting a webhook in Discord is safe; the bot recreates it.
 

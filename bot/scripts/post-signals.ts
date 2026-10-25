@@ -25,6 +25,8 @@ const OUT = join(here, "..", "assets", "signals", "out");
 const GROUP = "alphanumetrix";
 const AVATAR = "https://cdn.discordapp.com/avatars/1563549043454644264/{hash}.png?size=256";
 const FOOTER = "Past signals don't guarantee future results · Not financial advice";
+/** blkbox.tradingview_signal_events id of signal #7, the newest one shown. */
+const LAST_ID = 7;
 const GREEN = 0x22c55e, RED = 0xef4444, CYAN = 0x22d3ee;
 const t = (d: string) => `<t:${Math.floor(Date.parse(d + "T00:00:00Z") / 1000)}:D>`;
 
@@ -132,6 +134,8 @@ async function main() {
         const embed = { ...localized.get(lang as Lang)![i], image: { url: `attachment://${POSTS[i].file}` } };
         const msg = await hook.send({ username: "AlphanumetriX", avatarURL, embeds: [embed], files: [{ attachment: readFileSync(join(OUT, POSTS[i].file)), name: POSTS[i].file }], allowedMentions: { parse: [] } });
         if (i === POSTS.length - 1) {
+          // The signal feed (src/signals/feed.ts) refreshes this board in place.
+          await db.setSetting(guildId, `signals:board:${channelId}`, msg.id);
           const ch = (await guild.channels.fetch(channelId)) as TextChannel;
           await ch.messages.pin(msg.id).catch((e) => console.log("pin failed", lang, e.message));
         }
@@ -143,6 +147,9 @@ async function main() {
       const ch = (await guild.channels.fetch(channelId)) as TextChannel;
       for (const m of (await ch.messages.fetch({ limit: 5 })).filter((m) => m.type === 6).values()) await m.delete().catch(() => {});
     }
+    // The feed posts what arrives after the last signal shown here, under the same name and picture.
+    await db.setSetting(guildId, "signals:last_id", String(LAST_ID));
+    await db.setSetting(guildId, "signals:avatar", avatarURL);
     console.log(`done: https://discord.com/channels/${guildId}/${src.channel_id}`);
   } finally {
     await client.destroy();

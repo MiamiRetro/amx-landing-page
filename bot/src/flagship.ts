@@ -72,6 +72,11 @@ export class FlagshipWatch {
     return this.sb !== null;
   }
 
+  /** The read access to the dashboard's signals, shared with the signal feed. */
+  get client() {
+    return this.sb;
+  }
+
   async check() {
     if (!this.sb) return;
     const { data, error } = await this.sb.from("tradingview_signal_events").select("signal, direction, fired_at").eq("symbol", "BTC").order("fired_at", { ascending: false }).limit(200);

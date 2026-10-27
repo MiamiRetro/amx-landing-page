@@ -53,7 +53,8 @@ export function toEvents(rows: EventRow[]): SignalEvent[] {
       name: KEYS[r.signal],
       bull: r.direction === "bullish",
       fired: day(r.fired_at),
-      confirmed: r.raw?.seed ? undefined : day(r.received_at),
+      // The hand-entered history has no alert price (and the feed RPC does not return raw).
+      confirmed: r.raw?.seed || r.price === null || r.price === undefined ? undefined : day(r.received_at),
       price: r.price === null || r.price === undefined ? null : Number(r.price),
     }));
 }

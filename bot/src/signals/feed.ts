@@ -1,5 +1,5 @@
 import { WebhookClient, type APIEmbed, type Guild, type TextChannel } from "discord.js";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SignalSource } from "../flagship.js";
 import type { Lang } from "../config.js";
 import type { Db } from "../db/index.js";
 import { log, errInfo } from "../log.js";
@@ -43,6 +43,8 @@ export class SignalPoster {
         const me = this.guild.client.user!.id;
         const hook = (await ch.fetchWebhooks()).find((w) => w.name === WEBHOOK_NAME && w.owner?.id === me && w.token)
           ?? (await ch.createWebhook({ name: WEBHOOK_NAME, reason: "AlphanumetriX signals" }));
+        // A language channel's webhook is the mirror's own: record it so the mirror reuses it.
+        if (m.lang !== "en") await this.db.upsertMember({ channel_id: m.channel_id, group_id: m.group_id, lang: m.lang, webhook_id: hook.id, webhook_token: hook.token! });
         out.push({ lang: m.lang as Lang, channelId: m.channel_id, hook: new WebhookClient({ id: hook.id, token: hook.token! }) });
       } else {
         out.push({ lang: m.lang as Lang, channelId: m.channel_id, hook: new WebhookClient({ id: m.webhook_id, token: m.webhook_token }) });
@@ -123,21 +125,20 @@ export class SignalPoster {
 
 /**
  * Watches blkbox.tradingview_signal_events (through the flagship watcher's
- * client) and, for each new BTC signal, posts its card to every language and
+ * SignalSource) and, for each new BTC signal, posts its card to every language and
  * refreshes the pinned board. The first run only records where the history
  * stands, since scripts/post-signals.ts posts the history itself.
  */
 export class SignalFeed {
   private poster: SignalPoster;
+  private readOnce = false;
 
-  constructor(private guild: Guild, private db: Db, translator: Translator, private sb: SupabaseClient<any, any, any>) {
+  constructor(private guild: Guild, private db: Db, translator: Translator, private source: SignalSource) {
     this.poster = new SignalPoster(guild, db, translator);
   }
 
   async events(): Promise<SignalEvent[]> {
-    const { data, error } = await this.sb.from("tradingview_signal_events").select("id, symbol, signal, direction, fired_at, price, received_at, raw").eq("symbol", "BTC").order("id");
-    if (error) throw new Error(`signal events: ${error.message}`);
-    return toEvents((data ?? []) as EventRow[]);
+    return toEvents((await this.source.read()) as EventRow[]);
   }
 
   async check() {
@@ -149,6 +150,7 @@ export class SignalFeed {
       log.info("signal feed baseline", { last: events.at(-1)!.id });
       return;
     }
+    if (!this.readOnce) { this.readOnce = true; log.info("signal feed read", { events: events.length, newest: events.at(-1)!.id, posted: Number(lastSetting) }); }
     const fresh = events.map((e, i) => ({ e, i })).filter(({ e }) => e.id > Number(lastSetting));
     if (!fresh.length) return;
     await this.publish(events, fresh.map(({ i }) => i));

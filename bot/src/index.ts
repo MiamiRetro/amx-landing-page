@@ -105,7 +105,7 @@ async function main() {
       if (flagship.enabled) { flagship.start(); log.info("flagship follows the AlphanumetriX dashboard"); }
       // New signals become cards in every language's AlphanumetriX channel, and the pinned board follows.
       // Opt-in per environment, since the live server has no such channels yet.
-      if (flagship.client && process.env.SIGNAL_FEED === "1") { new SignalFeed(guild, db, translator, flagship.client).start(); log.info("signal feed on"); }
+      if (flagship.signals && process.env.SIGNAL_FEED === "1") { new SignalFeed(guild, db, translator, flagship.signals).start(); log.info("signal feed on"); }
       log.info("uid verification ready", { exchanges: [...affiliates.values()].map((p) => `${p.id}:${p.live ? "live" : "stand-in"}`) });
 
       // Affiliate keys die quietly: Bybit expires an unbound key after 90 days,

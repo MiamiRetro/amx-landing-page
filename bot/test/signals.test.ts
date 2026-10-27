@@ -21,6 +21,10 @@ test("events are BTC only, oldest first and numbered", () => {
   assert.deepEqual(ev.map((e) => e.n), [1, 2, 3, 4, 5, 6, 7]);
   assert.equal(ev[0].confirmed, undefined, "seed rows have no confirmation date");
   assert.equal(ev[6].confirmed, "2026-08-23");
+  // The feed RPC returns no raw payload: an alert without a price is the hand-entered history.
+  const bare = toEvents(rows.map(({ raw: _raw, ...r }) => r));
+  assert.equal(bare[0].confirmed, undefined);
+  assert.equal(bare[0].fired, "2026-02-09");
 });
 
 test("the board counts lit signals and leaves unfired ones dark", () => {

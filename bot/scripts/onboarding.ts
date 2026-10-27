@@ -245,7 +245,8 @@ const ACADEMY_FROM: { kind: "guides" | "strategies" | "forums"; tag: number }[] 
 /** Where an old forum is: under REFERENCE, folder style or emoji style, with or without its branch. */
 function oldForum(guild: Guild, lang: Lang, kind: "guides" | "strategies" | "forums") {
   const plain = NAMES[lang][kind];
-  for (const parent of [CATS[lang].ref, CATS_EMOJI[lang].ref]) {
+  const before = lang === "en" ? EN_OLD[kind] ?? null : OLD_CATS[lang];
+  for (const parent of [CATS[lang].ref, CATS_EMOJI[lang].ref, before]) {
     for (const name of [BRANCH + plain, plain]) {
       const ch = findChannel(guild, { name, parent });
       if (ch?.type === ChannelType.GuildForum) return ch;
@@ -282,7 +283,10 @@ for (const lang of LANGS) {
     if (l.kind === "start") legacy.push({ name: START_OLD[lang], parent: CATS[lang][l.cat] }, { name: `═🧭・${bare(START_OLD[lang])}・🧭═`, parent: null }, { name: `【${bare(START_OLD[lang])}】`, parent: null });
     if (l.kind === "tradegate") legacy.push({ name: NAMES[lang].btcgate, parent: CATS[lang][l.cat] });
     // Memes wore 🐸 before 😂, which reads as "funny" in every language.
-    if (l.kind === "memes") legacy.push({ name: NAMES[lang].memes.replace("😂", "🐸"), parent: CATS[lang][l.cat] });
+    if (l.kind === "memes") {
+      const frog = NAMES[lang].memes.replace("😂", "🐸");
+      legacy.push({ name: frog, parent: CATS[lang][l.cat] }, { name: frog, parent: lang === "en" ? EN_OLD.memes ?? null : OLD_CATS[lang] });
+    }
     if (l.kind === "teaser") legacy.push({ name: TEASER_OLD[lang], parent: CATS[lang][l.cat] });
     if (l.kind === "daytrade") {
       legacy.push({ name: DAYTRADE_OLD[lang], parent: CATS[lang][l.cat] });
@@ -311,7 +315,7 @@ const BOT_ALLOW = [P.ViewChannel, P.SendMessages, P.ReadMessageHistory, P.Manage
 
 const TRANSLATE_PNG = join(dirname(fileURLToPath(import.meta.url)), "..", "assets", "emoji", "translate.png");
 
-const STEPS = ["roles", "members", "channels", "perms", "mirror", "notify", "panels", "academy", "rules", "vip", "cleanup"] as const;
+const STEPS = ["roles", "members", "channels", "perms", "mirror", "notify", "panels", "academy", "rules", "vip", "archive", "cleanup"] as const;
 type Step = (typeof STEPS)[number];
 
 interface Ctx {
@@ -600,6 +604,54 @@ async function stepAcademy(ctx: Ctx) {
   }
 }
 
+/** Where channels the layout no longer has go: out of members' sight, history kept, staff can still read it. */
+const ARCHIVE_CAT = "🗄️ ARCHIVE";
+
+async function archive(ctx: Ctx, ch: NonThreadGuildBasedChannel, why: string) {
+  const { guild } = ctx;
+  log(`  archive #${ch.name} (${why})`);
+  if (!ctx.apply) return;
+  let cat = findCategory(guild, ARCHIVE_CAT);
+  if (!cat) {
+    const staff = ["Moderators", "Team - Will Not DM"].map((n) => guild.roles.cache.find((r) => r.name === n)).filter((r) => !!r);
+    cat = await guild.channels.create({
+      name: ARCHIVE_CAT,
+      type: ChannelType.GuildCategory,
+      position: 999,
+      permissionOverwrites: [
+        { id: guild.roles.everyone.id, deny: [P.ViewChannel] },
+        ...staff.map((r) => ({ id: r!.id, allow: [P.ViewChannel, P.ReadMessageHistory], deny: [P.SendMessages, P.SendMessagesInThreads, P.CreatePublicThreads] })),
+        { id: guild.members.me!.id, type: OverwriteType.Member, allow: [P.ViewChannel, P.ManageChannels] },
+      ],
+      reason: "onboarding: archive",
+    });
+  }
+  // Synced to the archive's permissions, so language and member roles no longer reach it.
+  await ch.setParent(cat.id, { lockPermissions: true, reason: `onboarding: archived (${why})` });
+}
+
+/**
+ * Channels from before the restructure that the layout has no place for. The
+ * live server's trader chats and the old 🔒 trade-alerts are archived, not
+ * deleted, so their history stays readable by staff.
+ */
+async function stepArchive(ctx: Ctx) {
+  const { guild } = ctx;
+  const archived = findCategory(guild, ARCHIVE_CAT)?.id;
+  const olds: { name: string; parent: string | null; why: string }[] = [
+    ...LANGS.map((lang) => ({ name: NAMES[lang].trader, parent: lang === "en" ? EN_OLD.trader ?? null : OLD_CATS[lang], why: `${lang}; trader-chat is not in the layout` })),
+    { name: "🔒・trade-alerts", parent: OLD_CATS.alerts, why: "en; 🔒 trade-signals replaces it" },
+  ];
+  let n = 0;
+  for (const o of olds) {
+    const ch = findChannel(guild, o) as NonThreadGuildBasedChannel | undefined;
+    if (!ch || (archived && ch.parentId === archived)) continue;
+    n++;
+    await archive(ctx, ch, o.why);
+  }
+  if (!n) log("  nothing to archive");
+}
+
 async function stepCleanup(ctx: Ctx) {
   const { guild } = ctx;
   // The old forums and REFERENCE, once the academy step has moved every post.
@@ -609,10 +661,9 @@ async function stepCleanup(ctx: Ctx) {
       const forum = oldForum(guild, lang, from.kind);
       if (!forum) continue;
       if (!moved) { log(`  keep #${forum.name} (${lang}; run the academy step first)`); continue; }
-      log(`  delete #${forum.name} (${lang}; its posts are in the academy)`);
-      if (!ctx.apply) continue;
-      await ctx.db.removeMember(forum.id);
-      await forum.delete("onboarding: folded into the academy");
+      // Archived, not deleted: replies stayed behind when the opening posts moved.
+      if (ctx.apply) await ctx.db.removeMember(forum.id);
+      await archive(ctx, forum, `${lang}; its posts are in the academy`);
     }
     for (const name of [CATS[lang].ref, CATS_EMOJI[lang].ref]) {
       const cat = findCategory(guild, name);
@@ -904,7 +955,7 @@ async function main() {
   };
   try {
     log(apply ? "APPLYING" : "DRY RUN (add --apply to make these changes)");
-    const run: Record<Step, (c: Ctx) => Promise<void>> = { roles: stepRoles, members: stepMembers, channels: stepChannels, perms: stepPerms, mirror: stepMirror, panels: stepPanels, rules: stepRules, vip: stepVip, cleanup: stepCleanup, notify: stepNotify, academy: stepAcademy };
+    const run: Record<Step, (c: Ctx) => Promise<void>> = { roles: stepRoles, members: stepMembers, channels: stepChannels, perms: stepPerms, mirror: stepMirror, panels: stepPanels, rules: stepRules, vip: stepVip, archive: stepArchive, cleanup: stepCleanup, notify: stepNotify, academy: stepAcademy };
     for (const step of STEPS) {
       if (only && step !== only) continue;
       log(`\n== ${step}`);

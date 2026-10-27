@@ -8,6 +8,7 @@
  *   npx tsx scripts/onboarding.ts                    # dry run: prints every change
  *   npx tsx scripts/onboarding.ts --apply            # all steps, in order
  *   npx tsx scripts/onboarding.ts --apply --step members
+ *   npx tsx scripts/onboarding.ts --apply --step panels --wipe-bot-panels   # also clear other bots' old panels
  *
  * Steps run in an order that never takes access away mid-way: roles are made
  * and handed out before any channel starts requiring them, and the picker is
@@ -322,6 +323,8 @@ interface Ctx {
   guild: Guild;
   db: Db;
   apply: boolean;
+  /** Panels step: also remove other bots' messages in panel channels. */
+  wipeBotPanels: boolean;
   role: (lang: Lang, tier: "base" | "member") => string | undefined;
 }
 
@@ -859,9 +862,10 @@ async function stepPanels(ctx: Ctx) {
     if (!ch) { log(`  ! no #${s.name} for its panel`); continue; }
     log(`  post ${s.panel} panel in #${s.name}`);
     if (!ctx.apply) continue;
-    // Any bot's panels go, not just ours: a panel posted by another bot account (the test server's
-    // old shared bot) has buttons only that bot can answer. Webhook posts (mirrored chat) stay.
-    const old = (await ch.messages.fetch({ limit: 50 })).filter((m) => m.author.bot && !m.webhookId);
+    // Our own earlier panels go. With --wipe-bot-panels any bot's do too (the test server's old shared
+    // bot left panels only it can answer); off by default, since live channels hold other bots' posts.
+    // Webhook posts (mirrored chat) always stay.
+    const old = (await ch.messages.fetch({ limit: 50 })).filter((m) => m.author.bot && !m.webhookId && (m.author.id === me.id || ctx.wipeBotPanels));
     for (const m of old.values()) await m.delete().catch(() => {});
     const lang: Lang = s.lang === "all" ? "en" : s.lang;
     const help = findChannel(guild, SPECS.find((x) => x.lang === lang && x.kind === "help")!);
@@ -950,6 +954,7 @@ async function main() {
     guild,
     db,
     apply,
+    wipeBotPanels: args.includes("--wipe-bot-panels"),
     // In a dry run, roles the run would create stand in as "pending:<name>" so the plan still shows them.
     role: (lang, tier) => guild.roles.cache.find((r) => r.name === LANG_ROLE_NAMES[lang][tier])?.id ?? (apply ? undefined : `pending:${LANG_ROLE_NAMES[lang][tier]}`),
   };

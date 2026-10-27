@@ -1,0 +1,58 @@
+[
+ {
+  "n": 1,
+  "name": "Weekly Diamond",
+  "bull": true,
+  "fired": "2026-02-09",
+  "seed": true,
+  "price": "~70,138"
+ },
+ {
+  "n": 2,
+  "name": "Wave Flip",
+  "bull": true,
+  "fired": "2026-04-13",
+  "seed": true,
+  "price": "~74,418"
+ },
+ {
+  "n": 3,
+  "name": "3-Day Cross",
+  "bull": true,
+  "fired": "2026-04-19",
+  "seed": true,
+  "price": "~73,802"
+ },
+ {
+  "n": 4,
+  "name": "Wave Flip",
+  "bull": false,
+  "fired": "2026-06-02",
+  "confirmed": "2026-06-03",
+  "price": "66,673"
+ },
+ {
+  "n": 5,
+  "name": "3-Day Cross",
+  "bull": false,
+  "fired": "2026-06-03",
+  "confirmed": "2026-06-06",
+  "price": "61,060"
+ },
+ {
+  "n": 6,
+  "name": "Wave Flip",
+  "bull": true,
+  "fired": "2026-08-20",
+  "confirmed": "2026-08-21",
+  "price": "73,010"
+ },
+ {
+  "n": 7,
+  "name": "3-Day Cross",
+  "bull": true,
+  "fired": "2026-08-20",
+  "confirmed": "2026-08-23",
+  "price": "77,088"
+ }
+]

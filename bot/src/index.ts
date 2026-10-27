@@ -19,6 +19,7 @@ import { handleVerifyButton, handleVerifySubmit, VERIFY_BUTTON, VERIFY_MODAL } f
 import { checkProviders, HealthWatch } from "./verify/health.js";
 import { VipTracker } from "./vip/tracker.js";
 import { FlagshipWatch } from "./flagship.js";
+import { SignalFeed } from "./signals/feed.js";
 import { SupportAssistant } from "./support/assistant.js";
 import { SupportDesk, SUPPORT_PREFIX } from "./support/desk.js";
 import { SupportReview } from "./support/review.js";
@@ -102,6 +103,9 @@ async function main() {
       if (process.env.VIP_SCHEDULE === "1") vip.schedule();
       const flagship = new FlagshipWatch(guild, db);
       if (flagship.enabled) { flagship.start(); log.info("flagship follows the AlphanumetriX dashboard"); }
+      // New signals become cards in every language's AlphanumetriX channel, and the pinned board follows.
+      // Opt-in per environment, since the live server has no such channels yet.
+      if (flagship.signals && process.env.SIGNAL_FEED === "1") { new SignalFeed(guild, db, translator, flagship.signals).start(); log.info("signal feed on"); }
       log.info("uid verification ready", { exchanges: [...affiliates.values()].map((p) => `${p.id}:${p.live ? "live" : "stand-in"}`) });
 
       // Affiliate keys die quietly: Bybit expires an unbound key after 90 days,

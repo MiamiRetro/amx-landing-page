@@ -14,8 +14,8 @@ import { log, errInfo } from "./log.js";
  *   1 → Leaning Bearish    🔴🟡
  *   0 → Strong Bear Trend  🔴🔴
  *
- * It reads blkbox.tradingview_signal_events with FLAGSHIP_SUPABASE_URL /
- * FLAGSHIP_SUPABASE_KEY (service role). /flagship still sets it by hand and
+ * It reads blkbox.tradingview_signal_events through SignalSource (the
+ * public.signal_feed RPC). /flagship still sets it by hand and
  * wins until the signals next change.
  */
 export type FlagshipState = "strong-bull" | "lean-bull" | "lean-bear" | "strong-bear";
@@ -60,23 +60,57 @@ export async function applyFlagship(guild: Guild, state: FlagshipState, reason: 
   return { changed, total: channels.size, failed };
 }
 
-export class FlagshipWatch {
-  private sb: SupabaseClient<any, any, any> | null;
+/** A row of blkbox.tradingview_signal_events as public.signal_feed returns it (never the raw payload). */
+export interface SignalRow { id: number; symbol: string; signal: string; direction: string; fired_at: string; price: string | number | null; received_at: string }
 
-  constructor(private guild: Guild, private db: Db) {
-    const url = process.env.FLAGSHIP_SUPABASE_URL?.trim(), key = process.env.FLAGSHIP_SUPABASE_KEY?.trim();
-    this.sb = url && key ? createClient(url, key, { auth: { persistSession: false }, db: { schema: "blkbox" } }) : null;
+/**
+ * Read-only access to the dashboard's signal log through the public.signal_feed
+ * RPC: the publishable key plus a feed token whose hash the database holds, so
+ * the bot never needs the service-role key or sees the webhook secret.
+ */
+export class SignalSource {
+  private sb: SupabaseClient<any, any, any>;
+
+  constructor(url: string, key: string, private token: string) {
+    this.sb = createClient(url, key, { auth: { persistSession: false } });
   }
 
+  /** FLAGSHIP_SUPABASE_URL, FLAGSHIP_SUPABASE_KEY (publishable) and SIGNAL_FEED_TOKEN, or null when any is missing. */
+  static fromEnv(): SignalSource | null {
+    const url = process.env.FLAGSHIP_SUPABASE_URL?.trim(), key = process.env.FLAGSHIP_SUPABASE_KEY?.trim(), token = process.env.SIGNAL_FEED_TOKEN?.trim();
+    return url && key && token ? new SignalSource(url, key, token) : null;
+  }
+
+  /** Every row after `afterId`, oldest first. */
+  async read(afterId = 0): Promise<SignalRow[]> {
+    const out: SignalRow[] = [];
+    for (;;) {
+      const { data, error } = await this.sb.rpc("signal_feed", { p_token: this.token, p_after_id: out.at(-1)?.id ?? afterId, p_limit: 100 });
+      if (error) throw new Error(`signal feed: ${error.message}`);
+      const rows = (data ?? []) as SignalRow[];
+      out.push(...rows);
+      if (rows.length < 100) return out;
+    }
+  }
+}
+
+export class FlagshipWatch {
+  private source = SignalSource.fromEnv();
+
+  constructor(private guild: Guild, private db: Db) {}
+
   get enabled() {
-    return this.sb !== null;
+    return this.source !== null;
+  }
+
+  /** The read access to the dashboard's signals, shared with the signal feed. */
+  get signals() {
+    return this.source;
   }
 
   async check() {
-    if (!this.sb) return;
-    const { data, error } = await this.sb.from("tradingview_signal_events").select("signal, direction, fired_at").eq("symbol", "BTC").order("fired_at", { ascending: false }).limit(200);
-    if (error) throw new Error(`signal events: ${error.message}`);
-    const state = stateOf((data ?? []) as Event[]);
+    if (!this.source) return;
+    const state = stateOf((await this.source.read()).filter((r) => r.symbol === "BTC"));
     // Only act on a change of the signals' own reading, so a manual /flagship holds until the signals move.
     const last = await this.db.getSetting(this.guild.id, "flagship:signals");
     if (last === state) return;
@@ -87,7 +121,7 @@ export class FlagshipWatch {
   }
 
   start(minutes = 15) {
-    if (!this.sb) return;
+    if (!this.source) return;
     const run = () => void this.check().catch((e) => log.warn("flagship check failed", errInfo(e)));
     run();
     setInterval(run, minutes * 60_000).unref();

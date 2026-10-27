@@ -14,7 +14,7 @@
 import "dotenv/config";
 import { ChannelType, Client, Events, GatewayIntentBits, type TextChannel } from "discord.js";
 import { isLang, type Lang } from "../src/config.js";
-import { startHereMessages } from "../src/startHere.js";
+import { startHereMessages, useAppEmojis } from "../src/startHere.js";
 
 /** Cards in the order startHereMessages returns them: the server guide, then the picker channel's two. */
 const GUIDE_CARDS = ["welcome", "rules", "start", "community"] as const;
@@ -54,12 +54,17 @@ async function main() {
     if (!ch) throw new Error(`no channel "${channelName}" in ${guild.name}. Channels: ${guild.channels.cache.filter((c) => c?.type === ChannelType.GuildText).map((c) => c!.name).join(", ")}`);
 
     // The help-desk link has to resolve inside whichever server we are posting to.
-    const helpDesk = find("☎️・help-desk") ?? find("help-desk");
+    // Names can carry a tree prefix (┣☎️・help-desk), so match on the ending.
+    const helpDesk = guild.channels.cache.find(
+      (c): c is TextChannel => (c?.type === ChannelType.GuildText || c?.type === ChannelType.GuildAnnouncement) && /(^|・)help-desk$/.test(c.name),
+    );
     const helpDeskUrl = helpDesk ? `https://discord.com/channels/${guild.id}/${helpDesk.id}` : `https://discord.com/channels/${guild.id}`;
 
     const old = (await ch.messages.fetch({ limit: 50 })).filter((m) => m.author.id === me.id);
     for (const m of old.values()) await m.delete().catch(() => {});
 
+    // The guide's custom emoji come from this bot app's own copies, so they show whichever server it's in.
+    useAppEmojis([...(await client.application!.emojis.fetch()).values()]);
     const picker = (PICKER_CARDS as readonly string[]).includes(card);
     const cards = startHereMessages({ helpDeskUrl, lang, picker });
     const names: readonly string[] = picker ? PICKER_CARDS : GUIDE_CARDS;

@@ -495,7 +495,11 @@ async function stepChannels(ctx: Ctx) {
   await guild.channels.setPositions(positions);
 }
 
-const VIP_CAT = "👑 VIP";
+/** The VIP folder in the same ┏━━ / ┣ / ┗ style as the language folders; the old names are renamed in place. */
+const VIP_CAT = `${FOLDER}VIP`;
+const VIP_CHAT = `${BRANCH}👑・vip-chat`;
+const VIP_CONCIERGE = `${END}${CONCIERGE_CHANNEL}`;
+const VIP_OLD: Record<string, string> = { [VIP_CAT]: "👑 VIP", [VIP_CHAT]: "👑・vip-chat", [VIP_CONCIERGE]: CONCIERGE_CHANNEL };
 
 /**
  * The VIP lounge sits right under the picker, shared by every language: the
@@ -513,7 +517,12 @@ async function stepVip(ctx: Ctx) {
     if (ctx.apply) await guild.roles.create({ name, permissions: [], reason: "VIP tiers" });
   }
   let cat = findCategory(guild, VIP_CAT);
-  if (!cat) {
+  const oldCat = cat ? undefined : findCategory(guild, VIP_OLD[VIP_CAT]);
+  if (oldCat) {
+    log(`  rename category ${oldCat.name} → ${VIP_CAT}`);
+    if (ctx.apply) await oldCat.setName(VIP_CAT, "onboarding: folder style");
+    cat = oldCat;
+  } else if (!cat) {
     log(`  create category ${VIP_CAT}`);
     if (ctx.apply) cat = await guild.channels.create({ name: VIP_CAT, type: ChannelType.GuildCategory, reason: "VIP lounge" });
   }
@@ -525,10 +534,20 @@ async function stepVip(ctx: Ctx) {
   ];
   if (cat && ctx.apply) await cat.permissionOverwrites.set(lounge, "VIP lounge");
 
-  let chat = guild.channels.cache.find((c): c is TextChannel => c.type === ChannelType.GuildText && c.name === "👑・vip-chat");
+  const vipText = (name: string) => {
+    const find = (n: string) => guild.channels.cache.find((c): c is TextChannel => c.type === ChannelType.GuildText && c.name === n);
+    return find(name) ?? find(VIP_OLD[name]);
+  };
+  const rename = async (ch: TextChannel | undefined, name: string) => {
+    if (!ch || ch.name === name) return;
+    log(`  rename #${ch.name} → #${name}`);
+    if (ctx.apply) await ch.setName(name, "onboarding: folder style");
+  };
+  let chat = vipText(VIP_CHAT);
+  await rename(chat, VIP_CHAT);
   if (!chat) {
-    log("  create #👑・vip-chat");
-    if (ctx.apply && cat) chat = await guild.channels.create({ name: "👑・vip-chat", type: ChannelType.GuildText, parent: cat.id, topic: "For our VIPs", reason: "VIP lounge" });
+    log(`  create #${VIP_CHAT}`);
+    if (ctx.apply && cat) chat = await guild.channels.create({ name: VIP_CHAT, type: ChannelType.GuildText, parent: cat.id, topic: "For our VIPs", reason: "VIP lounge" });
   } else if (cat && chat.parentId !== cat.id) {
     log(`  move #${chat.name} → ${VIP_CAT}`);
     if (ctx.apply) await chat.setParent(cat.id, { lockPermissions: false, reason: "VIP lounge" });
@@ -549,10 +568,11 @@ async function stepVip(ctx: Ctx) {
     ...teamRoleIds.map((id) => ({ id, allow: [...inThread, P.ManageThreads] })),
     { id: me.id, type: OverwriteType.Member, allow: [...inThread, P.SendMessages, P.CreatePrivateThreads, P.ManageThreads, P.ManageMessages] },
   ];
-  let concierge = guild.channels.cache.find((c): c is TextChannel => c.type === ChannelType.GuildText && c.name === CONCIERGE_CHANNEL);
+  let concierge = vipText(VIP_CONCIERGE);
+  await rename(concierge, VIP_CONCIERGE);
   if (!concierge) {
-    log(`  create #${CONCIERGE_CHANNEL} (VIPs and team: ${teamRoleNames().join(", ")})`);
-    if (ctx.apply && cat) concierge = await guild.channels.create({ name: CONCIERGE_CHANNEL, type: ChannelType.GuildText, parent: cat.id, topic: "Your private line to the BLKBöX team", permissionOverwrites: desk, reason: "VIP concierge" });
+    log(`  create #${VIP_CONCIERGE} (VIPs and team: ${teamRoleNames().join(", ")})`);
+    if (ctx.apply && cat) concierge = await guild.channels.create({ name: VIP_CONCIERGE, type: ChannelType.GuildText, parent: cat.id, topic: "Your private line to the BLKBöX team", permissionOverwrites: desk, reason: "VIP concierge" });
   } else if (ctx.apply) {
     if (cat && concierge.parentId !== cat.id) await concierge.setParent(cat.id, { lockPermissions: false, reason: "VIP concierge" });
     await concierge.permissionOverwrites.set(desk, "VIP concierge");
@@ -576,6 +596,9 @@ async function stepVip(ctx: Ctx) {
     });
   }
   if (report && ctx.apply) await db.setSetting(guild.id, "vip_report_channel", report.id);
+
+  // vip-chat first, the concierge last (┗).
+  if (ctx.apply && chat && concierge) await guild.channels.setPositions([{ channel: chat.id, position: 0 }, { channel: concierge.id, position: 1 }]).catch((e) => log(`  ! VIP channel order: ${e instanceof Error ? e.message : e}`));
 
   if (ctx.apply && cat) {
     await guild.channels.fetch();

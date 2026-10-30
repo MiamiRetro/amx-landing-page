@@ -34,7 +34,7 @@ async function run(args: string[]) {
   const targets = (flag(args, "targets", "zh,ko,id") ?? "").split(",").filter(isLang) as Lang[];
   const specs = (flag(args, "providers", "anthropic:claude-sonnet-5") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
   const out = flag(args, "out", `bakeoff/${new Date().toISOString().slice(0, 10)}`)!;
-  const providers: TranslationProvider[] = specs.map(providerFromSpec);
+  const providers: TranslationProvider[] = specs.map((s) => providerFromSpec(s));
 
   const { client, guild } = await connect();
   try {

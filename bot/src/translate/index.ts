@@ -1,9 +1,11 @@
 import { createHash } from "node:crypto";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Lang } from "../config.js";
 import type { Db } from "../db/index.js";
 import { log, errInfo } from "../log.js";
 import { placeholdersIntact } from "../mirror/placeholders.js";
 import { AnthropicProvider } from "./anthropic.js";
+import { queuedProviderFromEnv } from "./queue/queued-provider.js";
 import { OpenAICompatibleProvider, PRESETS } from "./openai-compatible.js";
 import type { TranslateRequest, TranslateResult, TranslationProvider } from "./provider.js";
 
@@ -13,6 +15,7 @@ import type { TranslateRequest, TranslateResult, TranslationProvider } from "./p
  *   openai:gpt-5.6-terra
  *   gemini:gemini-3.7-flash
  *   openrouter:tencent/hy-mt2-7b
+ *   queued:gemma4   (Supabase queue served by a local Gemma worker)
  */
 /** Passes text through untranslated. For pipeline testing without an API key. Never cached. */
 export class NoneProvider implements TranslationProvider {
@@ -24,11 +27,17 @@ export class NoneProvider implements TranslationProvider {
   }
 }
 
-export function providerFromSpec(spec: string): TranslationProvider {
+export interface ProviderDeps {
+  /** Supabase client for queued:* providers; defaults to one built from SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY. */
+  sb?: SupabaseClient;
+}
+
+export function providerFromSpec(spec: string, deps: ProviderDeps = {}): TranslationProvider {
   if (spec === "none") return new NoneProvider();
   const i = spec.indexOf(":");
   const vendor = i < 0 ? spec : spec.slice(0, i);
   const model = i < 0 ? "" : spec.slice(i + 1);
+  if (vendor === "queued") return queuedProviderFromEnv(model, deps.sb);
   if (vendor === "anthropic") return new AnthropicProvider(model || undefined);
   const preset = PRESETS[vendor];
   if (!preset) throw new Error(`Unknown translation vendor "${vendor}" in "${spec}"`);
@@ -120,10 +129,13 @@ export class Translator {
   private async callWithFallback(req: TranslateRequest, entities: string[][]): Promise<{ result: TranslateResult; provider: string } | null> {
     const providers = [this.o.primary, ...(this.o.fallbacks ?? [])];
     for (const p of providers) {
-      for (let attempt = 0; attempt < 2; attempt++) {
+      const attempts = Math.max(1, p.maxAttempts ?? 2);
+      for (let attempt = 0; attempt < attempts; attempt++) {
         const started = Date.now();
+        const ac = new AbortController();
         try {
-          const result = await this.withTimeout(this.o.limiter ? this.o.limiter(() => p.translate(req)) : p.translate(req));
+          const call = () => p.translate(req, { signal: ac.signal });
+          const result = await this.withTimeout(this.o.limiter ? this.o.limiter(call) : call(), ac);
           const bad = this.validate(result, req, entities);
           await this.o.db?.logUsage({
             provider: p.id,
@@ -163,10 +175,15 @@ export class Translator {
     return bad;
   }
 
-  private withTimeout<T>(p: Promise<T>): Promise<T> {
+  /** On timeout the controller is aborted too, so a provider holding remote work can cancel it. */
+  private withTimeout<T>(p: Promise<T>, ac: AbortController): Promise<T> {
     const ms = this.o.timeoutMs ?? 60_000;
     return new Promise<T>((resolve, reject) => {
-      const t = setTimeout(() => reject(new Error(`translation timed out after ${ms}ms`)), ms);
+      const t = setTimeout(() => {
+        const err = new Error(`translation timed out after ${ms}ms`);
+        ac.abort(err);
+        reject(err);
+      }, ms);
       p.then((v) => { clearTimeout(t); resolve(v); }, (e) => { clearTimeout(t); reject(e); });
     });
   }

@@ -14,7 +14,10 @@ import { log, errInfo } from "../log.js";
  *  - anyone else (Matt) through a one-time link from scripts/calendar-link.ts:
  *    they open it, sign in, press Allow, and the bot keeps the key in the
  *    settings table as calendar_token:<host>. That needs a "web" OAuth client
- *    (GOOGLE_WEB_CLIENT_ID, GOOGLE_WEB_CLIENT_SECRET) and PUBLIC_URL.
+ *    (GOOGLE_WEB_CLIENT_ID, GOOGLE_WEB_CLIENT_SECRET) and PUBLIC_URL;
+ *  - or, simplest, the host shares their calendar's free/busy with the
+ *    owner's Google account and CONCIERGE_CAL_<HOST> names that calendar
+ *    (their Gmail address): the owner's key reads it.
  */
 
 const SCOPE = "https://www.googleapis.com/auth/calendar.freebusy";
@@ -120,15 +123,19 @@ export interface Busy { start: Date; end: Date }
 
 /** The host's busy blocks between two times, or null when their calendar isn't connected. */
 export async function busyTimes(db: Db, guildId: string, host: string, from: Date, to: Date): Promise<Busy[] | null> {
-  const token = await accessToken(db, guildId, host);
+  // Their own key first; else their calendar shared with the owner, read with the owner's key.
+  const shared = host !== OWNER_HOST ? process.env[`CONCIERGE_CAL_${host.toUpperCase()}`]?.trim() : undefined;
+  const own = await accessToken(db, guildId, host);
+  const token = own ?? (shared ? await accessToken(db, guildId, OWNER_HOST) : null);
   if (!token) return null;
+  const id = own ? "primary" : shared!;
   const r = await fetch("https://www.googleapis.com/calendar/v3/freeBusy", {
     method: "POST",
     headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
-    body: JSON.stringify({ timeMin: from.toISOString(), timeMax: to.toISOString(), items: [{ id: "primary" }] }),
+    body: JSON.stringify({ timeMin: from.toISOString(), timeMax: to.toISOString(), items: [{ id }] }),
   });
   const j = (await r.json()) as { calendars?: Record<string, { busy?: { start: string; end: string }[]; errors?: unknown[] }> };
-  const cal = j.calendars?.primary;
+  const cal = j.calendars?.[id];
   if (!r.ok || !cal || cal.errors?.length) throw new Error(`free/busy for ${host}: ${r.status} ${JSON.stringify(cal?.errors ?? j).slice(0, 200)}`);
   return (cal.busy ?? []).map((b) => ({ start: new Date(b.start), end: new Date(b.end) }));
 }

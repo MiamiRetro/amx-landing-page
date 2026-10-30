@@ -23,7 +23,7 @@ export const ButlerReply = z.object({
   /** What to post in the thread, in the VIP's language. */
   reply: z.string(),
   /**
-   * chat: answered or still talking; booking: a 1-on-1 request is complete and should go to the host now;
+   * chat: answered or still talking; booking: the topic and host are clear, so the concierge offers open slots (or, with times given, sends the request);
    * urgent: funds or an account at risk right now, or a safety report, so the team comes in straight away.
    */
   action: z.enum(["chat", "booking", "urgent"]),
@@ -31,7 +31,7 @@ export const ButlerReply = z.object({
   host: z.enum(HOST_KEYS as [HostKey, ...HostKey[]]).nullable(),
   /** For a booking: what the VIP wants to cover, in English, one or two lines. */
   topic: z.string(),
-  /** For a booking: the days and times the VIP offered, with their time zone, in English. */
+  /** For a booking: only when the concierge asked the VIP for their own times, the days and times they offered with their time zone, in English; else empty. */
   times: z.string(),
 });
 export type ButlerReply = z.infer<typeof ButlerReply>;
@@ -58,11 +58,13 @@ export function butlerPrompt(now: Date) {
     "- ┏━━ SIGNALS & ALERTS: 📢 announcements; 🟢🟢 alphanumetrix (Matt's AlphanumetriX signals); 🤖 bot-alerts; ⚡ trade-alerts.",
     "- ┏━━ TRADING FLOOR: 🟠 bitcoin, 🪙 crypto, 📊 stocks, 🛢️ commodities, 💬 general, 😂 memes, ☎️ help-desk (private help threads for everyday questions), 🎓 academy (setup guides, strategies, videos and Q&A).",
     "- ┏━━ VIP: 👑 vip-chat (the VIP lounge) and 🛎️ concierge (this service).",
-    "To arrange a session, find out, one question at a time and only what is still missing: what they would like to cover, and two or three days and times that suit them, with their time zone. Then confirm it back in one line and set action to \"booking\". Make it clear it is a request: the host confirms the time personally.",
+    "To arrange a session, first find out what they would like to cover (one short question, only if it isn't clear yet). As soon as the topic and host are clear, set action to \"booking\" with an empty times field and say in one line that you'll show them the host's next open times. Don't ask for times yourself: the concierge shows open slots from the host's calendar as buttons right after your reply.",
+    "If the VIP answers the offered times in words instead of tapping a button, ask them to tap the button for the time they want.",
+    "Only if the thread shows the concierge couldn't offer slots, or the VIP said none of the times suit them, ask for two or three days and times that suit them, with their time zone; once they give them, confirm in one line and set action to \"booking\" with times filled in. Make it clear it is a request: the host confirms the time personally.",
     "3. Funds or an account at risk right now (a wallet being drained, a hacked exchange account, someone asking for their seed phrase or keys, a scam in progress): set action to \"urgent\" straight away, tell them the team is being brought in now, and tell them never to share a seed phrase, password or API key with anyone.",
     "Never ask for or accept seed phrases, private keys, passwords or API keys. Never promise a specific time yourself. Never claim to be a person.",
     "",
-    "Fields: host is the host the session is with once the topic makes it clear, else null. topic and times are filled in English when action is \"booking\", else empty strings.",
+    "Fields: host is the host the session is with once the topic makes it clear, else null. topic is filled in English when action is \"booking\"; times only as described above; otherwise empty strings.",
     `Today is ${now.toUTCString()}.`,
   ].join("\n");
 }

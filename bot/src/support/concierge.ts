@@ -14,12 +14,16 @@ import {
 } from "discord.js";
 import type { Db } from "../db/index.js";
 import { log, errInfo } from "../log.js";
+import { busyTimes } from "../calendar/google.js";
+import { findSlots, parseHours } from "../calendar/slots.js";
 import { HOSTS, hostIds, type Butler, type ButlerTurn, type HostKey } from "./butler.js";
 
 export const CONCIERGE_OPEN = "concierge:open";
 export const CONCIERGE_CLOSE = "concierge:close";
 /** concierge:accept:<thread id>:<host key>, on the request card in the bookings channel. */
 export const CONCIERGE_ACCEPT = "concierge:accept:";
+/** concierge:slot:<host key>:<unix seconds>, or concierge:slot:<host key>:none, under the open times the concierge offers. */
+export const CONCIERGE_SLOT = "concierge:slot:";
 export const CONCIERGE_PREFIX = "concierge:";
 export const CONCIERGE_CHANNEL = "🛎️・concierge";
 export const BOOKINGS_CHANNEL = "📅・vip-bookings";
@@ -70,6 +74,16 @@ const closeRow = () =>
 const goTo = (url: string) =>
   new ActionRowBuilder<ButtonBuilder>().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setURL(url).setLabel("Go to your concierge").setEmoji("🛎️"));
 
+/** When each host takes sessions, from CONCIERGE_HOURS_<HOST> ("Mon-Fri 10:00-18:00 Asia/Bangkok"). */
+const DEFAULT_HOURS: Record<HostKey, string> = { jt: "Mon-Fri 10:00-18:00 Asia/Bangkok", matt: "Mon-Fri 10:00-18:00 Asia/Bangkok" };
+const hoursOf = (host: HostKey) => parseHours(process.env[`CONCIERGE_HOURS_${host.toUpperCase()}`]?.trim() || DEFAULT_HOURS[host]);
+const SESSION_MIN = () => Number(process.env.CONCIERGE_SESSION_MIN ?? 30);
+const BOOK_DAYS = () => Number(process.env.CONCIERGE_BOOK_DAYS ?? 14);
+/** Sessions are booked, not on demand: nothing sooner than this. */
+const LEAD_HOURS = () => Number(process.env.CONCIERGE_LEAD_HOURS ?? 24);
+const TOPIC = "-# Topic: ";
+const when = (unix: number) => `<t:${unix}:F> (<t:${unix}:R>)`;
+
 const strip = (name: string) => name.replace(BUTLER, "").replace(PERSON, "").trim();
 
 /**
@@ -105,6 +119,7 @@ export class Concierge {
     if (i.customId === CONCIERGE_OPEN) return this.open(i);
     if (i.customId === CONCIERGE_CLOSE) return this.close(i);
     if (i.customId.startsWith(CONCIERGE_ACCEPT)) return this.accept(i);
+    if (i.customId.startsWith(CONCIERGE_SLOT)) return this.pickSlot(i);
   }
 
   private async open(i: ButtonInteraction<"cached">) {
@@ -211,7 +226,69 @@ export class Concierge {
     return ch?.type === ChannelType.GuildText ? ch : null;
   }
 
+  /** The host's next open times as buttons; falls back to asking the VIP for times when the calendar can't be read. */
+  private async offerSlots(thread: ThreadChannel, owner: string, host: HostKey, topic: string) {
+    const name = HOSTS[host].name;
+    let slots: Date[] = [];
+    try {
+      const now = new Date();
+      const busy = await busyTimes(this.db, this.guild.id, host, now, new Date(+now + (BOOK_DAYS() + 1) * 86_400_000));
+      if (busy) slots = findSlots({ hours: hoursOf(host), busy, now, lengthMin: SESSION_MIN(), days: BOOK_DAYS(), leadMin: LEAD_HOURS() * 60, count: 3 });
+    } catch (e) {
+      log.warn("concierge calendar read failed", { host, ...errInfo(e) });
+    }
+    if (slots.length === 0) {
+      await thread.send(`I couldn't see ${name}'s diary just now. Which two or three days and times would suit you, and in which time zone? I'll pass them on.`);
+      return;
+    }
+    const nums = ["1️⃣", "2️⃣", "3️⃣"];
+    const unix = slots.map((d) => Math.floor(+d / 1000));
+    await thread.send({
+      content: [
+        `${name}'s next open times for a ${SESSION_MIN()}-minute session, shown in your own time zone:`,
+        ...unix.map((u, k) => `${nums[k]} ${when(u)}`),
+        "",
+        "Choose one and I'll send the request. If none suit you, tell me what would.",
+        `${TOPIC}${topic.slice(0, 300)}`,
+      ].join("\n"),
+      components: [
+        new ActionRowBuilder<ButtonBuilder>().addComponents(
+          ...unix.map((u, k) => new ButtonBuilder().setCustomId(`${CONCIERGE_SLOT}${host}:${u}`).setStyle(ButtonStyle.Primary).setEmoji(nums[k]).setLabel("Book")),
+          new ButtonBuilder().setCustomId(`${CONCIERGE_SLOT}${host}:none`).setStyle(ButtonStyle.Secondary).setLabel("None of these"),
+        ),
+      ],
+      allowedMentions: { parse: [] },
+    });
+    log.info("concierge slots offered", { thread: thread.id, user: owner, host, slots: unix.length });
+  }
+
+  /** The VIP picks one of the offered times: the request goes to the host with that exact time. */
+  private async pickSlot(i: ButtonInteraction<"cached">) {
+    const thread = i.channel?.isThread() ? i.channel : null;
+    const owner = thread && (await this.ownerOf(thread));
+    if (!thread || !owner) return void i.reply({ content: "This button only works in a concierge thread.", flags: MessageFlags.Ephemeral });
+    if (i.user.id !== owner) return void i.reply({ content: "Only the VIP this concierge belongs to can choose a time.", flags: MessageFlags.Ephemeral });
+    const [host, pick] = i.customId.slice(CONCIERGE_SLOT.length).split(":") as [HostKey, string];
+    const topic = i.message.content.split("\n").find((l) => l.startsWith(TOPIC))?.slice(TOPIC.length) ?? "";
+    const offered = i.message.content.split("\n").filter((l) => !l.startsWith(TOPIC)).join("\n");
+    if (pick === "none") {
+      await i.update({ content: offered, components: [] });
+      await thread.send(`Of course. Which two or three days and times would suit you better, and in which time zone? I'll pass them to ${HOSTS[host]?.name ?? "the host"}.`);
+      return;
+    }
+    const unix = Number(pick);
+    await i.update({ content: `${offered}\n\n✅ You chose ${when(unix)}.`, components: [] });
+    await thread.send({ content: `Lovely. I've sent your request to ${HOSTS[host].name} for ${when(unix)}. They'll confirm with you here personally.`, allowedMentions: { parse: [] } });
+    await this.sendRequest(thread, owner, host, topic, `<t:${unix}:F> (${new Date(unix * 1000).toUTCString()})`);
+  }
+
   private async book(thread: ThreadChannel, owner: string, host: HostKey, topic: string, times: string) {
+    // No times from the VIP yet: show the host's open slots first.
+    if (!times.trim()) return this.offerSlots(thread, owner, host, topic);
+    return this.sendRequest(thread, owner, host, topic, times);
+  }
+
+  private async sendRequest(thread: ThreadChannel, owner: string, host: HostKey, topic: string, times: string) {
     const hostId = hostIds()[host];
     const ch = await this.bookingsChannel();
     if (!ch) {
@@ -223,7 +300,7 @@ export class Concierge {
         `## 📅 Session request for ${hostId ? `<@${hostId}>` : HOSTS[host].name}`,
         `**VIP:** <@${owner}>`,
         `**Topic:** ${topic || "(not given)"}`,
-        `**Suggested times:** ${times || "(not given)"}`,
+        `**Time:** ${times || "(not given)"}`,
         `**Thread:** ${thread.url}`,
         "",
         "-# Accept to join the VIP's private thread and confirm the time there.",

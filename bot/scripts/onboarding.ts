@@ -36,6 +36,7 @@ import { NOTIFY_ROLES, NOTIFY_TOPICS } from "../src/notify.js";
 import { guideChannelName } from "../src/i18n/guide.js";
 import { LANG_ROLE_NAMES } from "../src/roles.js";
 import { verifyPanel } from "../src/verify/panel.js";
+import { CONCIERGE_CHANNEL, CONCIERGE_OPEN, conciergePanel, teamRoleNames, VIP_ROLES } from "../src/support/concierge.js";
 import { supportPanel } from "../src/support/desk.js";
 
 type Tier =
@@ -495,13 +496,13 @@ async function stepChannels(ctx: Ctx) {
 }
 
 const VIP_CAT = "👑 VIP";
-const VIP_ROLES = ["VIPs", "VIP 1", "VIP 2", "VIP 3", "VIP 4"];
 
 /**
  * The VIP lounge sits right under the picker, shared by every language: the
  * legacy VIPs role and the commission tiers VIP 1-4 see it, staff keep their
  * access. The weekly report goes to an admin-only channel, because it lists
- * what we earn per client.
+ * what we earn per client. The concierge gives each VIP a private thread with
+ * the team, like help-desk but answered by people only.
  */
 async function stepVip(ctx: Ctx) {
   const { guild, db } = ctx;
@@ -537,6 +538,32 @@ async function stepVip(ctx: Ctx) {
     for (const id of vipRoleIds) await chat.permissionOverwrites.edit(id, { ViewChannel: true }, { reason: "VIP tiers" });
     await chat.permissionOverwrites.edit(guild.roles.everyone.id, { ViewChannel: false }, { reason: "VIP lounge" });
     await chat.permissionOverwrites.edit(me.id, { ViewChannel: true, SendMessages: true, ReadMessageHistory: true }, { reason: "VIP lounge" });
+  }
+
+  // Concierge: VIPs only write inside the private thread the button opens; the team is added to it.
+  const teamRoleIds = teamRoleNames().map((n) => guild.roles.cache.find((r) => r.name.toLowerCase() === n.toLowerCase())?.id).filter((x): x is string => !!x);
+  const inThread = [P.ViewChannel, P.ReadMessageHistory, P.SendMessagesInThreads, P.EmbedLinks, P.AttachFiles, P.AddReactions, P.UseExternalEmojis];
+  const desk: OverwriteResolvable[] = [
+    { id: guild.roles.everyone.id, deny: [P.ViewChannel, P.SendMessages, P.CreatePublicThreads, P.CreatePrivateThreads] },
+    ...vipRoleIds.map((id) => ({ id, allow: inThread })),
+    ...teamRoleIds.map((id) => ({ id, allow: [...inThread, P.ManageThreads] })),
+    { id: me.id, type: OverwriteType.Member, allow: [...inThread, P.SendMessages, P.CreatePrivateThreads, P.ManageThreads, P.ManageMessages] },
+  ];
+  let concierge = guild.channels.cache.find((c): c is TextChannel => c.type === ChannelType.GuildText && c.name === CONCIERGE_CHANNEL);
+  if (!concierge) {
+    log(`  create #${CONCIERGE_CHANNEL} (VIPs and team: ${teamRoleNames().join(", ")})`);
+    if (ctx.apply && cat) concierge = await guild.channels.create({ name: CONCIERGE_CHANNEL, type: ChannelType.GuildText, parent: cat.id, topic: "Your private line to the BLKBöX team", permissionOverwrites: desk, reason: "VIP concierge" });
+  } else if (ctx.apply) {
+    if (cat && concierge.parentId !== cat.id) await concierge.setParent(cat.id, { lockPermissions: false, reason: "VIP concierge" });
+    await concierge.permissionOverwrites.set(desk, "VIP concierge");
+  }
+  if (concierge) {
+    const pinned = await concierge.messages.fetchPinned().catch(() => null);
+    const has = pinned?.some((m) => m.author.id === me.id && m.components.some((r) => JSON.stringify(r.toJSON()).includes(CONCIERGE_OPEN)));
+    if (!has) {
+      log(`  post the concierge panel in #${concierge.name}`);
+      if (ctx.apply) await concierge.send(conciergePanel()).then((m) => m.pin().catch(() => {}));
+    }
   }
 
   let report = guild.channels.cache.find((c): c is TextChannel => c.type === ChannelType.GuildText && c.name === "📊・vip-report");

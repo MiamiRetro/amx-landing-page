@@ -183,7 +183,7 @@ async function main() {
         return void handleVerifyButton(i, { verify: v, roles: r, funnel }).catch((e) => log.error("verify button failed", errInfo(e)));
       }
       if (i.isModalSubmit() && i.customId === VERIFY_MODAL) {
-        return void handleVerifySubmit(i, { verify: v, roles: r, memberRoleId: r.memberRoleId(), funnel }).catch((e) => log.error("verify modal failed", errInfo(e)));
+        return void handleVerifySubmit(i, { verify: v, roles: r, memberRoleId: r.memberRoleId(), funnel, helpDeskId: (lang) => db.getSetting(guildId, `support_channel:${lang}`) }).catch((e) => log.error("verify modal failed", errInfo(e)));
       }
     }
     if (!i.isChatInputCommand()) return;

@@ -8,6 +8,7 @@
  *   npx tsx scripts/onboarding.ts                    # dry run: prints every change
  *   npx tsx scripts/onboarding.ts --apply            # all steps, in order
  *   npx tsx scripts/onboarding.ts --apply --step members
+ *   npx tsx scripts/onboarding.ts --apply --step panels --wipe-bot-panels   # also clear other bots' old panels
  *
  * Steps run in an order that never takes access away mid-way: roles are made
  * and handed out before any channel starts requiring them, and the picker is
@@ -35,6 +36,7 @@ import { NOTIFY_ROLES, NOTIFY_TOPICS } from "../src/notify.js";
 import { guideChannelName } from "../src/i18n/guide.js";
 import { LANG_ROLE_NAMES } from "../src/roles.js";
 import { verifyPanel } from "../src/verify/panel.js";
+import { BOOKINGS_CHANNEL, CONCIERGE_CHANNEL, CONCIERGE_OPEN, conciergePanel, teamRoleNames, VIP_ROLES } from "../src/support/concierge.js";
 import { supportPanel } from "../src/support/desk.js";
 
 type Tier =
@@ -42,6 +44,7 @@ type Tier =
   | "verify" //    language role only: vanishes on verification
   | "teaser" //    language role only, read-only
   | "free" //      both tiers
+  | "rules" //     free, and @everyone too: Discord only takes a rules channel everyone can see
   | "trader" //    both see it, only members talk
   | "help" //      both see it; nobody talks in the channel, everyone writes in their own help thread with links and screenshots
   | "member" //    members only
@@ -245,7 +248,8 @@ const ACADEMY_FROM: { kind: "guides" | "strategies" | "forums"; tag: number }[] 
 /** Where an old forum is: under REFERENCE, folder style or emoji style, with or without its branch. */
 function oldForum(guild: Guild, lang: Lang, kind: "guides" | "strategies" | "forums") {
   const plain = NAMES[lang][kind];
-  for (const parent of [CATS[lang].ref, CATS_EMOJI[lang].ref]) {
+  const before = lang === "en" ? EN_OLD[kind] ?? null : OLD_CATS[lang];
+  for (const parent of [CATS[lang].ref, CATS_EMOJI[lang].ref, before]) {
     for (const name of [BRANCH + plain, plain]) {
       const ch = findChannel(guild, { name, parent });
       if (ch?.type === ChannelType.GuildForum) return ch;
@@ -257,7 +261,7 @@ function oldForum(guild: Guild, lang: Lang, kind: "guides" | "strategies" | "for
 const PICKER: Spec = { name: "🌐・choose-language", parent: null, lang: "all", tier: "picker", readOnly: true, topic: "Pick your language to enter", panel: "picker" };
 
 /** Tiers each audience sees: a member who picked a language, and one who also verified. */
-const SEEN_BY = { base: ["verify", "teaser", "free", "trader", "help"], member: ["free", "trader", "member", "help"] } as Record<"base" | "member", Tier[]>;
+const SEEN_BY = { base: ["verify", "teaser", "free", "rules", "trader", "help"], member: ["free", "rules", "trader", "member", "help"] } as Record<"base" | "member", Tier[]>;
 /** ┗ for the last channel of its category that either audience sees, ┣ for the rest. */
 function branchOf(l: (typeof LAYOUT)[number]) {
   const inCat = LAYOUT.filter((x) => x.cat === l.cat && !x.top);
@@ -282,13 +286,18 @@ for (const lang of LANGS) {
     if (l.kind === "start") legacy.push({ name: START_OLD[lang], parent: CATS[lang][l.cat] }, { name: `═🧭・${bare(START_OLD[lang])}・🧭═`, parent: null }, { name: `【${bare(START_OLD[lang])}】`, parent: null });
     if (l.kind === "tradegate") legacy.push({ name: NAMES[lang].btcgate, parent: CATS[lang][l.cat] });
     // Memes wore 🐸 before 😂, which reads as "funny" in every language.
-    if (l.kind === "memes") legacy.push({ name: NAMES[lang].memes.replace("😂", "🐸"), parent: CATS[lang][l.cat] });
+    if (l.kind === "memes") {
+      const frog = NAMES[lang].memes.replace("😂", "🐸");
+      legacy.push({ name: frog, parent: CATS[lang][l.cat] }, { name: frog, parent: lang === "en" ? EN_OLD.memes ?? null : OLD_CATS[lang] });
+    }
     if (l.kind === "teaser") legacy.push({ name: TEASER_OLD[lang], parent: CATS[lang][l.cat] });
     if (l.kind === "daytrade") {
       legacy.push({ name: DAYTRADE_OLD[lang], parent: CATS[lang][l.cat] });
     }
     const topic = l.lockFor ? bare(NAMES[lang][l.lockFor]) : l.panel === "locked" ? bare(name) : undefined;
-    SPECS.push({ name, parent: l.top ? null : CATS[lang][l.cat], lang, tier: l.tier, kind: l.kind, readOnly: l.readOnly, noHistory: l.noHistory, type: l.type, panel: l.panel, topic, legacy });
+    // The English server guide is the server's rules channel (the one with the book icon).
+    const tier: Tier = lang === "en" && l.kind === "start" ? "rules" : l.tier;
+    SPECS.push({ name, parent: l.top ? null : CATS[lang][l.cat], lang, tier, kind: l.kind, readOnly: l.readOnly, noHistory: l.noHistory, type: l.type, panel: l.panel, topic, legacy });
   }
 }
 
@@ -311,13 +320,15 @@ const BOT_ALLOW = [P.ViewChannel, P.SendMessages, P.ReadMessageHistory, P.Manage
 
 const TRANSLATE_PNG = join(dirname(fileURLToPath(import.meta.url)), "..", "assets", "emoji", "translate.png");
 
-const STEPS = ["roles", "members", "channels", "perms", "mirror", "notify", "panels", "academy", "rules", "vip", "cleanup"] as const;
+const STEPS = ["roles", "members", "channels", "perms", "mirror", "notify", "panels", "academy", "rules", "vip", "archive", "cleanup"] as const;
 type Step = (typeof STEPS)[number];
 
 interface Ctx {
   guild: Guild;
   db: Db;
   apply: boolean;
+  /** Panels step: also remove other bots' messages in panel channels. */
+  wipeBotPanels: boolean;
   role: (lang: Lang, tier: "base" | "member") => string | undefined;
 }
 
@@ -484,14 +495,18 @@ async function stepChannels(ctx: Ctx) {
   await guild.channels.setPositions(positions);
 }
 
-const VIP_CAT = "👑 VIP";
-const VIP_ROLES = ["VIPs", "VIP 1", "VIP 2", "VIP 3", "VIP 4"];
+/** The VIP folder in the same ┏━━ / ┣ / ┗ style as the language folders; the old names are renamed in place. */
+const VIP_CAT = `${FOLDER}VIP`;
+const VIP_CHAT = `${BRANCH}👑・vip-chat`;
+const VIP_CONCIERGE = `${END}${CONCIERGE_CHANNEL}`;
+const VIP_OLD: Record<string, string> = { [VIP_CAT]: "👑 VIP", [VIP_CHAT]: "👑・vip-chat", [VIP_CONCIERGE]: CONCIERGE_CHANNEL };
 
 /**
  * The VIP lounge sits right under the picker, shared by every language: the
  * legacy VIPs role and the commission tiers VIP 1-4 see it, staff keep their
  * access. The weekly report goes to an admin-only channel, because it lists
- * what we earn per client.
+ * what we earn per client. The concierge gives each VIP a private thread with
+ * the team, like help-desk but answered by people only.
  */
 async function stepVip(ctx: Ctx) {
   const { guild, db } = ctx;
@@ -502,7 +517,12 @@ async function stepVip(ctx: Ctx) {
     if (ctx.apply) await guild.roles.create({ name, permissions: [], reason: "VIP tiers" });
   }
   let cat = findCategory(guild, VIP_CAT);
-  if (!cat) {
+  const oldCat = cat ? undefined : findCategory(guild, VIP_OLD[VIP_CAT]);
+  if (oldCat) {
+    log(`  rename category ${oldCat.name} → ${VIP_CAT}`);
+    if (ctx.apply) await oldCat.setName(VIP_CAT, "onboarding: folder style");
+    cat = oldCat;
+  } else if (!cat) {
     log(`  create category ${VIP_CAT}`);
     if (ctx.apply) cat = await guild.channels.create({ name: VIP_CAT, type: ChannelType.GuildCategory, reason: "VIP lounge" });
   }
@@ -514,10 +534,20 @@ async function stepVip(ctx: Ctx) {
   ];
   if (cat && ctx.apply) await cat.permissionOverwrites.set(lounge, "VIP lounge");
 
-  let chat = guild.channels.cache.find((c): c is TextChannel => c.type === ChannelType.GuildText && c.name === "👑・vip-chat");
+  const vipText = (name: string) => {
+    const find = (n: string) => guild.channels.cache.find((c): c is TextChannel => c.type === ChannelType.GuildText && c.name === n);
+    return find(name) ?? find(VIP_OLD[name]);
+  };
+  const rename = async (ch: TextChannel | undefined, name: string) => {
+    if (!ch || ch.name === name) return;
+    log(`  rename #${ch.name} → #${name}`);
+    if (ctx.apply) await ch.setName(name, "onboarding: folder style");
+  };
+  let chat = vipText(VIP_CHAT);
+  await rename(chat, VIP_CHAT);
   if (!chat) {
-    log("  create #👑・vip-chat");
-    if (ctx.apply && cat) chat = await guild.channels.create({ name: "👑・vip-chat", type: ChannelType.GuildText, parent: cat.id, topic: "For our VIPs", reason: "VIP lounge" });
+    log(`  create #${VIP_CHAT}`);
+    if (ctx.apply && cat) chat = await guild.channels.create({ name: VIP_CHAT, type: ChannelType.GuildText, parent: cat.id, topic: "For our VIPs", reason: "VIP lounge" });
   } else if (cat && chat.parentId !== cat.id) {
     log(`  move #${chat.name} → ${VIP_CAT}`);
     if (ctx.apply) await chat.setParent(cat.id, { lockPermissions: false, reason: "VIP lounge" });
@@ -529,6 +559,50 @@ async function stepVip(ctx: Ctx) {
     await chat.permissionOverwrites.edit(me.id, { ViewChannel: true, SendMessages: true, ReadMessageHistory: true }, { reason: "VIP lounge" });
   }
 
+  // Concierge: VIPs only write inside the private thread the button opens; the team is added to it.
+  const teamRoleIds = teamRoleNames().map((n) => guild.roles.cache.find((r) => r.name.toLowerCase() === n.toLowerCase())?.id).filter((x): x is string => !!x);
+  const inThread = [P.ViewChannel, P.ReadMessageHistory, P.SendMessagesInThreads, P.EmbedLinks, P.AttachFiles, P.AddReactions, P.UseExternalEmojis];
+  const desk: OverwriteResolvable[] = [
+    { id: guild.roles.everyone.id, deny: [P.ViewChannel, P.SendMessages, P.CreatePublicThreads, P.CreatePrivateThreads] },
+    ...vipRoleIds.map((id) => ({ id, allow: inThread })),
+    ...teamRoleIds.map((id) => ({ id, allow: [...inThread, P.ManageThreads] })),
+    { id: me.id, type: OverwriteType.Member, allow: [...inThread, P.SendMessages, P.CreatePrivateThreads, P.ManageThreads, P.ManageMessages] },
+  ];
+  let concierge = vipText(VIP_CONCIERGE);
+  await rename(concierge, VIP_CONCIERGE);
+  if (!concierge) {
+    log(`  create #${VIP_CONCIERGE} (VIPs and team: ${teamRoleNames().join(", ")})`);
+    if (ctx.apply && cat) concierge = await guild.channels.create({ name: VIP_CONCIERGE, type: ChannelType.GuildText, parent: cat.id, topic: "Your private line to the BLKBöX team", permissionOverwrites: desk, reason: "VIP concierge" });
+  } else if (ctx.apply) {
+    if (cat && concierge.parentId !== cat.id) await concierge.setParent(cat.id, { lockPermissions: false, reason: "VIP concierge" });
+    await concierge.permissionOverwrites.set(desk, "VIP concierge");
+  }
+  if (concierge) {
+    const pinned = await concierge.messages.fetchPinned().catch(() => null);
+    const panel = pinned?.find((m) => m.author.id === me.id && m.components.some((r) => JSON.stringify(r.toJSON()).includes(CONCIERGE_OPEN)));
+    if (!panel) {
+      log(`  post the concierge panel in #${concierge.name}`);
+      if (ctx.apply) await concierge.send(conciergePanel()).then((m) => m.pin().catch(() => {}));
+    } else if (panel.content !== conciergePanel().content) {
+      // Same message, new wording: the pin and its place stay.
+      log(`  update the concierge panel in #${concierge.name}`);
+      if (ctx.apply) await panel.edit(conciergePanel());
+    }
+  }
+
+  // Where the e-butler sends session requests for JT and Matt: the team only.
+  let bookings = guild.channels.cache.find((c): c is TextChannel => c.type === ChannelType.GuildText && c.name === BOOKINGS_CHANNEL);
+  const bookingsOws: OverwriteResolvable[] = [
+    { id: guild.roles.everyone.id, deny: [P.ViewChannel] },
+    ...teamRoleIds.map((id) => ({ id, allow: [P.ViewChannel, P.ReadMessageHistory] })),
+    { id: me.id, type: OverwriteType.Member, allow: [P.ViewChannel, P.SendMessages, P.ReadMessageHistory, P.EmbedLinks] },
+  ];
+  if (!bookings) {
+    log(`  create #${BOOKINGS_CHANNEL} (team only: session requests from the concierge)`);
+    if (ctx.apply) bookings = await guild.channels.create({ name: BOOKINGS_CHANNEL, type: ChannelType.GuildText, topic: "Session requests from the VIP concierge. Accept to join the VIP's thread.", permissionOverwrites: bookingsOws, reason: "VIP concierge bookings" });
+  } else if (ctx.apply) await bookings.permissionOverwrites.set(bookingsOws, "VIP concierge bookings");
+  if (bookings && ctx.apply) await db.setSetting(guild.id, "concierge_bookings_channel", bookings.id);
+
   let report = guild.channels.cache.find((c): c is TextChannel => c.type === ChannelType.GuildText && c.name === "📊・vip-report");
   if (!report) {
     log("  create #📊・vip-report (admins only)");
@@ -539,6 +613,9 @@ async function stepVip(ctx: Ctx) {
     });
   }
   if (report && ctx.apply) await db.setSetting(guild.id, "vip_report_channel", report.id);
+
+  // vip-chat first, the concierge last (┗).
+  if (ctx.apply && chat && concierge) await guild.channels.setPositions([{ channel: chat.id, position: 0 }, { channel: concierge.id, position: 1 }]).catch((e) => log(`  ! VIP channel order: ${e instanceof Error ? e.message : e}`));
 
   if (ctx.apply && cat) {
     await guild.channels.fetch();
@@ -600,6 +677,54 @@ async function stepAcademy(ctx: Ctx) {
   }
 }
 
+/** Where channels the layout no longer has go: out of members' sight, history kept, staff can still read it. */
+const ARCHIVE_CAT = "🗄️ ARCHIVE";
+
+async function archive(ctx: Ctx, ch: NonThreadGuildBasedChannel, why: string) {
+  const { guild } = ctx;
+  log(`  archive #${ch.name} (${why})`);
+  if (!ctx.apply) return;
+  let cat = findCategory(guild, ARCHIVE_CAT);
+  if (!cat) {
+    const staff = ["Moderators", "Team - Will Not DM"].map((n) => guild.roles.cache.find((r) => r.name === n)).filter((r) => !!r);
+    cat = await guild.channels.create({
+      name: ARCHIVE_CAT,
+      type: ChannelType.GuildCategory,
+      position: 999,
+      permissionOverwrites: [
+        { id: guild.roles.everyone.id, deny: [P.ViewChannel] },
+        ...staff.map((r) => ({ id: r!.id, allow: [P.ViewChannel, P.ReadMessageHistory], deny: [P.SendMessages, P.SendMessagesInThreads, P.CreatePublicThreads] })),
+        { id: guild.members.me!.id, type: OverwriteType.Member, allow: [P.ViewChannel, P.ManageChannels] },
+      ],
+      reason: "onboarding: archive",
+    });
+  }
+  // Synced to the archive's permissions, so language and member roles no longer reach it.
+  await ch.setParent(cat.id, { lockPermissions: true, reason: `onboarding: archived (${why})` });
+}
+
+/**
+ * Channels from before the restructure that the layout has no place for. The
+ * live server's trader chats and the old 🔒 trade-alerts are archived, not
+ * deleted, so their history stays readable by staff.
+ */
+async function stepArchive(ctx: Ctx) {
+  const { guild } = ctx;
+  const archived = findCategory(guild, ARCHIVE_CAT)?.id;
+  const olds: { name: string; parent: string | null; why: string }[] = [
+    ...LANGS.map((lang) => ({ name: NAMES[lang].trader, parent: lang === "en" ? EN_OLD.trader ?? null : OLD_CATS[lang], why: `${lang}; trader-chat is not in the layout` })),
+    { name: "🔒・trade-alerts", parent: OLD_CATS.alerts, why: "en; 🔒 trade-signals replaces it" },
+  ];
+  let n = 0;
+  for (const o of olds) {
+    const ch = findChannel(guild, o) as NonThreadGuildBasedChannel | undefined;
+    if (!ch || (archived && ch.parentId === archived)) continue;
+    n++;
+    await archive(ctx, ch, o.why);
+  }
+  if (!n) log("  nothing to archive");
+}
+
 async function stepCleanup(ctx: Ctx) {
   const { guild } = ctx;
   // The old forums and REFERENCE, once the academy step has moved every post.
@@ -609,10 +734,9 @@ async function stepCleanup(ctx: Ctx) {
       const forum = oldForum(guild, lang, from.kind);
       if (!forum) continue;
       if (!moved) { log(`  keep #${forum.name} (${lang}; run the academy step first)`); continue; }
-      log(`  delete #${forum.name} (${lang}; its posts are in the academy)`);
-      if (!ctx.apply) continue;
-      await ctx.db.removeMember(forum.id);
-      await forum.delete("onboarding: folded into the academy");
+      // Archived, not deleted: replies stayed behind when the opening posts moved.
+      if (ctx.apply) await ctx.db.removeMember(forum.id);
+      await archive(ctx, forum, `${lang}; its posts are in the academy`);
     }
     for (const name of [CATS[lang].ref, CATS_EMOJI[lang].ref]) {
       const cat = findCategory(guild, name);
@@ -695,7 +819,7 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
       const base = role(l, "base"), member = role(l, "member");
       // History on, so the Verify panel posted before they arrived is there to read.
       if (tier === "verify" || tier === "teaser") base && set(base, OverwriteType.Role, P.ViewChannel | P.ReadMessageHistory, 0n);
-      if (tier === "free") {
+      if (tier === "free" || tier === "rules") {
         // An open channel allows Send outright, so a leftover @everyone deny can't mute it.
         // History allowed outright too (unless the channel hides it), so an old @everyone history deny can't hide the backlog.
         const allow = (readOnly ? P.ViewChannel : P.ViewChannel | P.SendMessages | P.SendMessagesInThreads) | (noHistory ? 0n : P.ReadMessageHistory);
@@ -717,6 +841,8 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
       if (tier === "member") member && set(member, OverwriteType.Role, P.ViewChannel | P.ReadMessageHistory, 0n);
     }
   }
+  // Every member sees it, whatever their language, and so does someone who hasn't picked one yet.
+  if (tier === "rules") set(everyone, OverwriteType.Role, P.ViewChannel | P.ReadMessageHistory, 0n);
   if (readOnly) set(everyone, OverwriteType.Role, 0n, P.SendMessages);
   if (ch.type !== ChannelType.GuildCategory) set(me.id, OverwriteType.Member, BOT_ALLOW.reduce((a, b) => a | b, 0n), 0n);
   return [...out.values()].map((o) => ({ id: o.id, type: o.type, allow: o.allow, deny: o.deny }));
@@ -808,9 +934,10 @@ async function stepPanels(ctx: Ctx) {
     if (!ch) { log(`  ! no #${s.name} for its panel`); continue; }
     log(`  post ${s.panel} panel in #${s.name}`);
     if (!ctx.apply) continue;
-    // Any bot's panels go, not just ours: a panel posted by another bot account (the test server's
-    // old shared bot) has buttons only that bot can answer. Webhook posts (mirrored chat) stay.
-    const old = (await ch.messages.fetch({ limit: 50 })).filter((m) => m.author.bot && !m.webhookId);
+    // Our own earlier panels go. With --wipe-bot-panels any bot's do too (the test server's old shared
+    // bot left panels only it can answer); off by default, since live channels hold other bots' posts.
+    // Webhook posts (mirrored chat) always stay.
+    const old = (await ch.messages.fetch({ limit: 50 })).filter((m) => m.author.bot && !m.webhookId && (m.author.id === me.id || ctx.wipeBotPanels));
     for (const m of old.values()) await m.delete().catch(() => {});
     const lang: Lang = s.lang === "all" ? "en" : s.lang;
     const help = findChannel(guild, SPECS.find((x) => x.lang === lang && x.kind === "help")!);
@@ -833,29 +960,33 @@ async function stepPanels(ctx: Ctx) {
 
 /**
  * Community servers must name a rules channel, and Discord shows it to
- * everyone, member list and all. The picker already carries the rules, so it
- * becomes the rules channel and the old one is hidden from everyone but staff.
+ * everyone, with the book icon. The English server guide becomes the rules
+ * channel (the perms step opens it to @everyone for this) and the old one is
+ * hidden from everyone but staff, once Discord has taken the new one.
  */
 async function stepRules(ctx: Ctx) {
   const { guild } = ctx;
   if (!guild.features.includes("COMMUNITY")) { log("  not a Community server, nothing to do"); return; }
-  const picker = findChannel(guild, PICKER);
-  if (!picker) { log("  ! picker channel missing"); return; }
-  const old = guild.rulesChannelId && guild.rulesChannelId !== picker.id ? guild.channels.cache.get(guild.rulesChannelId) : undefined;
-  if (guild.rulesChannelId !== picker.id) {
-    log(`  rules channel: #${old?.name ?? "none"} → #${picker.name}`);
+  const spec = SPECS.find((s) => s.tier === "rules")!;
+  const guide = findChannel(guild, spec);
+  if (!guide) { log(`  ! #${spec.name} missing`); return; }
+  const old = guild.rulesChannelId && guild.rulesChannelId !== guide.id ? guild.channels.cache.get(guild.rulesChannelId) : undefined;
+  if (guild.rulesChannelId !== guide.id) {
+    log(`  rules channel: #${old?.name ?? "none"} → #${guide.name}`);
     if (ctx.apply) {
-      const after = await guild.setRulesChannel(picker.id, "onboarding: the picker carries the rules");
-      // Discord answers 200 and keeps the old channel when the new one is hidden from some members,
-      // which the picker is by design. Then the old channel stays the rules channel, hidden below.
-      if (after.rulesChannelId !== picker.id) log(`  ! Discord kept #${old?.name} as the rules channel (the picker is hidden from members who picked a language)`);
+      const after = await guild.setRulesChannel(guide.id, "onboarding: the English server guide is the rules channel");
+      // Discord answers 200 and keeps the old channel when it won't take the new one.
+      if (after.rulesChannelId !== guide.id) {
+        log(`  ! Discord kept #${old?.name} as the rules channel. Set it by hand: Server Settings → Community → Overview → Rules channel → #${guide.name}. The old channel is left as it is.`);
+        return;
+      }
     }
   }
   if (old && "permissionOverwrites" in old) {
     const everyone = old.permissionOverwrites.cache.get(guild.roles.everyone.id);
     if (!everyone?.deny.has(P.ViewChannel) || old.permissionOverwrites.cache.some((o) => o.id !== guild.roles.everyone.id && o.allow.has(P.ViewChannel))) {
       log(`  hide #${old.name} from everyone but staff`);
-      if (ctx.apply) await old.permissionOverwrites.set([{ id: guild.roles.everyone.id, deny: [P.ViewChannel] }], "onboarding: rules live in the picker now");
+      if (ctx.apply) await old.permissionOverwrites.set([{ id: guild.roles.everyone.id, deny: [P.ViewChannel] }], "onboarding: the server guide is the rules channel now");
     }
   }
 }
@@ -899,12 +1030,13 @@ async function main() {
     guild,
     db,
     apply,
+    wipeBotPanels: args.includes("--wipe-bot-panels"),
     // In a dry run, roles the run would create stand in as "pending:<name>" so the plan still shows them.
     role: (lang, tier) => guild.roles.cache.find((r) => r.name === LANG_ROLE_NAMES[lang][tier])?.id ?? (apply ? undefined : `pending:${LANG_ROLE_NAMES[lang][tier]}`),
   };
   try {
     log(apply ? "APPLYING" : "DRY RUN (add --apply to make these changes)");
-    const run: Record<Step, (c: Ctx) => Promise<void>> = { roles: stepRoles, members: stepMembers, channels: stepChannels, perms: stepPerms, mirror: stepMirror, panels: stepPanels, rules: stepRules, vip: stepVip, cleanup: stepCleanup, notify: stepNotify, academy: stepAcademy };
+    const run: Record<Step, (c: Ctx) => Promise<void>> = { roles: stepRoles, members: stepMembers, channels: stepChannels, perms: stepPerms, mirror: stepMirror, panels: stepPanels, rules: stepRules, vip: stepVip, archive: stepArchive, cleanup: stepCleanup, notify: stepNotify, academy: stepAcademy };
     for (const step of STEPS) {
       if (only && step !== only) continue;
       log(`\n== ${step}`);

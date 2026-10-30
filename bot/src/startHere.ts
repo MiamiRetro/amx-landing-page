@@ -71,7 +71,7 @@ const asset = (file: string, lang: Lang = "en") => {
 /** The guide only ever shows mentions as text: nothing in it pings or highlights the message for anyone. */
 const NO_PINGS = { parse: [] };
 
-const TERMS_URL = "https://momentous-bolt-1cc.notion.site/BLKB-X-Inc-Terms-of-Service-f0567f236cfe43f7b04a47ffa4ed3931?pvs=4";
+const TERMS_URL = "https://www.blkbox.pro/terms-of-service";
 const PRIVACY_URL = "https://www.blkbox.pro/privacy-policy";
 const RULES = [
   "**Respect everyone.**  No harassment, no hate.",

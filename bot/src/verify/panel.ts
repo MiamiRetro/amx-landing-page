@@ -287,7 +287,16 @@ export async function handleVerifyButton(i: ButtonInteraction, deps: { verify: V
   await i.showModal(verifyModal(exchanges));
 }
 
-export async function handleVerifySubmit(i: ModalSubmitInteraction, deps: { verify: VerifyService; roles: LanguageRoles; memberRoleId: string | null; funnel?: Funnel }) {
+type SubmitDeps = {
+  verify: VerifyService;
+  roles: LanguageRoles;
+  memberRoleId: string | null;
+  funnel?: Funnel;
+  /** The help-desk channel id for a language, so a reply can send the member straight there. */
+  helpDeskId?: (lang: Lang) => Promise<string | null>;
+};
+
+export async function handleVerifySubmit(i: ModalSubmitInteraction, deps: SubmitDeps) {
   if (!i.inCachedGuild()) return;
   await i.deferReply({ flags: MessageFlags.Ephemeral });
   try {
@@ -308,11 +317,18 @@ export async function handleVerifySubmit(i: ModalSubmitInteraction, deps: { veri
   }
 }
 
-async function reply(
-  res: Awaited<ReturnType<VerifyService["verify"]>>,
-  member: GuildMember,
-  deps: { roles: LanguageRoles; memberRoleId: string | null },
-) {
+/** A link button to the member's own help-desk, where 🛟 Get help opens a private thread. */
+async function helpDeskRow(member: GuildMember, deps: Pick<SubmitDeps, "roles" | "helpDeskId">) {
+  const id = await deps.helpDeskId?.(deps.roles.langOf(member) ?? "en").catch(() => null);
+  if (!id) return [];
+  return [
+    new ActionRowBuilder<ButtonBuilder>().addComponents(
+      new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel("Open help-desk").setEmoji("🛟").setURL(`https://discord.com/channels/${member.guild.id}/${id}`),
+    ),
+  ];
+}
+
+async function reply(res: Awaited<ReturnType<VerifyService["verify"]>>, member: GuildMember, deps: SubmitDeps) {
   const label = res.exchange.charAt(0).toUpperCase() + res.exchange.slice(1);
   switch (res.outcome) {
     case "verified": {
@@ -354,10 +370,13 @@ async function reply(
     case "already_claimed":
       return {
         content: [
-          "That UID is already linked to another Discord account.",
+          `## That ${label} UID is already in use`,
           "",
-          "If it is yours and you have changed accounts, open a ticket in help-desk and a moderator will move it across.",
+          "It is already linked to another Discord account, so it can't verify this one.",
+          "",
+          "**If it's your UID and you no longer have access to that Discord account**, open a support thread: go to help-desk with the button below, tap 🛟 **Get help**, and tell us your UID. A moderator will check it and move it to this account.",
         ].join("\n"),
+        components: await helpDeskRow(member, deps),
       };
     case "not_referred":
       return {

@@ -21,6 +21,9 @@ import { VipTracker } from "./vip/tracker.js";
 import { FlagshipWatch } from "./flagship.js";
 import { SignalFeed } from "./signals/feed.js";
 import { SupportAssistant } from "./support/assistant.js";
+import { handleCalendarHttp } from "./calendar/google.js";
+import { Butler } from "./support/butler.js";
+import { Concierge, CONCIERGE_PREFIX } from "./support/concierge.js";
 import { SupportDesk, SUPPORT_PREFIX } from "./support/desk.js";
 import { SupportReview } from "./support/review.js";
 import { NotifyCenter, NOTIFY_OPEN, NOTIFY_SET } from "./notify.js";
@@ -57,6 +60,7 @@ async function main() {
   let vip: VipTracker | null = null;
   let invites: InviteTracker | null = null;
   let support: SupportDesk | null = null;
+  let concierge: Concierge | null = null;
   let review: SupportReview | null = null;
   let notify: NotifyCenter | null = null;
   const funnel = new Funnel(db, guildId);
@@ -79,6 +83,7 @@ async function main() {
       notify = new NotifyCenter(guild, db, roles);
       support = new SupportDesk(guild, db, roles, c.user.id, assistant);
       log.info("support desk ready", { assistant: assistant?.model ?? "off" });
+      concierge = new Concierge(guild, db, c.user.id, process.env.ANTHROPIC_API_KEY && process.env.CONCIERGE_BUTLER !== "off" ? new Butler() : null);
       if (SupportReview.enabled()) {
         const desk = support;
         review = new SupportReview(guild, db, c.user.id, assistant, (m) => desk.isMod(m));
@@ -158,6 +163,7 @@ async function main() {
   client.on(Events.MessageCreate, (m) => {
     mirror?.onCreate(m);
     void support?.onMessage(m).catch((e) => log.error("support message failed", errInfo(e)));
+    void concierge?.onMessage(m).catch((e) => log.error("concierge message failed", errInfo(e)));
     void review?.onMessage(m).catch((e) => log.error("support review reply failed", errInfo(e)));
   });
   client.on(Events.MessageUpdate, (_old, m) => mirror?.onUpdate(m));
@@ -174,6 +180,9 @@ async function main() {
     if (i.isStringSelectMenu() && i.customId === NOTIFY_SET && i.inCachedGuild() && notify) {
       return void notify.onSelect(i).catch((e) => log.error("notify select failed", errInfo(e)));
     }
+    if (i.isButton() && i.customId.startsWith(CONCIERGE_PREFIX) && i.inCachedGuild() && concierge) {
+      return void concierge.onButton(i).catch((e) => log.error("concierge button failed", errInfo(e)));
+    }
     if (i.isButton() && i.customId.startsWith(SUPPORT_PREFIX) && i.inCachedGuild() && support) {
       return void support.onButton(i).catch((e) => log.error("support button failed", errInfo(e)));
     }
@@ -183,7 +192,7 @@ async function main() {
         return void handleVerifyButton(i, { verify: v, roles: r, funnel }).catch((e) => log.error("verify button failed", errInfo(e)));
       }
       if (i.isModalSubmit() && i.customId === VERIFY_MODAL) {
-        return void handleVerifySubmit(i, { verify: v, roles: r, memberRoleId: r.memberRoleId(), funnel }).catch((e) => log.error("verify modal failed", errInfo(e)));
+        return void handleVerifySubmit(i, { verify: v, roles: r, memberRoleId: r.memberRoleId(), funnel, helpDeskId: (lang) => db.getSetting(guildId, `support_channel:${lang}`) }).catch((e) => log.error("verify modal failed", errInfo(e)));
       }
     }
     if (!i.isChatInputCommand()) return;
@@ -213,7 +222,8 @@ async function main() {
   client.on(Events.Warn, (w) => log.warn("client warning", { warning: w }));
 
   // Railway health check
-  createServer((req, res) => {
+  createServer(async (req, res) => {
+    if (await handleCalendarHttp(req, res, db, guildId).catch((e) => { log.error("calendar http failed", errInfo(e)); return false; })) return;
     if (req.url === "/health") {
       const body = { ok: client.isReady(), uptimeSec: Math.round((Date.now() - startedAt) / 1000), queue: mirror?.queue.pending ?? 0, paused: mirror?.paused ?? null };
       res.writeHead(client.isReady() ? 200 : 503, { "content-type": "application/json" });

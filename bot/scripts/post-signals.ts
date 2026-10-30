@@ -5,25 +5,25 @@
  * language around a language-free infographic from assets/signals/out
  * (render with `node assets/signals/render.mjs`).
  *
- * It posts through the mirror's own "AMX Mirror" webhooks, so the mirror does
- * not translate the posts a second time. Re-running replaces the earlier set.
+ * It posts through the mirror's own "AMX Mirror" webhooks (src/signals/feed.ts),
+ * so the mirror does not translate the posts a second time. Re-running
+ * replaces the earlier set.
  *
  *   railway run --environment test npx tsx scripts/post-signals.ts --guild 1180210431126675576
  */
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { Client, GatewayIntentBits, WebhookClient, type APIEmbed, type TextChannel } from "discord.js";
-import { config, type Lang } from "../src/config.js";
+import { Client, GatewayIntentBits, type APIEmbed, type TextChannel } from "discord.js";
+import { config } from "../src/config.js";
 import { Db } from "../src/db/index.js";
 import { Translator, providerFromSpec } from "../src/translate/index.js";
-import { tokenize, detokenize } from "../src/mirror/placeholders.js";
-import { WEBHOOK_NAME } from "../src/mirror/webhooks.js";
+import { SignalPoster } from "../src/signals/feed.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const OUT = join(here, "..", "assets", "signals", "out");
-const GROUP = "alphanumetrix";
-const AVATAR = "https://cdn.discordapp.com/avatars/1563549043454644264/{hash}.png?size=256";
+/** The poster's picture when the server has none recorded yet (signals:avatar). */
+const AVATAR = "https://cdn.discordapp.com/avatars/1563549043454644264/65520ed36f41f49b975644f757ebaead.png?size=256";
 const FOOTER = "Past signals don't guarantee future results · Not financial advice";
 /** blkbox.tradingview_signal_events id of signal #7, the newest one shown. */
 const LAST_ID = 7;
@@ -73,84 +73,36 @@ const POSTS: Post[] = [
     footer: { text: FOOTER } } },
 ];
 
-/** The translatable strings of an embed, in a fixed order, and the way back. */
-function strings(e: APIEmbed): string[] {
-  return [e.title!, e.description!, ...(e.fields ?? []).flatMap((f) => [f.name, f.value]), e.footer!.text];
-}
-function rebuild(e: APIEmbed, s: string[]): APIEmbed {
-  let i = 2;
-  return { ...e, title: s[0], description: s[1], fields: e.fields?.map((f) => ({ ...f, name: s[i++], value: s[i++] })), footer: { text: s[i] } };
-}
-
 async function main() {
   const arg = (n: string) => { const i = process.argv.indexOf(`--${n}`); return i > 0 ? process.argv[i + 1] : undefined; };
   const guildId = arg("guild") ?? config.guildId();
   const db = new Db();
-  const group = (await db.loadGroups(guildId)).find((g) => g.name === GROUP);
-  if (!group) throw new Error(`no ${GROUP} mirror group in ${guildId}`);
-  const src = group.members.find((m) => m.lang === "en")!;
-  const targets = group.members.filter((m) => m.lang !== "en");
-
   const translator = new Translator({ primary: providerFromSpec(config.translationProvider()), fallbacks: config.translationFallbacks().map(providerFromSpec), db, timeoutMs: 120_000 });
-  const glossary = await db.glossary(guildId);
-  const langs = targets.map((m) => m.lang as Lang);
-  const localized = new Map<Lang, APIEmbed[]>([["en" as Lang, POSTS.map((p) => p.embed)]]);
-  for (const l of langs) localized.set(l, []);
-  for (const p of POSTS) {
-    const tok = strings(p.embed).map(tokenize);
-    // One language per call: all nine at once overflows the provider's output for the longer cards.
-    for (const l of langs) {
-      const r = await translator.translate(tok.map((x) => x.text), tok.map((x) => x.entities), "en" as Lang, [l], glossary);
-      if (!r.translated) throw new Error(`translation incomplete for ${p.file} (${l})`);
-      localized.get(l)!.push(rebuild(p.embed, r.translations[l].map((s, i) => detokenize(s, tok[i].entities))));
-    }
-    console.log("translated", p.file);
-  }
-
   const client = new Client({ intents: [GatewayIntentBits.Guilds] });
   await client.login(config.discordToken());
   try {
     const guild = await client.guilds.fetch(guildId);
-    const poster = await client.fetchWebhook("1563549043454644264");
-    const avatarURL = AVATAR.replace("{hash}", poster.avatar ?? "");
-    // The English channel has no mirror webhook; one named like the mirror's own is skipped by it.
-    const enChannel = (await guild.channels.fetch(src.channel_id)) as TextChannel;
-    const enHook = (await enChannel.fetchWebhooks()).find((w) => w.name === WEBHOOK_NAME && w.owner?.id === client.user!.id)
-      ?? (await enChannel.createWebhook({ name: WEBHOOK_NAME, reason: "signal history" }));
-    const hooks = new Map<string, { channelId: string; hook: WebhookClient }>();
-    hooks.set("en", { channelId: src.channel_id, hook: new WebhookClient({ id: enHook.id, token: enHook.token! }) });
-    for (const m of targets) hooks.set(m.lang, { channelId: m.channel_id, hook: new WebhookClient({ id: m.webhook_id!, token: m.webhook_token! }) });
+    const poster = new SignalPoster(guild, db, translator);
+    if (!(await db.getSetting(guildId, "signals:avatar"))) await poster.setAvatar(AVATAR);
+    const targets = await poster.targets();
+    console.log("channels:", targets.map((t) => `${t.lang} ${t.channelId}`).join(", "));
 
-    // Replace the earlier set: everything these posters sent in these channels.
-    const ours = new Set([poster.id, enHook.id, ...targets.map((m) => m.webhook_id!)]);
-    for (const [, { channelId }] of hooks) {
-      const ch = (await guild.channels.fetch(channelId)) as TextChannel;
-      const old = (await ch.messages.fetch({ limit: 50 })).filter((m) => (m.webhookId && ours.has(m.webhookId)) || m.type === 6);
+    // Replace the earlier set: everything the AlphanumetriX poster sent in these channels, and pin notices.
+    for (const t of targets) {
+      const ch = (await guild.channels.fetch(t.channelId)) as TextChannel;
+      const old = (await ch.messages.fetch({ limit: 50 })).filter((m) => (!!m.webhookId && m.author.username === "AlphanumetriX") || m.type === 6);
       for (const m of old.values()) await m.delete().catch(() => {});
     }
 
-    for (let i = 0; i < POSTS.length; i++) {
-      for (const [lang, { channelId, hook }] of hooks) {
-        const embed = { ...localized.get(lang as Lang)![i], image: { url: `attachment://${POSTS[i].file}` } };
-        const msg = await hook.send({ username: "AlphanumetriX", avatarURL, embeds: [embed], files: [{ attachment: readFileSync(join(OUT, POSTS[i].file)), name: POSTS[i].file }], allowedMentions: { parse: [] } });
-        if (i === POSTS.length - 1) {
-          // The signal feed (src/signals/feed.ts) refreshes this board in place.
-          await db.setSetting(guildId, `signals:board:${channelId}`, msg.id);
-          const ch = (await guild.channels.fetch(channelId)) as TextChannel;
-          await ch.messages.pin(msg.id).catch((e) => console.log("pin failed", lang, e.message));
-        }
-      }
-      console.log("posted", POSTS[i].file);
+    for (const p of POSTS) {
+      const image = readFileSync(join(OUT, p.file));
+      if (p.file === "board.png") await poster.postBoard(p.embed, image, targets);
+      else await poster.post(p.embed, image, p.file, targets);
+      console.log("posted", p.file);
     }
-    // Drop the "pinned a message" notices.
-    for (const [, { channelId }] of hooks) {
-      const ch = (await guild.channels.fetch(channelId)) as TextChannel;
-      for (const m of (await ch.messages.fetch({ limit: 5 })).filter((m) => m.type === 6).values()) await m.delete().catch(() => {});
-    }
-    // The feed posts what arrives after the last signal shown here, under the same name and picture.
+    // The feed (src/signals/feed.ts) posts what arrives after the newest signal shown here.
     await db.setSetting(guildId, "signals:last_id", String(LAST_ID));
-    await db.setSetting(guildId, "signals:avatar", avatarURL);
-    console.log(`done: https://discord.com/channels/${guildId}/${src.channel_id}`);
+    console.log(`done: https://discord.com/channels/${guildId}/${targets[0].channelId}`);
   } finally {
     await client.destroy();
   }

@@ -43,6 +43,8 @@ export class SignalPoster {
         const me = this.guild.client.user!.id;
         const hook = (await ch.fetchWebhooks()).find((w) => w.name === WEBHOOK_NAME && w.owner?.id === me && w.token)
           ?? (await ch.createWebhook({ name: WEBHOOK_NAME, reason: "AlphanumetriX signals" }));
+        // A language channel's webhook is the mirror's own: record it so the mirror reuses it.
+        if (m.lang !== "en") await this.db.upsertMember({ channel_id: m.channel_id, group_id: m.group_id, lang: m.lang, webhook_id: hook.id, webhook_token: hook.token! });
         out.push({ lang: m.lang as Lang, channelId: m.channel_id, hook: new WebhookClient({ id: hook.id, token: hook.token! }) });
       } else {
         out.push({ lang: m.lang as Lang, channelId: m.channel_id, hook: new WebhookClient({ id: m.webhook_id, token: m.webhook_token }) });

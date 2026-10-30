@@ -107,8 +107,9 @@ export class LanguageRoles {
       const member = (await this.db.getSetting(this.guild.id, `mrole:${lang}`)) ?? byName(LANG_ROLE_NAMES[lang].member);
       if (base && member && this.guild.roles.cache.has(base) && this.guild.roles.cache.has(member)) this.pairs.set(lang, { base, member });
     }
-    const names = ((await this.db.getSetting(this.guild.id, "member_roles")) ?? "Member,Members").split(",").map((s) => s.trim().toLowerCase());
-    this.memberRoleIds = new Set(this.guild.roles.cache.filter((r) => names.includes(r.name.toLowerCase())).map((r) => r.id));
+    // Listed order decides which role a new verification gets; "Members" first, as the live server's main one.
+    const names = ((await this.db.getSetting(this.guild.id, "member_roles")) ?? "Members,Member").split(",").map((s) => s.trim().toLowerCase());
+    this.memberRoleIds = new Set(names.flatMap((n) => this.guild.roles.cache.filter((r) => r.name.toLowerCase() === n).map((r) => r.id)));
     this.loadedAt = Date.now();
   }
 

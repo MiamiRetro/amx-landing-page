@@ -21,6 +21,7 @@ import { VipTracker } from "./vip/tracker.js";
 import { FlagshipWatch } from "./flagship.js";
 import { SignalFeed } from "./signals/feed.js";
 import { SupportAssistant } from "./support/assistant.js";
+import { handleCalendarHttp } from "./calendar/google.js";
 import { Butler } from "./support/butler.js";
 import { Concierge, CONCIERGE_PREFIX } from "./support/concierge.js";
 import { SupportDesk, SUPPORT_PREFIX } from "./support/desk.js";
@@ -221,7 +222,8 @@ async function main() {
   client.on(Events.Warn, (w) => log.warn("client warning", { warning: w }));
 
   // Railway health check
-  createServer((req, res) => {
+  createServer(async (req, res) => {
+    if (await handleCalendarHttp(req, res, db, guildId).catch((e) => { log.error("calendar http failed", errInfo(e)); return false; })) return;
     if (req.url === "/health") {
       const body = { ok: client.isReady(), uptimeSec: Math.round((Date.now() - startedAt) / 1000), queue: mirror?.queue.pending ?? 0, paused: mirror?.paused ?? null };
       res.writeHead(client.isReady() ? 200 : 503, { "content-type": "application/json" });

@@ -43,6 +43,7 @@ type Tier =
   | "verify" //    language role only: vanishes on verification
   | "teaser" //    language role only, read-only
   | "free" //      both tiers
+  | "rules" //     free, and @everyone too: Discord only takes a rules channel everyone can see
   | "trader" //    both see it, only members talk
   | "help" //      both see it; nobody talks in the channel, everyone writes in their own help thread with links and screenshots
   | "member" //    members only
@@ -259,7 +260,7 @@ function oldForum(guild: Guild, lang: Lang, kind: "guides" | "strategies" | "for
 const PICKER: Spec = { name: "🌐・choose-language", parent: null, lang: "all", tier: "picker", readOnly: true, topic: "Pick your language to enter", panel: "picker" };
 
 /** Tiers each audience sees: a member who picked a language, and one who also verified. */
-const SEEN_BY = { base: ["verify", "teaser", "free", "trader", "help"], member: ["free", "trader", "member", "help"] } as Record<"base" | "member", Tier[]>;
+const SEEN_BY = { base: ["verify", "teaser", "free", "rules", "trader", "help"], member: ["free", "rules", "trader", "member", "help"] } as Record<"base" | "member", Tier[]>;
 /** ┗ for the last channel of its category that either audience sees, ┣ for the rest. */
 function branchOf(l: (typeof LAYOUT)[number]) {
   const inCat = LAYOUT.filter((x) => x.cat === l.cat && !x.top);
@@ -293,7 +294,9 @@ for (const lang of LANGS) {
       legacy.push({ name: DAYTRADE_OLD[lang], parent: CATS[lang][l.cat] });
     }
     const topic = l.lockFor ? bare(NAMES[lang][l.lockFor]) : l.panel === "locked" ? bare(name) : undefined;
-    SPECS.push({ name, parent: l.top ? null : CATS[lang][l.cat], lang, tier: l.tier, kind: l.kind, readOnly: l.readOnly, noHistory: l.noHistory, type: l.type, panel: l.panel, topic, legacy });
+    // The English server guide is the server's rules channel (the one with the book icon).
+    const tier: Tier = lang === "en" && l.kind === "start" ? "rules" : l.tier;
+    SPECS.push({ name, parent: l.top ? null : CATS[lang][l.cat], lang, tier, kind: l.kind, readOnly: l.readOnly, noHistory: l.noHistory, type: l.type, panel: l.panel, topic, legacy });
   }
 }
 
@@ -749,7 +752,7 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
       const base = role(l, "base"), member = role(l, "member");
       // History on, so the Verify panel posted before they arrived is there to read.
       if (tier === "verify" || tier === "teaser") base && set(base, OverwriteType.Role, P.ViewChannel | P.ReadMessageHistory, 0n);
-      if (tier === "free") {
+      if (tier === "free" || tier === "rules") {
         // An open channel allows Send outright, so a leftover @everyone deny can't mute it.
         // History allowed outright too (unless the channel hides it), so an old @everyone history deny can't hide the backlog.
         const allow = (readOnly ? P.ViewChannel : P.ViewChannel | P.SendMessages | P.SendMessagesInThreads) | (noHistory ? 0n : P.ReadMessageHistory);
@@ -771,6 +774,8 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
       if (tier === "member") member && set(member, OverwriteType.Role, P.ViewChannel | P.ReadMessageHistory, 0n);
     }
   }
+  // Every member sees it, whatever their language, and so does someone who hasn't picked one yet.
+  if (tier === "rules") set(everyone, OverwriteType.Role, P.ViewChannel | P.ReadMessageHistory, 0n);
   if (readOnly) set(everyone, OverwriteType.Role, 0n, P.SendMessages);
   if (ch.type !== ChannelType.GuildCategory) set(me.id, OverwriteType.Member, BOT_ALLOW.reduce((a, b) => a | b, 0n), 0n);
   return [...out.values()].map((o) => ({ id: o.id, type: o.type, allow: o.allow, deny: o.deny }));
@@ -888,29 +893,33 @@ async function stepPanels(ctx: Ctx) {
 
 /**
  * Community servers must name a rules channel, and Discord shows it to
- * everyone, member list and all. The picker already carries the rules, so it
- * becomes the rules channel and the old one is hidden from everyone but staff.
+ * everyone, with the book icon. The English server guide becomes the rules
+ * channel (the perms step opens it to @everyone for this) and the old one is
+ * hidden from everyone but staff, once Discord has taken the new one.
  */
 async function stepRules(ctx: Ctx) {
   const { guild } = ctx;
   if (!guild.features.includes("COMMUNITY")) { log("  not a Community server, nothing to do"); return; }
-  const picker = findChannel(guild, PICKER);
-  if (!picker) { log("  ! picker channel missing"); return; }
-  const old = guild.rulesChannelId && guild.rulesChannelId !== picker.id ? guild.channels.cache.get(guild.rulesChannelId) : undefined;
-  if (guild.rulesChannelId !== picker.id) {
-    log(`  rules channel: #${old?.name ?? "none"} → #${picker.name}`);
+  const spec = SPECS.find((s) => s.tier === "rules")!;
+  const guide = findChannel(guild, spec);
+  if (!guide) { log(`  ! #${spec.name} missing`); return; }
+  const old = guild.rulesChannelId && guild.rulesChannelId !== guide.id ? guild.channels.cache.get(guild.rulesChannelId) : undefined;
+  if (guild.rulesChannelId !== guide.id) {
+    log(`  rules channel: #${old?.name ?? "none"} → #${guide.name}`);
     if (ctx.apply) {
-      const after = await guild.setRulesChannel(picker.id, "onboarding: the picker carries the rules");
-      // Discord answers 200 and keeps the old channel when the new one is hidden from some members,
-      // which the picker is by design. Then the old channel stays the rules channel, hidden below.
-      if (after.rulesChannelId !== picker.id) log(`  ! Discord kept #${old?.name} as the rules channel (the picker is hidden from members who picked a language)`);
+      const after = await guild.setRulesChannel(guide.id, "onboarding: the English server guide is the rules channel");
+      // Discord answers 200 and keeps the old channel when it won't take the new one.
+      if (after.rulesChannelId !== guide.id) {
+        log(`  ! Discord kept #${old?.name} as the rules channel. Set it by hand: Server Settings → Community → Overview → Rules channel → #${guide.name}. The old channel is left as it is.`);
+        return;
+      }
     }
   }
   if (old && "permissionOverwrites" in old) {
     const everyone = old.permissionOverwrites.cache.get(guild.roles.everyone.id);
     if (!everyone?.deny.has(P.ViewChannel) || old.permissionOverwrites.cache.some((o) => o.id !== guild.roles.everyone.id && o.allow.has(P.ViewChannel))) {
       log(`  hide #${old.name} from everyone but staff`);
-      if (ctx.apply) await old.permissionOverwrites.set([{ id: guild.roles.everyone.id, deny: [P.ViewChannel] }], "onboarding: rules live in the picker now");
+      if (ctx.apply) await old.permissionOverwrites.set([{ id: guild.roles.everyone.id, deny: [P.ViewChannel] }], "onboarding: the server guide is the rules channel now");
     }
   }
 }

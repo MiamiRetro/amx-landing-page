@@ -36,7 +36,7 @@ import { NOTIFY_ROLES, NOTIFY_TOPICS } from "../src/notify.js";
 import { guideChannelName } from "../src/i18n/guide.js";
 import { LANG_ROLE_NAMES } from "../src/roles.js";
 import { verifyPanel } from "../src/verify/panel.js";
-import { CONCIERGE_CHANNEL, CONCIERGE_OPEN, conciergePanel, teamRoleNames, VIP_ROLES } from "../src/support/concierge.js";
+import { BOOKINGS_CHANNEL, CONCIERGE_CHANNEL, CONCIERGE_OPEN, conciergePanel, teamRoleNames, VIP_ROLES } from "../src/support/concierge.js";
 import { supportPanel } from "../src/support/desk.js";
 
 type Tier =
@@ -579,12 +579,29 @@ async function stepVip(ctx: Ctx) {
   }
   if (concierge) {
     const pinned = await concierge.messages.fetchPinned().catch(() => null);
-    const has = pinned?.some((m) => m.author.id === me.id && m.components.some((r) => JSON.stringify(r.toJSON()).includes(CONCIERGE_OPEN)));
-    if (!has) {
+    const panel = pinned?.find((m) => m.author.id === me.id && m.components.some((r) => JSON.stringify(r.toJSON()).includes(CONCIERGE_OPEN)));
+    if (!panel) {
       log(`  post the concierge panel in #${concierge.name}`);
       if (ctx.apply) await concierge.send(conciergePanel()).then((m) => m.pin().catch(() => {}));
+    } else if (panel.content !== conciergePanel().content) {
+      // Same message, new wording: the pin and its place stay.
+      log(`  update the concierge panel in #${concierge.name}`);
+      if (ctx.apply) await panel.edit(conciergePanel());
     }
   }
+
+  // Where the e-butler sends session requests for JT and Matt: the team only.
+  let bookings = guild.channels.cache.find((c): c is TextChannel => c.type === ChannelType.GuildText && c.name === BOOKINGS_CHANNEL);
+  const bookingsOws: OverwriteResolvable[] = [
+    { id: guild.roles.everyone.id, deny: [P.ViewChannel] },
+    ...teamRoleIds.map((id) => ({ id, allow: [P.ViewChannel, P.ReadMessageHistory] })),
+    { id: me.id, type: OverwriteType.Member, allow: [P.ViewChannel, P.SendMessages, P.ReadMessageHistory, P.EmbedLinks] },
+  ];
+  if (!bookings) {
+    log(`  create #${BOOKINGS_CHANNEL} (team only: session requests from the concierge)`);
+    if (ctx.apply) bookings = await guild.channels.create({ name: BOOKINGS_CHANNEL, type: ChannelType.GuildText, topic: "Session requests from the VIP concierge. Accept to join the VIP's thread.", permissionOverwrites: bookingsOws, reason: "VIP concierge bookings" });
+  } else if (ctx.apply) await bookings.permissionOverwrites.set(bookingsOws, "VIP concierge bookings");
+  if (bookings && ctx.apply) await db.setSetting(guild.id, "concierge_bookings_channel", bookings.id);
 
   let report = guild.channels.cache.find((c): c is TextChannel => c.type === ChannelType.GuildText && c.name === "📊・vip-report");
   if (!report) {

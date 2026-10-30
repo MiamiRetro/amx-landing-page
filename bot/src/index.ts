@@ -21,6 +21,7 @@ import { VipTracker } from "./vip/tracker.js";
 import { FlagshipWatch } from "./flagship.js";
 import { SignalFeed } from "./signals/feed.js";
 import { SupportAssistant } from "./support/assistant.js";
+import { Butler } from "./support/butler.js";
 import { Concierge, CONCIERGE_PREFIX } from "./support/concierge.js";
 import { SupportDesk, SUPPORT_PREFIX } from "./support/desk.js";
 import { SupportReview } from "./support/review.js";
@@ -81,7 +82,7 @@ async function main() {
       notify = new NotifyCenter(guild, db, roles);
       support = new SupportDesk(guild, db, roles, c.user.id, assistant);
       log.info("support desk ready", { assistant: assistant?.model ?? "off" });
-      concierge = new Concierge(guild, c.user.id);
+      concierge = new Concierge(guild, db, c.user.id, process.env.ANTHROPIC_API_KEY && process.env.CONCIERGE_BUTLER !== "off" ? new Butler() : null);
       if (SupportReview.enabled()) {
         const desk = support;
         review = new SupportReview(guild, db, c.user.id, assistant, (m) => desk.isMod(m));
@@ -161,6 +162,7 @@ async function main() {
   client.on(Events.MessageCreate, (m) => {
     mirror?.onCreate(m);
     void support?.onMessage(m).catch((e) => log.error("support message failed", errInfo(e)));
+    void concierge?.onMessage(m).catch((e) => log.error("concierge message failed", errInfo(e)));
     void review?.onMessage(m).catch((e) => log.error("support review reply failed", errInfo(e)));
   });
   client.on(Events.MessageUpdate, (_old, m) => mirror?.onUpdate(m));

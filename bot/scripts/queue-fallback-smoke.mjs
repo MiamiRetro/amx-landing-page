@@ -10,8 +10,9 @@ const fallback={id:sonnet.id,translate:async (...args)=>{calls++;return sonnet.t
 const t=new Translator({primary,fallbacks:[fallback],timeoutMs:30000});
 const started=Date.now();
 try {
- const result=await t.translate(['The meeting starts tomorrow morning.'],[[]],'en',['zh'],[]);
- if(!result.translated || calls!==1 || !result.translations.zh[0]) throw Error('Fallback smoke failed');
+ const targets=['zh','ko','id','es','ja','pt','ru','tr','vi'];
+ const result=await t.translate(['The meeting starts tomorrow morning.'],[[]],'en',targets,[]);
+ if(!result.translated || calls!==1 || targets.some(lang=>!result.translations[lang]?.[0])) throw Error('Fallback smoke failed');
  console.log(JSON.stringify({verified:'real Sonnet fallback with no local worker',elapsedMs:Date.now()-started,sonnetCalls:calls,result}));
 } finally {await primary.close();}
 process.exit(0);

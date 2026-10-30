@@ -75,7 +75,9 @@ function check(name: string, ok: boolean, detail?: string) {
   console.log(`  ${ok ? "PASS" : "FAIL"}  ${name}${detail ? `  (${detail})` : ""}`);
 }
 
-const synthetic = (text: string, targets: TranslateRequest["targets"] = ["zh", "ko", "id"]): TranslateRequest => ({
+const targetsDefault: TranslateRequest["targets"] = flag("--all-languages") ? ["zh", "ko", "id", "es", "ja", "pt", "ru", "tr", "vi"] : ["zh", "ko", "id"];
+console.log(`Target languages per live request: ${targetsDefault.join(", ")}`);
+const synthetic = (text: string, targets: TranslateRequest["targets"] = targetsDefault): TranslateRequest => ({
   segments: [text],
   sourceLang: "en",
   targets,

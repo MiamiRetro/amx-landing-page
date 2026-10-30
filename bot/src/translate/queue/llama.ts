@@ -9,7 +9,7 @@ export interface LlamaChatBody {
   stream: false;
   cache_prompt: boolean;
   chat_template_kwargs: { enable_thinking: false };
-  response_format?: { type: "json_object" };
+  response_format?: { type: "json_object" } | { type: "json_schema"; json_schema: { name: string; strict: true; schema: Record<string, unknown> } };
 }
 
 export interface LlamaChatResult {
@@ -94,11 +94,13 @@ export class LlamaClient {
   }
 
   /** Aborting `signal` closes the connection, which makes llama-server stop generating. */
-  async chat(system: string, user: string, maxTokens: number, signal: AbortSignal): Promise<LlamaChatResult> {
+  async chat(system: string, user: string, maxTokens: number, signal: AbortSignal, schema?: Record<string, unknown>): Promise<LlamaChatResult> {
+    const body = buildChatBody(system, user, maxTokens, this.o.jsonMode ?? true);
+    if (schema) body.response_format = { type: "json_schema", json_schema: { name: "translations", strict: true, schema } };
     const res = await this.f(`${this.base}/v1/chat/completions`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(buildChatBody(system, user, maxTokens, this.o.jsonMode ?? true)),
+      body: JSON.stringify(body),
       signal,
     });
     if (!res.ok) {

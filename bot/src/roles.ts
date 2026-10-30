@@ -14,6 +14,12 @@ const REPLY: Record<Lang, { done: string; pending: string; notReady: string }> =
   zh: { done: "好了，你现在可以看到中文频道了。", pending: "已记住你的选择。完成会员验证后，中文频道会自动对你开放。", notReady: "中文频道还没准备好。" },
   ko: { done: "완료! 이제 한국어 채널이 보여요.", pending: "선택을 저장했어요. 멤버 인증이 끝나면 한국어 채널이 자동으로 열립니다.", notReady: "한국어 채널이 아직 준비되지 않았어요." },
   id: { done: "Beres. Kanal Bahasa Indonesia sekarang terbuka untukmu.", pending: "Pilihanmu disimpan. Begitu verifikasi member selesai, kanal Bahasa Indonesia otomatis terbuka.", notReady: "Kanal Bahasa Indonesia belum siap." },
+  es: { done: "Listo. Tus canales en español están disponibles.", pending: "Preferencia guardada. Los canales se abrirán tras la verificación.", notReady: "Los canales en español aún no están listos." },
+  ja: { done: "日本語チャンネルが利用できます。", pending: "設定を保存しました。認証後にチャンネルが開きます。", notReady: "日本語チャンネルはまだ準備中です。" },
+  pt: { done: "Pronto. Seus canais em português estão disponíveis.", pending: "Preferência salva. Os canais serão abertos após a verificação.", notReady: "Os canais em português ainda não estão prontos." },
+  ru: { done: "Готово. Русские каналы доступны.", pending: "Выбор сохранён. Каналы откроются после проверки.", notReady: "Русские каналы пока не готовы." },
+  tr: { done: "Tamam. Türkçe kanalların açıldı.", pending: "Tercihin kaydedildi. Doğrulamadan sonra kanallar açılacak.", notReady: "Türkçe kanallar henüz hazır değil." },
+  vi: { done: "Xong. Các kênh tiếng Việt đã mở.", pending: "Đã lưu lựa chọn. Các kênh sẽ mở sau khi xác minh.", notReady: "Các kênh tiếng Việt chưa sẵn sàng." },
 };
 
 export class LanguageRoles {

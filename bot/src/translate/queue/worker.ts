@@ -12,7 +12,7 @@ import { Wakeup } from "./wakeup.js";
 /** The slice of LlamaClient the worker uses, so tests can drive it without a server. */
 export interface LlamaApi {
   countTokens(text: string, signal?: AbortSignal): Promise<number>;
-  chat(system: string, user: string, maxTokens: number, signal: AbortSignal): Promise<LlamaChatResult>;
+  chat(system: string, user: string, maxTokens: number, signal: AbortSignal, schema?: Record<string, unknown>): Promise<LlamaChatResult>;
   healthy(): Promise<boolean>;
 }
 
@@ -203,7 +203,13 @@ export class QueueWorker {
         return;
       }
 
-      const out = await this.o.llama.chat(SYSTEM_PROMPT, user, plan.maxTokens, ac.signal);
+      const schema = {
+        type: "object", additionalProperties: false, required: req.targets,
+        properties: Object.fromEntries(req.targets.map(lang => [lang, {
+          type: "array", items: { type: "string" }, minItems: req.segments.length, maxItems: req.segments.length,
+        }])),
+      };
+      const out = await this.o.llama.chat(SYSTEM_PROMPT, user, plan.maxTokens, ac.signal, schema);
       if (out.reasoning) log.warn("model returned reasoning text although thinking is disabled", { jobId: job.id, chars: out.reasoning.length });
       if (out.finishReason === "length") {
         await this.fail(job, `truncated: hit max_tokens ${plan.maxTokens}`);

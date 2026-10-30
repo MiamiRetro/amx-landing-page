@@ -78,9 +78,9 @@ const goTo = (url: string) =>
 const DEFAULT_HOURS: Record<HostKey, string> = { jt: "Mon-Fri 10:00-18:00 Asia/Bangkok", matt: "Mon-Fri 10:00-18:00 Asia/Bangkok" };
 const hoursOf = (host: HostKey) => parseHours(process.env[`CONCIERGE_HOURS_${host.toUpperCase()}`]?.trim() || DEFAULT_HOURS[host]);
 const SESSION_MIN = () => Number(process.env.CONCIERGE_SESSION_MIN ?? 30);
-const BOOK_DAYS = () => Number(process.env.CONCIERGE_BOOK_DAYS ?? 14);
+const BOOK_DAYS = () => Number(process.env.CONCIERGE_BOOK_DAYS ?? 7);
 /** Sessions are booked, not on demand: nothing sooner than this. */
-const LEAD_HOURS = () => Number(process.env.CONCIERGE_LEAD_HOURS ?? 24);
+const LEAD_HOURS = () => Number(process.env.CONCIERGE_LEAD_HOURS ?? 48);
 const TOPIC = "-# Topic: ";
 const when = (unix: number) => `<t:${unix}:F> (<t:${unix}:R>)`;
 

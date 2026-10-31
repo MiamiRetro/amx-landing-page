@@ -1,5 +1,6 @@
 import type { Db } from "../db/index.js";
 import { ProviderError, type AffiliateProvider, type ExchangeId } from "./types.js";
+import { UidClaimedError, UidInvalidError, UidRevokedError } from "./providers/backend.js";
 
 export type Outcome =
   | "verified"
@@ -8,6 +9,7 @@ export type Outcome =
   | "not_referred"
   | "not_configured"
   | "bad_uid"
+  | "revoked"
   | "rate_limited"
   | "provider_error";
 
@@ -23,7 +25,7 @@ export interface VerifyResult {
   remaining?: number;
 }
 
-const MAX_ATTEMPTS = Number(process.env.VERIFY_MAX_ATTEMPTS ?? 5);
+const MAX_ATTEMPTS = Number(process.env.VERIFY_MAX_ATTEMPTS ?? 10);
 const WINDOW_MIN = Number(process.env.VERIFY_WINDOW_MIN ?? 15);
 /** Exchange UIDs are short numeric or alphanumeric ids; anything else is a typo or a probe. */
 export const UID_RE = /^[A-Za-z0-9_-]{4,32}$/;
@@ -43,6 +45,12 @@ export class VerifyService {
     private db: Db,
     private guildId: string,
     private providers: Map<ExchangeId, AffiliateProvider>,
+    /**
+     * The provider keeps the record of who holds which UID (the BLKBöX app API),
+     * so it decides "already linked", not our own table: a UID released there
+     * must be usable here straight away.
+     */
+    private providerOwnsUids = false,
   ) {}
 
   provider(exchange: ExchangeId) {
@@ -84,7 +92,7 @@ export class VerifyService {
     const remaining = Math.max(0, MAX_ATTEMPTS - used - 1);
 
     const held = await this.db.verificationByUid(args.exchange, uid);
-    if (held && held.discord_user_id !== args.userId) {
+    if (held && held.discord_user_id !== args.userId && !this.providerOwnsUids) {
       await record("already_claimed");
       return { ...base, outcome: "already_claimed", claimedBy: held.discord_user_id, remaining };
     }
@@ -102,12 +110,20 @@ export class VerifyService {
     }
 
     try {
-      const res = await provider.lookup(uid);
+      const res = await provider.lookup(uid, { discordUserId: args.userId });
       if (!res.referred) {
         await record("not_referred");
         return { ...base, outcome: "not_referred", remaining };
       }
-      await this.db.saveVerification({
+      // The same person may already hold this UID from another server sharing
+      // the database (the test server); one row per UID, so keep theirs.
+      // The API gave this UID to this member. Our row for it, if another member in this
+      // server held it, moves across; a row from another server sharing the table is left alone.
+      if (held && held.discord_user_id !== args.userId && this.providerOwnsUids && held.guild_id === this.guildId) {
+        await this.db.removeVerification(held.guild_id, held.discord_user_id);
+      }
+      const keep = held && (held.discord_user_id === args.userId || held.guild_id !== this.guildId);
+      if (!keep) await this.db.saveVerification({
         guild_id: this.guildId,
         discord_user_id: args.userId,
         exchange: args.exchange,
@@ -117,6 +133,19 @@ export class VerifyService {
       await record("verified");
       return { ...base, outcome: "verified", remaining };
     } catch (e) {
+      // The app API keeps its own record of who holds which UID, across Discord and the app.
+      if (e instanceof UidClaimedError) {
+        await record("already_claimed", e.message);
+        return { ...base, outcome: "already_claimed", remaining };
+      }
+      if (e instanceof UidRevokedError) {
+        await record("revoked", e.message);
+        return { ...base, outcome: "revoked", remaining };
+      }
+      if (e instanceof UidInvalidError) {
+        await record("bad_uid", e.message);
+        return { ...base, outcome: "bad_uid", remaining };
+      }
       const error = e instanceof ProviderError ? e.message : e instanceof Error ? e.message : String(e);
       await record("provider_error", error);
       return { ...base, outcome: "provider_error", error, remaining };

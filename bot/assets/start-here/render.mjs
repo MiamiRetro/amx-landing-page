@@ -2,10 +2,10 @@ import { chromium } from "playwright-core";
 const exe = process.argv[2];
 const specs = [
   { file: "hero.png", mode: "hero", w: 1200, h: 520, kicker: "BLKBöX Trading Floor", title: "The crypto trader's<br><span class=\"accent\">command center.</span>", sub: "Market intelligence · Proprietary signals · Multi-exchange execution" },
-  { file: "language.png", w: 1200, h: 300, kicker: "Step 1", title: "Choose your<br>language", sub: "选择语言 · 언어 선택 · Pilih bahasa", sm: true },
-  { file: "rules.png", w: 1200, h: 300, kicker: "Step 2", title: "The rules", sub: "Seven lines. Keep it clean." },
-  { file: "start.png", w: 1200, h: 300, kicker: "Step 3", title: "Get started", sub: "Account · Exchange · Verify your UID" },
-  { file: "community.png", w: 1200, h: 300, kicker: "Stay close", title: "Follow &amp; get help", sub: "YouTube · X · Help-desk", sm: true },
+  { file: "language.png", w: 1200, h: 300, kicker: "Start here", title: "Choose your<br>language", sub: "选择语言 · 언어 선택 · Pilih bahasa", sm: true },
+  { file: "rules.png", w: 1200, h: 300, kicker: "House rules", title: "The rules", sub: "Seven lines. Keep it clean." },
+  { file: "start.png", w: 1200, h: 300, kicker: "Free access", title: "Get started", sub: "Account · Exchange · Verify your UID" },
+  { file: "community.png", w: 1200, h: 300, kicker: "Stay close", title: "Follow &amp; get help", sub: "YouTube · X · Notifications · Help", sm: true },
   { file: "logo.png", mode: "tile", w: 512, h: 512 },
   { file: "avatar.png", mode: "avatar", w: 512, h: 512, transparent: true },
   { file: "emoji.png", mode: "emoji", w: 128, h: 128, transparent: true },

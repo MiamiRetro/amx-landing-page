@@ -1,0 +1,34 @@
+{
+  "en": {
+    "kicker": "BLKBöX Trading Floor", "title": "Pardon our mess", "sub": "We're rebuilding the server in 10 languages",
+    "cards": [["🔀", "Channels on the move", "Channels may move, get renamed or vanish for a little while."],
+              ["🤔", "Things may look odd", "Some channels won't make sense until we're finished."],
+              ["🛟", "Nothing is lost", "Your messages are safe and verified members keep access."]],
+    "pill": "TONIGHT", "when": "Sun 1 Nov · 03:00–06:00 UTC+7", "utc": "(Sat 31 Oct · 20:00–23:00 UTC)",
+    "text": ["🚧 **Pardon our mess**", "", "Tonight we're rebuilding the BLKBöX Trading Floor into its new 10-language layout.", "🗓️ **Sunday 1 Nov, 03:00–06:00 UTC+7** (Saturday 31 Oct, 20:00–23:00 UTC)", "", "While we work:", "• Channels may move, get renamed or briefly disappear", "• Some things may look odd or not make sense for a while", "• You might spot channels in places you don't expect", "", "Nothing you've posted is lost, and verified members keep their access. Please bear with us while we iron out the bugs. We're aiming for a smooth switch and we'll post here the moment it's done. ⚡"]
+  },
+  "zh": {
+    "kicker": "BLKBöX 交易大厅", "title": "施工中，敬请见谅", "sub": "我们正在把服务器升级为 10 种语言",
+    "cards": [["🔀", "频道调整中", "频道可能会移动、改名或暂时消失。"],
+              ["🤔", "可能看起来有点乱", "完成之前，有些频道的位置可能不太合理。"],
+              ["🛟", "内容不会丢失", "你的消息都安全，已验证会员的权限保持不变。"]],
+    "pill": "今晚", "when": "11月1日（周日）03:00–06:00 UTC+7", "utc": "（10月31日 20:00–23:00 UTC）",
+    "text": ["🚧 **施工中，敬请见谅**", "", "今晚我们会把 BLKBöX 交易大厅升级为全新的 10 种语言布局。", "🗓️ **11月1日（周日）03:00–06:00 UTC+7**（10月31日周六 20:00–23:00 UTC）", "", "升级期间：", "• 频道可能会移动、改名或短暂消失", "• 有些地方可能一时看起来奇怪或不太合理", "• 你可能会在意想不到的位置看到某些频道", "", "你发过的内容不会丢失，已验证会员的权限保持不变。我们正在努力排除问题，请耐心等待，争取平稳过渡。完成后会第一时间在这里通知。⚡"]
+  },
+  "ko": {
+    "kicker": "BLKBöX 트레이딩 플로어", "title": "공사 중입니다, 양해 부탁드려요", "sub": "서버를 10개 언어로 새로 꾸미고 있어요",
+    "cards": [["🔀", "채널 이동 중", "채널이 잠시 이동하거나 이름이 바뀌거나 사라질 수 있어요."],
+              ["🤔", "조금 어색해 보일 수 있어요", "작업이 끝날 때까지 일부 채널이 어색해 보일 수 있어요."],
+              ["🛟", "아무것도 사라지지 않아요", "메시지는 안전하고, 인증 회원의 권한은 그대로 유지돼요."]],
+    "pill": "오늘 밤", "when": "11월 1일(일) 03:00–06:00 UTC+7", "utc": "(10월 31일(토) 20:00–23:00 UTC)",
+    "text": ["🚧 **공사 중입니다, 양해 부탁드려요**", "", "오늘 밤 BLKBöX 트레이딩 플로어를 새로운 10개 언어 구성으로 바꿉니다.", "🗓️ **11월 1일(일) 03:00–06:00 UTC+7** (10월 31일(토) 20:00–23:00 UTC)", "", "작업하는 동안:", "• 채널이 이동하거나, 이름이 바뀌거나, 잠시 사라질 수 있어요", "• 한동안 어색하거나 이해가 안 되는 부분이 있을 수 있어요", "• 예상치 못한 위치에 채널이 보일 수 있어요", "", "올리신 글은 사라지지 않고, 인증 회원의 권한도 그대로입니다. 버그를 잡는 동안 조금만 기다려 주세요. 매끄럽게 전환하는 것이 목표이며, 끝나는 즉시 여기에서 알려드릴게요. ⚡"]
+  },
+  "id": {
+    "kicker": "BLKBöX Trading Floor", "title": "Maaf, sedang renovasi", "sub": "Kami sedang membangun ulang server dalam 10 bahasa",
+    "cards": [["🔀", "Kanal sedang berpindah", "Kanal bisa berpindah, ganti nama, atau hilang sebentar."],
+              ["🤔", "Mungkin terlihat aneh", "Beberapa kanal belum masuk akal sampai kami selesai."],
+              ["🛟", "Tidak ada yang hilang", "Pesanmu aman dan member terverifikasi tetap punya akses."]],
+    "pill": "MALAM INI", "when": "Minggu 1 Nov · 03:00–06:00 UTC+7", "utc": "(Sabtu 31 Okt · 20:00–23:00 UTC)",
+    "text": ["🚧 **Maaf, sedang renovasi**", "", "Malam ini kami membangun ulang BLKBöX Trading Floor ke tata letak baru dalam 10 bahasa.", "🗓️ **Minggu 1 Nov, 03:00–06:00 UTC+7** (Sabtu 31 Okt, 20:00–23:00 UTC)", "", "Selama proses ini:", "• Kanal bisa berpindah, berganti nama, atau hilang sebentar", "• Beberapa hal mungkin terlihat aneh atau belum masuk akal", "• Kamu mungkin melihat kanal di tempat yang tidak terduga", "", "Pesan yang sudah kamu kirim tidak akan hilang, dan member terverifikasi tetap punya akses. Mohon bersabar selama kami membereskan bug. Kami menargetkan peralihan yang mulus dan akan mengabari di sini begitu selesai. ⚡"]
+  }
+}

@@ -10,6 +10,9 @@ RUN npm run build && npm prune --omit=dev
 FROM node:22-alpine
 WORKDIR /app
 ENV NODE_ENV=production
+# Headless Chromium draws the AlphanumetriX signal cards (src/signals/render.ts).
+RUN apk add --no-cache chromium
+ENV CHROMIUM_PATH=/usr/bin/chromium-browser
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 # Images the bot attaches at runtime, such as the UID guide.

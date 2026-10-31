@@ -38,7 +38,7 @@ export interface AffiliateProvider {
    * Throws on transport or auth failures; a clean "not our customer" answer
    * must come back as `{ referred: false }` so the member gets the right message.
    */
-  lookup(uid: string): Promise<AffiliateLookup>;
+  lookup(uid: string, ctx?: { discordUserId?: string }): Promise<AffiliateLookup>;
 }
 
 /** Thrown when the exchange could not answer, as opposed to answering "no". */

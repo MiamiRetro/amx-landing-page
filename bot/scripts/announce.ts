@@ -6,6 +6,8 @@
  *   npx tsx scripts/announce.ts --post progress            # dry run: shows where each would go
  *   npx tsx scripts/announce.ts --post progress --apply    # 20:00 UTC, as the window opens (no ping)
  *   npx tsx scripts/announce.ts --post live --apply        # once the final checks pass (@everyone)
+ *   npx tsx scripts/announce.ts --post mess --apply        # before the window: "pardon our mess", with its
+ *                                                          # infographic (assets/announce), in the languages it has
  *
  * Each person only sees their own language's announcements channel, so the
  * @everyone in "live" pings everyone once. The bot is given Mention @everyone
@@ -13,6 +15,9 @@
  * Re-running skips a channel that already has the post.
  */
 import { PermissionFlagsBits as P, OverwriteType, ChannelType, type TextChannel, type NewsChannel } from "discord.js";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { LANGS, type Lang } from "../src/config.js";
 import { connect } from "../src/lib/client.js";
 
@@ -128,10 +133,16 @@ const LIVE: Record<Lang, string[]> = {
   ],
 };
 
-const POSTS = {
-  progress: { ping: false, text: (l: Lang) => PROGRESS[l] },
-  live: { ping: true, text: (l: Lang) => ["@everyone", "", LIVE[l][0], "", ...LIVE[l].slice(1, -1), "", LIVE[l].at(-1)!].join("\n") },
-} as const;
+/** "Pardon our mess": text and infographic per language, from assets/announce (render.mjs draws the images). */
+const ANNOUNCE = join(dirname(fileURLToPath(import.meta.url)), "..", "assets", "announce");
+const MESS = JSON.parse(readFileSync(join(ANNOUNCE, "mess.json"), "utf8")) as Partial<Record<Lang, { text: string[] }>>;
+
+type Post = { ping: boolean; text: (l: Lang) => string | null; file?: (l: Lang) => string };
+const POSTS: Record<string, Post> = {
+  progress: { ping: false, text: (l) => PROGRESS[l] },
+  live: { ping: true, text: (l) => ["@everyone", "", LIVE[l][0], "", ...LIVE[l].slice(1, -1), "", LIVE[l].at(-1)!].join("\n") },
+  mess: { ping: false, text: (l) => MESS[l]?.text.join("\n") ?? null, file: (l) => join(ANNOUNCE, `mess-${l}.png`) },
+};
 
 function arg(name: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
@@ -140,7 +151,7 @@ function arg(name: string): string | undefined {
 }
 
 async function main() {
-  const which = arg("post") as keyof typeof POSTS | undefined;
+  const which = arg("post");
   if (!which || !(which in POSTS)) throw new Error(`--post must be one of ${Object.keys(POSTS).join(", ")}`);
   const apply = process.argv.includes("--apply");
   const post = POSTS[which];
@@ -156,6 +167,7 @@ async function main() {
       );
       if (!ch) { console.log(`  ${lang}: no #${CHANNEL[lang]} (skipped)`); if (which === "live") missing++; continue; }
       const text = post.text(lang);
+      if (text === null) { console.log(`  ${lang}: no text for "${which}" (skipped)`); continue; }
       // Already posted: the bot's own message with the same headline in the last day.
       const headline = text.split("\n").find((l) => l && l !== "@everyone")!;
       const recent = await ch.messages.fetch({ limit: 30 }).catch(() => null);
@@ -169,7 +181,7 @@ async function main() {
       if (post.ping && !canPing) {
         await ch.permissionOverwrites.edit(me.id, { MentionEveryone: true }, { type: OverwriteType.Member, reason: "migration announcement" });
       }
-      await ch.send({ content: text, allowedMentions: { parse: post.ping ? ["everyone"] : [] } });
+      await ch.send({ content: text, files: post.file ? [{ attachment: post.file(lang), name: `${which}-${lang}.png` }] : [], allowedMentions: { parse: post.ping ? ["everyone"] : [] } });
     }
     if (missing) console.log(`\n! ${missing} language(s) had no announcements channel: has the migration's channels step run?`);
   } finally {

@@ -1,0 +1,42 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+@font-face{font-family:Sora;src:url(../../node_modules/@fontsource/sora/files/sora-latin-800-normal.woff2) format("woff2");font-weight:800}
+@font-face{font-family:Sora;src:url(../../node_modules/@fontsource/sora/files/sora-latin-700-normal.woff2) format("woff2");font-weight:700}
+@font-face{font-family:Sora;src:url(../../node_modules/@fontsource/sora/files/sora-latin-600-normal.woff2) format("woff2");font-weight:600}
+*{margin:0;box-sizing:border-box;word-break:keep-all;overflow-wrap:anywhere}
+body{width:1200px;height:675px;background:#050d14;overflow:hidden;font-family:Sora,"Noto Sans","PingFang SC","Hiragino Sans","Apple SD Gothic Neo",sans-serif;color:#fff;position:relative}
+.glow1{position:absolute;left:-10%;top:-40%;width:70%;height:150%;background:radial-gradient(48% 50% at 40% 45%,rgba(48,158,168,.28) 0%,rgba(48,158,168,.07) 55%,transparent 100%)}
+.glow2{position:absolute;right:-15%;bottom:-60%;width:80%;height:150%;background:radial-gradient(50% 50% at 60% 50%,rgba(245,158,11,.16) 0%,rgba(245,158,11,.04) 55%,transparent 100%)}
+.grid{position:absolute;inset:0;background-image:linear-gradient(rgba(34,211,238,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(34,211,238,.06) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(70% 80% at 50% 45%,#000 30%,transparent 100%);-webkit-mask-image:radial-gradient(70% 80% at 50% 45%,#000 30%,transparent 100%)}
+/* construction tape */
+.tape{position:absolute;left:-40px;right:-40px;height:34px;background:repeating-linear-gradient(-45deg,#f5b301 0 28px,#0b0b0b 28px 56px);box-shadow:0 4px 18px rgba(0,0,0,.5)}
+.tape.top{top:22px;transform:rotate(-1.2deg)}
+.tape.bot{bottom:22px;transform:rotate(1deg)}
+.wrap{position:absolute;inset:92px 72px 92px 72px;display:flex;flex-direction:column}
+.kicker{font-weight:700;font-size:17px;letter-spacing:.3em;color:#22d3ee;text-transform:uppercase}
+.title{font-weight:800;font-size:72px;line-height:1.05;letter-spacing:-.02em;margin-top:10px}
+.title .cone{display:inline-block;margin-right:14px}
+.sub{font-weight:700;font-size:24px;color:#93a4b3;margin-top:12px}
+.cards{display:flex;gap:22px;margin-top:34px}
+.card{flex:1;background:rgba(255,255,255,.045);border:1px solid rgba(34,211,238,.18);border-radius:18px;padding:22px 22px 24px}
+.card .ic{font-size:38px}
+.card h3{font-weight:800;font-size:23px;margin-top:10px;line-height:1.2}
+.card p{font-weight:600;font-size:17px;color:#a9b6c2;margin-top:8px;line-height:1.4}
+.when{margin-top:auto;display:flex;align-items:center;gap:14px;font-weight:700;font-size:20px;color:#e6edf3}
+.when .pill{background:linear-gradient(90deg,#22d3ee,#10b981);color:#04131c;border-radius:999px;padding:7px 16px;font-weight:800;font-size:17px;letter-spacing:.04em}
+.when .utc{color:#93a4b3;font-weight:600}
+</style></head><body>
+<div class="glow1"></div><div class="glow2"></div><div class="grid"></div>
+<div class="tape top"></div><div class="tape bot"></div>
+<div class="wrap">
+  <div class="kicker" id="kicker"></div>
+  <div class="title"><span class="cone">🚧</span><span id="title"></span></div>
+  <div class="sub" id="sub"></div>
+  <div class="cards" id="cards"></div>
+  <div class="when"><span class="pill" id="pill"></span><span id="when"></span><span class="utc" id="utc"></span></div>
+</div>
+<script>
+window.draw = (t) => {
+  for (const k of ["kicker", "title", "sub", "pill", "when", "utc"]) document.getElementById(k).textContent = t[k];
+  document.getElementById("cards").innerHTML = t.cards.map(([ic, h, p]) => `<div class="card"><div class="ic">${ic}</div><h3>${h}</h3><p>${p}</p></div>`).join("");
+};
+</script></body></html>

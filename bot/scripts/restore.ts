@@ -9,8 +9,9 @@
  *   - categories and channels in the backup get their old name, category,
  *     position, topic, slowmode and permission overwrites back; ones the
  *     migration deleted are recreated empty (Discord kept no messages)
- *   - channels made after the backup are hidden in a staff-only
- *     "🗄️ ROLLBACK" category, not deleted, so anything posted in them stays
+ *   - channels made after the backup are hidden in staff-only "🗄️ ROLLBACK"
+ *     categories ("🗄️ ROLLBACK 2", ... as a category holds at most 50
+ *     channels), not deleted, so anything posted in them stays
  *   - members get back exactly the language and notification roles they held
  *     in the backup; their other roles are left alone
  *
@@ -83,6 +84,13 @@ async function main() {
         .filter((o) => o.type === "member" || guild.roles.cache.has(o.id))
         .map((o) => ({ id: o.id, type: o.type === "role" ? OverwriteType.Role : OverwriteType.Member, allow: BigInt(o.allow), deny: BigInt(o.deny) }));
 
+    // A rerun finds what an earlier run recreated by its name and type, so nothing is made twice.
+    const backupIds = new Set(backup.channels.map((c) => c.id));
+    const matched = new Set<string>();
+    const recreatedEarlier = (c: BackupChannel) => guild.channels.cache.find((x) =>
+      !x.isThread() && x.name === c.name && x.type === TYPES[c.type] && !backupIds.has(x.id) && !matched.has(x.id)
+      && !(x.parent?.name.startsWith(ROLLBACK_CAT)) && (x.parentId ?? null) === (resolve(c.parentId) ?? null));
+
     log(`\n== categories`);
     const cats = backup.channels.filter((c) => c.type === "GuildCategory");
     for (const c of cats) await restoreChannel(c);
@@ -92,6 +100,14 @@ async function main() {
 
     async function restoreChannel(c: BackupChannel) {
       let ch = guild.channels.cache.get(c.id);
+      if (!ch) {
+        const again = recreatedEarlier(c);
+        if (again) {
+          idMap.set(c.id, again.id);
+          matched.add(again.id);
+          ch = again;
+        }
+      }
       if (!ch) {
         log(`  recreate ${c.type === "GuildCategory" ? "category " : "#"}${c.name} (deleted; comes back empty)`);
         if (!apply) return;
@@ -137,8 +153,22 @@ async function main() {
 
     log(`\n== channels made after the backup`);
     const known = new Set(backup.channels.map((c) => resolve(c.id)));
-    const extra = guild.channels.cache.filter((c) => !c.isThread() && !known.has(c.id) && c.name !== ROLLBACK_CAT);
-    let rollbackCat = guild.channels.cache.find((c): c is CategoryChannel => c.type === ChannelType.GuildCategory && c.name === ROLLBACK_CAT);
+    const isRollback = (c: GuildBasedChannel | null | undefined) => !!c && c.type === ChannelType.GuildCategory && c.name.startsWith(ROLLBACK_CAT);
+    const extra = guild.channels.cache.filter((c) => !c.isThread() && !known.has(c.id) && !isRollback(c));
+    // Discord caps a category at 50 channels, and the migration makes about 150: fill one, then open the next.
+    const rollbackIn = async (): Promise<CategoryChannel> => {
+      const cats = guild.channels.cache.filter((c): c is CategoryChannel => isRollback(c));
+      const free = cats.find((c) => c.children.cache.size < 50);
+      if (free) return free;
+      return guild.channels.create({
+        name: cats.size ? `${ROLLBACK_CAT} ${cats.size + 1}` : ROLLBACK_CAT, type: ChannelType.GuildCategory, position: 999,
+        permissionOverwrites: [
+          { id: guild.roles.everyone.id, deny: [P.ViewChannel] },
+          { id: guild.members.me!.id, type: OverwriteType.Member, allow: [P.ViewChannel, P.ManageChannels] },
+        ],
+        reason: "rollback",
+      });
+    };
     for (const ch of extra.values()) {
       if (ch.isThread()) continue;
       if (ch.type === ChannelType.GuildCategory) {
@@ -146,18 +176,10 @@ async function main() {
         log(`  ${left.size ? "keep" : "delete empty"} category ${ch.name}`);
         continue;
       }
-      if (rollbackCat && ch.parentId === rollbackCat.id) continue;
+      if (isRollback(ch.parent)) continue;
       log(`  hide #${ch.name} in ${ROLLBACK_CAT}`);
       if (!apply) continue;
-      rollbackCat ??= await guild.channels.create({
-        name: ROLLBACK_CAT, type: ChannelType.GuildCategory, position: 999,
-        permissionOverwrites: [
-          { id: guild.roles.everyone.id, deny: [P.ViewChannel] },
-          { id: guild.members.me!.id, type: OverwriteType.Member, allow: [P.ViewChannel, P.ManageChannels] },
-        ],
-        reason: "rollback",
-      });
-      await ch.setParent(rollbackCat.id, { lockPermissions: true, reason: "rollback: made by the migration" });
+      await ch.setParent((await rollbackIn()).id, { lockPermissions: true, reason: "rollback: made by the migration" });
     }
     // Emptied new categories go once their channels are hidden.
     if (apply) {

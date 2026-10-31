@@ -4,3 +4,6 @@ dist
 snapshots/*.json
 bakeoff/
 .verify-ui.log
+infographic-out/
+backups/
+premigrate-plan.json

@@ -28,6 +28,9 @@ export const PRESETS: Record<string, { baseUrl: string; keyEnv: string; jsonMode
     jsonMode: false,
     extraHeaders: { "HTTP-Referer": "https://alphanumetrix.com", "X-Title": "AMX mirror bot" },
   },
+  // Local llama-server on the Mac Studio (Gemma 4 on :8081), e.g. TRANSLATION_PROVIDER=local:gemma4.
+  // The server ignores the key, but the provider requires one, so set LOCAL_LLM_API_KEY to any value.
+  local: { baseUrl: process.env.LOCAL_LLM_BASE_URL ?? "http://127.0.0.1:8081/v1", keyEnv: "LOCAL_LLM_API_KEY", jsonMode: true },
 };
 
 export class OpenAICompatibleProvider implements TranslationProvider {

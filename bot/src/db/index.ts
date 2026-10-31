@@ -34,6 +34,9 @@ export interface MapRow {
   target_channel_id: string;
   mirror_message_id: string;
   lang: Lang;
+  /** Forum mirrors only: the thread holding the original, and the thread holding this copy. */
+  source_thread_id?: string | null;
+  target_thread_id?: string | null;
 }
 
 function unwrap<T>(r: { data: T | null; error: { message: string } | null }, what: string): T {
@@ -103,6 +106,16 @@ export class Db {
     return (r.data as MapRow | null) ?? null;
   }
 
+  /** Every forum mirror row, for the daily edit/delete sync. */
+  async forumRows(): Promise<MapRow[]> {
+    const out: MapRow[] = [];
+    for (let from = 0; ; from += 1000) {
+      const page = unwrap(await this.sb.from("message_map").select("*").not("source_thread_id", "is", null).range(from, from + 999), "forum rows") as MapRow[];
+      out.push(...page);
+      if (page.length < 1000) return out;
+    }
+  }
+
   async deleteMap(sourceMessageId: string) {
     unwrap(await this.sb.from("message_map").delete().eq("source_message_id", sourceMessageId), "delete map");
   }
@@ -138,6 +151,17 @@ export class Db {
 
   async setSetting(guildId: string, key: string, value: string) {
     unwrap(await this.sb.from("settings").upsert({ guild_id: guildId, key, value }, { onConflict: "guild_id,key" }), "set setting");
+  }
+
+  /** Every setting whose key starts with `prefix`, e.g. all learned FAQ entries. */
+  async listSettings(guildId: string, prefix: string): Promise<{ key: string; value: string }[]> {
+    const r = await this.sb.from("settings").select("key, value").eq("guild_id", guildId).like("key", `${prefix}%`);
+    if (r.error) throw new Error(`list settings: ${r.error.message}`);
+    return (r.data ?? []) as { key: string; value: string }[];
+  }
+
+  async deleteSetting(guildId: string, key: string) {
+    unwrap(await this.sb.from("settings").delete().eq("guild_id", guildId).eq("key", key), "delete setting");
   }
 
   async getLangPref(guildId: string, userId: string): Promise<Lang | null> {

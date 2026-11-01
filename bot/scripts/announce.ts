@@ -136,11 +136,17 @@ const LIVE: Record<Lang, string[]> = {
 /** "Pardon our mess": text and infographic per language, from assets/announce (render.mjs draws the images). */
 const ANNOUNCE = join(dirname(fileURLToPath(import.meta.url)), "..", "assets", "announce");
 const MESS = JSON.parse(readFileSync(join(ANNOUNCE, "mess.json"), "utf8")) as Partial<Record<Lang, { text: string[] }>>;
+/** "Don't see the new channels?": the tip line and its picture (channels-<lang>.png) for the live post. */
+const CHANNELS_TIP = JSON.parse(readFileSync(join(ANNOUNCE, "channels.json"), "utf8")) as Record<Lang, { tip: string }>;
 
 type Post = { ping: boolean; text: (l: Lang) => string | null; file?: (l: Lang) => string };
 const POSTS: Record<string, Post> = {
   progress: { ping: false, text: (l) => PROGRESS[l] },
-  live: { ping: true, text: (l) => ["@everyone", "", LIVE[l][0], "", ...LIVE[l].slice(1, -1), "", LIVE[l].at(-1)!].join("\n") },
+  live: {
+    ping: true,
+    text: (l) => ["@everyone", "", LIVE[l][0], "", ...LIVE[l].slice(1, -1), "", CHANNELS_TIP[l].tip, "", LIVE[l].at(-1)!].join("\n"),
+    file: (l) => join(ANNOUNCE, `channels-${l}.png`),
+  },
   mess: { ping: false, text: (l) => MESS[l]?.text.join("\n") ?? null, file: (l) => join(ANNOUNCE, `mess-${l}.png`) },
 };
 

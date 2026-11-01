@@ -34,7 +34,7 @@ import { connect } from "../src/lib/client.js";
 import { startHereMessages, useAppEmojis } from "../src/startHere.js";
 import { NOTIFY_ROLES, NOTIFY_TOPICS } from "../src/notify.js";
 import { guideChannelName } from "../src/i18n/guide.js";
-import { LANG_ROLE_NAMES } from "../src/roles.js";
+import { LANG_ROLE_NAMES, languageHeld } from "../src/roles.js";
 import { verifyPanel } from "../src/verify/panel.js";
 import { BOOKINGS_CHANNEL, CONCIERGE_CHANNEL, CONCIERGE_OPEN, conciergePanel, teamRoleNames, VIP_ROLES } from "../src/support/concierge.js";
 import { supportPanel } from "../src/support/desk.js";
@@ -380,10 +380,8 @@ async function stepMembers(ctx: Ctx) {
   let changed = 0;
   for (const m of all.values()) {
     if (m.user.bot) continue;
-    const lang: Lang = (["zh", "ko", "id"] as const).find((l) => {
-      const p = [ctx.role(l, "base"), ctx.role(l, "member")];
-      return p.some((id) => id && m.roles.cache.has(id));
-    }) ?? "en";
+    // Every language counts, not only the three the old server had: a rerun keeps vi/es/pt/tr/ru/ja members where they are.
+    const lang = languageHeld((id) => m.roles.cache.has(id), (l, t) => ctx.role(l, t) ?? undefined);
     const tier = m.roles.cache.some((r) => memberRoleIds.has(r.id)) ? "member" : "base";
     const want = ctx.role(lang, tier);
     const key = LANG_ROLE_NAMES[lang][tier];

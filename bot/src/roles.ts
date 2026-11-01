@@ -26,6 +26,16 @@ export interface LangRolePair {
 }
 
 /** Role names the layout creates. Settings `role:<lang>` / `mrole:<lang>` override them by id. */
+/**
+ * The language a member is on, from the language roles they hold (either tier). Every non-English language
+ * is checked before English, so a rerun of the onboarding members step never moves someone off
+ * Tiếng Việt, Español, Português, Türkçe, Русский or 日本語; nothing held means English.
+ */
+export function languageHeld(holds: (roleId: string) => boolean, roleOf: (lang: Lang, tier: "base" | "member") => string | undefined): Lang {
+  const order = [...LANGS.filter((l) => l !== "en"), "en" as Lang];
+  return order.find((l) => [roleOf(l, "base"), roleOf(l, "member")].some((id) => !!id && holds(id))) ?? "en";
+}
+
 export const LANG_ROLE_NAMES: Record<Lang, { base: string; member: string }> = {
   en: { base: "English", member: "English Member" },
   zh: { base: "中文", member: "中文 Member" },

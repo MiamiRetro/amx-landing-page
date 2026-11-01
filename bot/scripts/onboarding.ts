@@ -920,6 +920,15 @@ async function stepPerms(ctx: Ctx) {
     const ch = findChannel(guild, s);
     if (!ch) { log(`  ! skip #${s.name} (missing)`); continue; }
     const ows = overwritesFor(ctx, ch, s.lang, s.tier, !!s.readOnly, !!s.noHistory);
+    // Certified Analysts post trade alerts in any language; the mirror translates each one into the others (JT, 1 Nov).
+    if (s.kind === "signals") {
+      const analysts = guild.roles.cache.find((r) => r.name === "Certified Analysts");
+      if (analysts) {
+        const i = ows.findIndex((o) => String(o.id) === analysts.id);
+        if (i >= 0) ows.splice(i, 1);
+        ows.push({ id: analysts.id, type: OverwriteType.Role, allow: P.ViewChannel | P.ReadMessageHistory | P.SendMessages | P.SendMessagesInThreads | P.EmbedLinks | P.AttachFiles, deny: 0n });
+      }
+    }
     log(`  #${s.name} [${s.tier}] ${describe(guild, ows)}`);
     if (ctx.apply) await ch.permissionOverwrites.set(ows, "onboarding: language tiers");
   }

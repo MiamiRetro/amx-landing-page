@@ -504,7 +504,8 @@ const VIP_CAT = `${FOLDER}VIP`;
 const VIP_CHAT = `${BRANCH}👑・vip-chat`;
 const VIP_CONCIERGE = `${END}${CONCIERGE_CHANNEL}`;
 const VIP_REPORT = `${BRANCH}📊・vip-report`;
-const VIP_OLD: Record<string, string | string[]> = { [VIP_CAT]: "👑 VIP", [VIP_CHAT]: "👑・vip-chat", [VIP_CONCIERGE]: [`${BRANCH}${CONCIERGE_CHANNEL}`, CONCIERGE_CHANNEL], [VIP_REPORT]: [`${END}📊・vip-report`, "📊・vip-report"] };
+const VIP_BOOKINGS = `${BRANCH}${BOOKINGS_CHANNEL}`;
+const VIP_OLD: Record<string, string | string[]> = { [VIP_CAT]: "👑 VIP", [VIP_CHAT]: "👑・vip-chat", [VIP_CONCIERGE]: [`${BRANCH}${CONCIERGE_CHANNEL}`, CONCIERGE_CHANNEL], [VIP_REPORT]: [`${END}📊・vip-report`, "📊・vip-report"], [VIP_BOOKINGS]: BOOKINGS_CHANNEL };
 
 /**
  * The VIP lounge sits right under the picker, shared by every language: the
@@ -598,16 +599,22 @@ async function stepVip(ctx: Ctx) {
   }
 
   // Where the e-butler sends session requests for JT and Matt: the team only.
-  let bookings = guild.channels.cache.find((c): c is TextChannel => c.type === ChannelType.GuildText && c.name === BOOKINGS_CHANNEL);
+  let bookings = vipText(VIP_BOOKINGS);
+  await rename(bookings, VIP_BOOKINGS);
   const bookingsOws: OverwriteResolvable[] = [
     { id: guild.roles.everyone.id, deny: [P.ViewChannel] },
     ...teamRoleIds.map((id) => ({ id, allow: [P.ViewChannel, P.ReadMessageHistory] })),
     { id: me.id, type: OverwriteType.Member, allow: [P.ViewChannel, P.SendMessages, P.ReadMessageHistory, P.EmbedLinks] },
   ];
   if (!bookings) {
-    log(`  create #${BOOKINGS_CHANNEL} (team only: session requests from the concierge)`);
-    if (ctx.apply) bookings = await guild.channels.create({ name: BOOKINGS_CHANNEL, type: ChannelType.GuildText, topic: "Session requests from the VIP concierge. Accept to join the VIP's thread.", permissionOverwrites: bookingsOws, reason: "VIP concierge bookings" });
+    log(`  create #${VIP_BOOKINGS} (team only: session requests from the concierge)`);
+    if (ctx.apply) bookings = await guild.channels.create({ name: VIP_BOOKINGS, type: ChannelType.GuildText, parent: cat?.id, topic: "Session requests from the VIP concierge. Accept to join the VIP's thread.", permissionOverwrites: bookingsOws, reason: "VIP concierge bookings" });
   } else if (ctx.apply) await bookings.permissionOverwrites.set(bookingsOws, "VIP concierge bookings");
+  if (bookings && cat && bookings.parentId !== cat.id) {
+    log(`  move #${bookings.name} → ${VIP_CAT}`);
+    // Keeps its own overwrites: the VIP tiers in the folder must not see it.
+    if (ctx.apply) await bookings.setParent(cat.id, { lockPermissions: false, reason: "VIP folder" });
+  }
   if (bookings && ctx.apply) await db.setSetting(guild.id, "concierge_bookings_channel", bookings.id);
 
   let report = vipText(VIP_REPORT);
@@ -641,8 +648,8 @@ async function stepVip(ctx: Ctx) {
     }
   }
 
-  // The report first, then vip-chat, the concierge last (┗).
-  if (ctx.apply && chat && concierge && report) await guild.channels.setPositions([{ channel: report.id, position: 0 }, { channel: chat.id, position: 1 }, { channel: concierge.id, position: 2 }]).catch((e) => log(`  ! VIP channel order: ${e instanceof Error ? e.message : e}`));
+  // The report and bookings first, then vip-chat, the concierge last (┗).
+  if (ctx.apply && chat && concierge && report && bookings) await guild.channels.setPositions([report, bookings, chat, concierge].map((c, position) => ({ channel: c.id, position }))).catch((e) => log(`  ! VIP channel order: ${e instanceof Error ? e.message : e}`));
 
   if (ctx.apply && cat) {
     await guild.channels.fetch();

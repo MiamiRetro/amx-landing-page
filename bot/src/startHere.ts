@@ -16,7 +16,6 @@ import {
   type MessageCreateOptions,
 } from "discord.js";
 import { PICKER_PREFIX } from "./picker.js";
-import { SUPPORT_OPEN } from "./support/desk.js";
 import { notifyButton, NOTIFY_TEXT } from "./notify.js";
 import { VERIFY_BUTTON } from "./verify/panel.js";
 import type { Lang } from "./config.js";
@@ -197,12 +196,8 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean;
     )
     .addSeparatorComponents(divider())
     .addTextDisplayComponents(text(`${n.title}\n${n.body}`))
-    .addActionRowComponents(row(notifyButton(opts.lang ?? "en")))
-    .addSeparatorComponents(divider())
-    .addTextDisplayComponents(text(`${t.helpTitle}\n${t.helpBody}`))
-    .addActionRowComponents(
-      row(new ButtonBuilder().setStyle(ButtonStyle.Primary).setLabel(t.helpButton).setEmoji("🛟").setCustomId(SUPPORT_OPEN)),
-    );
+    .addActionRowComponents(row(notifyButton(opts.lang ?? "en")));
+  // No help button here: help-desk is its own channel with the one 🛟 button (JT, 1 Nov).
 
   // The picker channel is the front door and the only thing a newcomer sees:
   // the rules with the terms they accept by entering, then the language buttons.

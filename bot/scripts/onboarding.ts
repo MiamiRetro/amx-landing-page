@@ -617,6 +617,13 @@ async function stepVip(ctx: Ctx) {
     });
   }
   if (report && ctx.apply) await db.setSetting(guild.id, "vip_report_channel", report.id);
+  // Internal revenue: moderators see the rest of the VIP folder, never this.
+  for (const id of modRoleIds(guild)) {
+    if (report && !report.permissionOverwrites.cache.get(id)?.deny.has(P.ViewChannel)) {
+      log(`  hide #${report.name} from Moderators`);
+      if (ctx.apply) await report.permissionOverwrites.edit(id, { ViewChannel: false }, { reason: "VIP report: admins only" });
+    }
+  }
 
   // vip-chat first, the concierge last (┗).
   if (ctx.apply && chat && concierge) await guild.channels.setPositions([{ channel: chat.id, position: 0 }, { channel: concierge.id, position: 1 }]).catch((e) => log(`  ! VIP channel order: ${e instanceof Error ? e.message : e}`));
@@ -690,7 +697,7 @@ async function archive(ctx: Ctx, ch: NonThreadGuildBasedChannel, why: string) {
   if (!ctx.apply) return;
   let cat = findCategory(guild, ARCHIVE_CAT);
   if (!cat) {
-    const staff = ["Moderators", "Team - Will Not DM"].map((n) => guild.roles.cache.find((r) => r.name === n)).filter((r) => !!r);
+    const staff = ["Team - Will Not DM"].map((n) => guild.roles.cache.find((r) => r.name === n)).filter((r) => !!r);
     cat = await guild.channels.create({
       name: ARCHIVE_CAT,
       type: ChannelType.GuildCategory,
@@ -785,11 +792,17 @@ async function stepCleanup(ctx: Ctx) {
 }
 
 /** The overwrites a channel ends up with: its staff overwrites kept, the tier's language roles laid on top. */
-/** The team's roles: the help-desk moderators (SUPPORT_MOD_ROLES) and the concierge team. */
-function staffRoleIds(guild: Guild) {
-  const names = new Set([...(process.env.SUPPORT_MOD_ROLES ?? "Moderators").split(","), ...teamRoleNames()].map((n) => n.trim().toLowerCase()).filter(Boolean));
-  return guild.roles.cache.filter((r) => names.has(r.name.toLowerCase())).map((r) => r.id);
-}
+const roleIdsNamed = (guild: Guild, names: string[]) => {
+  const want = new Set(names.map((n) => n.trim().toLowerCase()).filter(Boolean));
+  return guild.roles.cache.filter((r) => want.has(r.name.toLowerCase())).map((r) => r.id);
+};
+/** The team that answers help threads in every language (HELP_TEAM_ROLES). */
+const helpTeamRoleIds = (guild: Guild) => roleIdsNamed(guild, (process.env.HELP_TEAM_ROLES ?? "Team - Will Not DM").split(","));
+/**
+ * Moderators get their own grants only on #🛡️・mod-chat and the VIP folder (not #📊・vip-report);
+ * everywhere else they see what their language and member roles give them (JT, 1 Nov).
+ */
+const modRoleIds = (guild: Guild) => roleIdsNamed(guild, ["Moderators"]);
 
 function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChannel, lang: Lang | "all", tier: Tier, readOnly: boolean, noHistory = false): OverwriteResolvable[] {
   const { guild } = ctx;
@@ -864,8 +877,9 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
   // The team works in English: outside English, staff overwrites carried over from the old channels go, so other
   // languages' channels stay out of their list. Help-desk is the exception in every language: a private help thread
   // only shows to someone who can see its channel, and the team is pulled into those threads (JT, 1 Nov).
+  for (const id of modRoleIds(guild)) out.delete(id);
   if (lang !== "en" && lang !== "all") {
-    for (const id of staffRoleIds(guild)) {
+    for (const id of helpTeamRoleIds(guild)) {
       out.delete(id);
       if (tier === "help") set(id, OverwriteType.Role, P.ViewChannel | P.ReadMessageHistory | P.SendMessagesInThreads | P.ManageThreads | P.EmbedLinks | P.AttachFiles, 0n);
     }

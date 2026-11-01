@@ -503,7 +503,8 @@ async function stepChannels(ctx: Ctx) {
 const VIP_CAT = `${FOLDER}VIP`;
 const VIP_CHAT = `${BRANCH}👑・vip-chat`;
 const VIP_CONCIERGE = `${END}${CONCIERGE_CHANNEL}`;
-const VIP_OLD: Record<string, string> = { [VIP_CAT]: "👑 VIP", [VIP_CHAT]: "👑・vip-chat", [VIP_CONCIERGE]: CONCIERGE_CHANNEL };
+const VIP_REPORT = `${BRANCH}📊・vip-report`;
+const VIP_OLD: Record<string, string | string[]> = { [VIP_CAT]: "👑 VIP", [VIP_CHAT]: "👑・vip-chat", [VIP_CONCIERGE]: [`${BRANCH}${CONCIERGE_CHANNEL}`, CONCIERGE_CHANNEL], [VIP_REPORT]: [`${END}📊・vip-report`, "📊・vip-report"] };
 
 /**
  * The VIP lounge sits right under the picker, shared by every language: the
@@ -521,7 +522,7 @@ async function stepVip(ctx: Ctx) {
     if (ctx.apply) await guild.roles.create({ name, permissions: [], reason: "VIP tiers" });
   }
   let cat = findCategory(guild, VIP_CAT);
-  const oldCat = cat ? undefined : findCategory(guild, VIP_OLD[VIP_CAT]);
+  const oldCat = cat ? undefined : findCategory(guild, VIP_OLD[VIP_CAT] as string);
   if (oldCat) {
     log(`  rename category ${oldCat.name} → ${VIP_CAT}`);
     if (ctx.apply) await oldCat.setName(VIP_CAT, "onboarding: folder style");
@@ -542,7 +543,7 @@ async function stepVip(ctx: Ctx) {
 
   const vipText = (name: string) => {
     const find = (n: string) => guild.channels.cache.find((c): c is TextChannel => c.type === ChannelType.GuildText && c.name === n);
-    return find(name) ?? find(VIP_OLD[name]);
+    return find(name) ?? [VIP_OLD[name]].flat().map(find).find((c) => !!c);
   };
   const rename = async (ch: TextChannel | undefined, name: string) => {
     if (!ch || ch.name === name) return;
@@ -609,18 +610,24 @@ async function stepVip(ctx: Ctx) {
   } else if (ctx.apply) await bookings.permissionOverwrites.set(bookingsOws, "VIP concierge bookings");
   if (bookings && ctx.apply) await db.setSetting(guild.id, "concierge_bookings_channel", bookings.id);
 
-  let report = guild.channels.cache.find((c): c is TextChannel => c.type === ChannelType.GuildText && c.name === "📊・vip-report");
+  let report = vipText(VIP_REPORT);
+  await rename(report, VIP_REPORT);
   if (!report) {
-    log("  create #📊・vip-report (admins and team)");
+    log(`  create #${VIP_REPORT} (admins and team)`);
     if (ctx.apply) report = await guild.channels.create({
-      name: "📊・vip-report", type: ChannelType.GuildText, topic: "Weekly commission per client and VIP tier changes. Admins and team only.",
+      name: VIP_REPORT, type: ChannelType.GuildText, parent: cat?.id, topic: "Weekly commission per client and VIP tier changes. Admins and team only.",
       permissionOverwrites: [{ id: guild.roles.everyone.id, deny: [P.ViewChannel] }, { id: me.id, type: OverwriteType.Member, allow: [P.ViewChannel, P.SendMessages, P.ReadMessageHistory, P.EmbedLinks] }],
       reason: "VIP report",
     });
   }
+  if (report && cat && report.parentId !== cat.id) {
+    log(`  move #${report.name} → ${VIP_CAT}`);
+    // Keeps its own overwrites: the VIP tiers in the folder must not see it.
+    if (ctx.apply) await report.setParent(cat.id, { lockPermissions: false, reason: "VIP folder" });
+  }
   if (report && ctx.apply) await db.setSetting(guild.id, "vip_report_channel", report.id);
   // Internal revenue: the team reads it, moderators see the rest of the VIP folder but never this.
-  for (const id of teamRoleIds) {
+  for (const id of teamRoleIds.filter((x) => !modRoleIds(guild).includes(x))) {
     const o = report?.permissionOverwrites.cache.get(id);
     if (report && !(o?.allow.has(P.ViewChannel) && o.allow.has(P.ReadMessageHistory))) {
       log(`  show #${report.name} to the team`);
@@ -634,8 +641,8 @@ async function stepVip(ctx: Ctx) {
     }
   }
 
-  // vip-chat first, the concierge last (┗).
-  if (ctx.apply && chat && concierge) await guild.channels.setPositions([{ channel: chat.id, position: 0 }, { channel: concierge.id, position: 1 }]).catch((e) => log(`  ! VIP channel order: ${e instanceof Error ? e.message : e}`));
+  // The report first, then vip-chat, the concierge last (┗).
+  if (ctx.apply && chat && concierge && report) await guild.channels.setPositions([{ channel: report.id, position: 0 }, { channel: chat.id, position: 1 }, { channel: concierge.id, position: 2 }]).catch((e) => log(`  ! VIP channel order: ${e instanceof Error ? e.message : e}`));
 
   if (ctx.apply && cat) {
     await guild.channels.fetch();

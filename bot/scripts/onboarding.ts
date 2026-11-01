@@ -785,6 +785,12 @@ async function stepCleanup(ctx: Ctx) {
 }
 
 /** The overwrites a channel ends up with: its staff overwrites kept, the tier's language roles laid on top. */
+/** The team's roles: the help-desk moderators (SUPPORT_MOD_ROLES) and the concierge team. */
+function staffRoleIds(guild: Guild) {
+  const names = new Set([...(process.env.SUPPORT_MOD_ROLES ?? "Moderators").split(","), ...teamRoleNames()].map((n) => n.trim().toLowerCase()).filter(Boolean));
+  return guild.roles.cache.filter((r) => names.has(r.name.toLowerCase())).map((r) => r.id);
+}
+
 function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChannel, lang: Lang | "all", tier: Tier, readOnly: boolean, noHistory = false): OverwriteResolvable[] {
   const { guild } = ctx;
   const me = guild.members.me!;
@@ -855,6 +861,15 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
   if (readOnly) set(everyone, OverwriteType.Role, 0n, P.SendMessages);
   // Categories too: they are born hidden from @everyone, and a bot without Administrator can't edit what it can't see.
   set(me.id, OverwriteType.Member, BOT_ALLOW.reduce((a, b) => a | b, 0n), 0n);
+  // The team works in English: outside English, staff overwrites carried over from the old channels go, so other
+  // languages' channels stay out of their list. Help-desk is the exception in every language: a private help thread
+  // only shows to someone who can see its channel, and the team is pulled into those threads (JT, 1 Nov).
+  if (lang !== "en" && lang !== "all") {
+    for (const id of staffRoleIds(guild)) {
+      out.delete(id);
+      if (tier === "help") set(id, OverwriteType.Role, P.ViewChannel | P.ReadMessageHistory | P.SendMessagesInThreads | P.ManageThreads | P.EmbedLinks | P.AttachFiles, 0n);
+    }
+  }
   return [...out.values()].map((o) => ({ id: o.id, type: o.type, allow: o.allow, deny: o.deny }));
 }
 

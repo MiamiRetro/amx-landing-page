@@ -34,8 +34,11 @@ async function main() {
   const db = new Db();
   const guildId = config.guildId();
 
-  const primary = providerFromSpec(config.translationProvider());
-  const fallbacks = config.translationFallbacks().map(providerFromSpec);
+  const primary = providerFromSpec(config.translationProvider(), { sb: db.sb });
+  const fallbacks = config.translationFallbacks().map((s) => providerFromSpec(s, { sb: db.sb }));
+  if (primary.id.startsWith("queued:") && fallbacks.length === 0) {
+    log.warn("queued translation provider has no TRANSLATION_FALLBACKS; messages stay untranslated whenever the local worker is down or over budget");
+  }
   const limiter = new Semaphore(config.translationConcurrency());
   const translator = new Translator({
     primary,

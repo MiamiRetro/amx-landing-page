@@ -39,6 +39,15 @@ export const config = {
   translationTimeoutSec: () => Number(process.env.TRANSLATION_TIMEOUT_SEC ?? 60),
   /** Max concurrent translation requests across all channels. */
   translationConcurrency: () => Number(process.env.TRANSLATION_CONCURRENCY ?? 4),
+  /**
+   * Environment label that scopes queue names (translate-gemma4-<env>), so test
+   * and production never share a queue. Falls back to Railway's environment name.
+   */
+  translationQueueEnv: () => env("TRANSLATION_QUEUE_ENV", process.env.RAILWAY_ENVIRONMENT_NAME),
+  /** Seconds the bot waits for the local worker before cancelling the job and falling back. Keep under translationTimeoutSec. */
+  translationQueueDeadlineSec: () => Number(process.env.TRANSLATION_QUEUE_DEADLINE_SEC ?? 20),
+  /** A worker heartbeat older than this counts as down and the bot falls back without waiting. */
+  translationQueueWorkerTtlSec: () => Number(process.env.TRANSLATION_QUEUE_WORKER_TTL_SEC ?? 15),
   /** Messages to backfill per channel on startup. */
   backfillLimit: () => Number(process.env.BACKFILL_LIMIT ?? 200),
   port: () => Number(process.env.PORT ?? 8080),

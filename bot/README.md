@@ -39,6 +39,7 @@ Create a project (or reuse one), open the SQL editor, paste `src/db/schema.sql`,
 | `OPS_USER_IDS` | Accounts that must see every language channel regardless of role |
 | `TRANSLATION_PROVIDER` | `anthropic:claude-sonnet-5` (default), or `gemini:<model>`, `openai:<model>`, `openrouter:<model>` |
 | `TRANSLATION_FALLBACKS` | Comma-separated providers tried when the primary fails |
+| `queued:gemma4` as the provider | Translate on a local Gemma worker through a Supabase queue, no public endpoint; needs `TRANSLATION_QUEUE_ENV`. Off by default. See [docs/discord-bot/gemma-queue.md](../docs/discord-bot/gemma-queue.md) |
 | `ANTHROPIC_API_KEY` etc. | Key for each provider you use |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Storage |
 | `BYBIT_*`, `BITGET_*`, `BLOFIN_*` | Affiliate API keys for UID verification (see below) |

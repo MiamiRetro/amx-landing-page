@@ -24,8 +24,19 @@ export interface TranslateResult {
   usage: { inputTokens: number; cachedTokens: number; cacheCreationTokens: number; outputTokens: number };
 }
 
+export interface TranslateOptions {
+  /** Aborted when the caller gives up (timeout); providers holding remote work should cancel it. */
+  signal?: AbortSignal;
+}
+
 export interface TranslationProvider {
   /** Stable id used in caches and logs, e.g. "anthropic:claude-sonnet-5". */
   readonly id: string;
-  translate(req: TranslateRequest): Promise<TranslateResult>;
+  /**
+   * Calls the Translator may make to this provider per request before moving to
+   * the next one. Defaults to 2 (one retry). A provider whose single call can
+   * already wait a long time sets 1 so the retry loop cannot double the wait.
+   */
+  readonly maxAttempts?: number;
+  translate(req: TranslateRequest, opts?: TranslateOptions): Promise<TranslateResult>;
 }

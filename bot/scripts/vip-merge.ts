@@ -6,7 +6,7 @@
  *   railway run npx tsx scripts/vip-merge.ts --apply
  */
 import { writeFileSync } from "node:fs";
-import { PermissionsBitField } from "discord.js";
+import { PermissionsBitField, type GuildMember, type Role } from "discord.js";
 import { connect } from "../src/lib/client.js";
 
 const apply = process.argv.includes("--apply");
@@ -34,11 +34,14 @@ try {
   const me = guild.members.me!;
   console.log(`bot: Administrator ${me.permissions.has("Administrator")}, ManageRoles ${me.permissions.has("ManageRoles")}, top position ${me.roles.highest.position}`);
 
+  // A bot can only set overwrites it holds itself, so anything else stays out; the check below says if that costs a VIP anything.
   for (const c of channels as any[]) {
     const o = c.permissionOverwrites.cache.get(old.id);
-    const missing = new PermissionsBitField(o.allow.bitfield & ~c.permissionsFor(me).bitfield).toArray();
-    console.log(`#${c.name}: copy ${o.allow.toArray().length} allows to the tiers${missing.length ? `; BOT LACKS ${missing.join(",")}` : ""}`);
-    if (apply) for (const r of tiers) await c.permissionOverwrites.edit(r!.id, Object.fromEntries([...o.allow.toArray().map((p: string) => [p, true]), ...o.deny.toArray().map((p: string) => [p, false])]), { reason });
+    const held = c.permissionsFor(me).bitfield;
+    const missing = new PermissionsBitField(o.allow.bitfield & ~held).toArray();
+    const allow = new PermissionsBitField(o.allow.bitfield & held).toArray();
+    console.log(`#${c.name}: copy ${allow.length} allows to the tiers${missing.length ? `; skipped, bot lacks: ${missing.join(",")}` : ""}`);
+    if (apply) for (const r of tiers) await c.permissionOverwrites.edit(r!.id, Object.fromEntries(allow.map((p: string) => [p, true])), { reason });
   }
   let give = 0;
   for (const m of old.members.values()) {
@@ -47,6 +50,33 @@ try {
     if (apply) await m.roles.add(tiers[0]!, reason);
   }
   console.log(`${apply ? "gave" : "would give"} VIP 1 to ${give} of ${old.members.size} holders`);
+  // What each holder keeps in these channels with VIP 1 in place of VIPs.
+  const effective = (m: GuildMember, c: any, roles: Role[]) => {
+    const ow = c.permissionOverwrites.cache;
+    let p = roles.reduce((a, r) => a | r.permissions.bitfield, guild.roles.everyone.permissions.bitfield);
+    const e = ow.get(guild.id);
+    if (e) p = (p & ~e.deny.bitfield) | e.allow.bitfield;
+    let a = 0n, d = 0n;
+    for (const r of roles) { const o = ow.get(r.id); if (o) { a |= o.allow.bitfield; d |= o.deny.bitfield; } }
+    p = (p & ~d) | a;
+    const u = ow.get(m.id);
+    if (u) p = (p & ~u.deny.bitfield) | u.allow.bitfield;
+    return p;
+  };
+  await guild.channels.fetch();
+  const lost = new Map<string, number>();
+  for (const c of channels as any[]) {
+    const fresh: any = guild.channels.cache.get(c.id);
+    for (const m of old.members.values()) {
+      const rest = [...m.roles.cache.values()].filter((r) => r.id !== old.id && r.id !== guild.id);
+      const after = rest.some((r) => tiers.some((t) => t!.id === r.id)) ? rest : [...rest, tiers[0]!];
+      const gone = effective(m, fresh, [...m.roles.cache.values()].filter((r) => r.id !== guild.id)) & ~effective(m, fresh, after);
+      for (const p of new PermissionsBitField(gone).toArray()) lost.set(`#${fresh.name} ${p}`, (lost.get(`#${fresh.name} ${p}`) ?? 0) + 1);
+    }
+  }
+  console.log(lost.size ? `holders would lose: ${[...lost].map(([k, n]) => `${k} (${n})`).join(", ")}` : "no holder loses anything in these channels");
+  const CORE = /ViewChannel|SendMessages|ReadMessageHistory|EmbedLinks|AttachFiles|AddReactions/;
+  if (apply && [...lost.keys()].some((k) => CORE.test(k))) throw new Error("holders would lose core access; VIPs not deleted");
   if (apply) {
     await guild.members.fetch();
     const left = old.members.filter((m) => !tiers.some((r) => m.roles.cache.has(r!.id)));

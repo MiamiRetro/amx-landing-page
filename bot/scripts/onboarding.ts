@@ -502,9 +502,9 @@ async function stepChannels(ctx: Ctx) {
 /** The VIP folder in the same ┏━━ / ┣ / ┗ style as the language folders; the old names are renamed in place. */
 const VIP_CAT = `${FOLDER}VIP`;
 const VIP_CHAT = `${BRANCH}👑・vip-chat`;
-const VIP_CONCIERGE = `${BRANCH}${CONCIERGE_CHANNEL}`;
-const VIP_REPORT = `${END}📊・vip-report`;
-const VIP_OLD: Record<string, string | string[]> = { [VIP_CAT]: "👑 VIP", [VIP_CHAT]: "👑・vip-chat", [VIP_CONCIERGE]: [`${END}${CONCIERGE_CHANNEL}`, CONCIERGE_CHANNEL], [VIP_REPORT]: "📊・vip-report" };
+const VIP_CONCIERGE = `${END}${CONCIERGE_CHANNEL}`;
+const VIP_REPORT = `${BRANCH}📊・vip-report`;
+const VIP_OLD: Record<string, string | string[]> = { [VIP_CAT]: "👑 VIP", [VIP_CHAT]: "👑・vip-chat", [VIP_CONCIERGE]: [`${BRANCH}${CONCIERGE_CHANNEL}`, CONCIERGE_CHANNEL], [VIP_REPORT]: [`${END}📊・vip-report`, "📊・vip-report"] };
 
 /**
  * The VIP lounge sits right under the picker, shared by every language: the
@@ -641,8 +641,8 @@ async function stepVip(ctx: Ctx) {
     }
   }
 
-  // vip-chat first, the concierge next, the report last (┗).
-  if (ctx.apply && chat && concierge && report) await guild.channels.setPositions([{ channel: chat.id, position: 0 }, { channel: concierge.id, position: 1 }, { channel: report.id, position: 2 }]).catch((e) => log(`  ! VIP channel order: ${e instanceof Error ? e.message : e}`));
+  // The report first, then vip-chat, the concierge last (┗).
+  if (ctx.apply && chat && concierge && report) await guild.channels.setPositions([{ channel: report.id, position: 0 }, { channel: chat.id, position: 1 }, { channel: concierge.id, position: 2 }]).catch((e) => log(`  ! VIP channel order: ${e instanceof Error ? e.message : e}`));
 
   if (ctx.apply && cat) {
     await guild.channels.fetch();

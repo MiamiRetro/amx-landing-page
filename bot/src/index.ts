@@ -86,7 +86,7 @@ async function main() {
       notify = new NotifyCenter(guild, db, roles);
       support = new SupportDesk(guild, db, roles, c.user.id, assistant, translator);
       log.info("support desk ready", { assistant: assistant?.model ?? "off" });
-      concierge = new Concierge(guild, db, c.user.id, process.env.ANTHROPIC_API_KEY && process.env.CONCIERGE_BUTLER !== "off" ? new Butler() : null);
+      concierge = new Concierge(guild, db, c.user.id, process.env.ANTHROPIC_API_KEY && process.env.CONCIERGE_BUTLER !== "off" ? new Butler() : null, roles, translator);
       if (SupportReview.enabled()) {
         const desk = support;
         review = new SupportReview(guild, db, c.user.id, assistant, (m) => desk.isMod(m));

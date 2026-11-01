@@ -20,19 +20,10 @@ import type { LanguageRoles } from "../roles.js";
 import type { SupportAssistant, Turn } from "./assistant.js";
 import { guideFile } from "./guides.js";
 import { confirmButtons, langName, scriptMismatch, SWITCH_CANCEL, SWITCH_CONFIRM, SWITCH_PICK, SWITCH_TEXT, switchButtons, switchKey } from "./switch.js";
+import { relayTranslation, type ThreadTranslator } from "./relay.js";
 import { SUPPORT_TEXT } from "./text.js";
 
-/** What help threads need from the translator: the same polite, glossary-aware one the mirror uses. */
-export interface ThreadTranslator {
-  translate(segments: string[], entities: string[][], sourceLang: Lang, targets: Lang[], glossary: { term: string; note: string | null }[]): Promise<{ translations: Record<Lang, string[]>; translated: boolean }>;
-}
-
-const FLAG: Record<Lang, string> = { en: "🇬🇧", zh: "🇨🇳", ko: "🇰🇷", id: "🇮🇩", vi: "🇻🇳", es: "🇪🇸", pt: "🇧🇷", tr: "🇹🇷", ru: "🇷🇺", ja: "🇯🇵" };
-/** Under a team reply translated for the member. */
-const TRANSLATED: Record<Lang, string> = {
-  en: "Auto-translated for the team", zh: "自动翻译", ko: "자동 번역", id: "Diterjemahkan otomatis", vi: "Đã dịch tự động",
-  es: "Traducido automáticamente", pt: "Traduzido automaticamente", tr: "Otomatik çevrildi", ru: "Автоматический перевод", ja: "自動翻訳",
-};
+export type { ThreadTranslator } from "./relay.js";
 
 export const SUPPORT_OPEN = "support:open";
 export const SUPPORT_HUMAN = "support:human";
@@ -230,20 +221,7 @@ export class SupportDesk {
    * the member's into English for the team, the team's into the member's language. Nothing for English members.
    */
   private async relay(m: Message, state: ThreadState) {
-    if (!this.translator || state.lang === "en" || !m.content.trim()) return;
-    const fromMember = m.author.id === state.userId;
-    const [from, to] = fromMember ? [state.lang, "en" as Lang] : (["en", state.lang] as Lang[]);
-    try {
-      const r = await this.translator.translate([m.content], [[]], from, [to], []);
-      const text = r.translations[to]?.[0]?.trim();
-      if (!r.translated || !text || text === m.content.trim()) return;
-      await m.reply({
-        embeds: [{ description: text.slice(0, 4000), color: 0x22d3ee, footer: { text: `${FLAG[to]} ${TRANSLATED[to]}` } }],
-        allowedMentions: { parse: [], repliedUser: false },
-      });
-    } catch (e) {
-      log.warn("help thread translation failed", { thread: m.channelId, ...errInfo(e) });
-    }
+    return relayTranslation(this.translator, m, state.userId, state.lang);
   }
 
   /** The thread so far, oldest first, as the assistant reads it. */

@@ -28,6 +28,8 @@ try {
     for (const t of threads) {
       const target = await db.getSetting(guild.id, `academy_moved:${t.id}`);
       if (!target || target.startsWith("skipped")) continue;
+      // An academy post deleted since the move has nowhere to take its replies.
+      if (!(await guild.channels.fetch(target).catch(() => null))) { console.log(`  "${t.name}" (#${forum.name}): its academy post is gone, skipped`); continue; }
       const all: Message[] = []; let before: string | undefined;
       for (;;) { const p = await t.messages.fetch({ limit: 100, before }); if (!p.size) break; all.push(...p.values()); before = p.last()!.id; }
       const discussion = /forums/.test(forum.name);

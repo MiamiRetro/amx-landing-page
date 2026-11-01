@@ -1,0 +1,47 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+@font-face{font-family:Sora;src:url(../../node_modules/@fontsource/sora/files/sora-latin-800-normal.woff2) format("woff2");font-weight:800}
+@font-face{font-family:Sora;src:url(../../node_modules/@fontsource/sora/files/sora-latin-700-normal.woff2) format("woff2");font-weight:700}
+@font-face{font-family:Sora;src:url(../../node_modules/@fontsource/sora/files/sora-latin-600-normal.woff2) format("woff2");font-weight:600}
+*{margin:0;box-sizing:border-box;word-break:keep-all;overflow-wrap:anywhere}
+body{width:1200px;height:630px;background:#050d14;overflow:hidden;font-family:Sora,"Noto Sans","PingFang SC","Hiragino Sans","Apple SD Gothic Neo",sans-serif;color:#fff;position:relative}
+.glow1{position:absolute;left:-10%;top:-40%;width:70%;height:160%;background:radial-gradient(48% 50% at 40% 45%,rgba(34,211,238,.22) 0%,rgba(34,211,238,.06) 55%,transparent 100%)}
+.glow2{position:absolute;right:-15%;bottom:-60%;width:80%;height:160%;background:radial-gradient(50% 50% at 60% 50%,rgba(16,185,129,.18) 0%,rgba(16,185,129,.04) 55%,transparent 100%)}
+.grid{position:absolute;inset:0;background-image:linear-gradient(rgba(34,211,238,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(34,211,238,.06) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(70% 80% at 50% 45%,#000 30%,transparent 100%);-webkit-mask-image:radial-gradient(70% 80% at 50% 45%,#000 30%,transparent 100%)}
+.line{position:absolute;left:0;right:0;bottom:0;height:4px;background:linear-gradient(90deg,#22d3ee,#10b981 55%,transparent)}
+.wrap{position:absolute;inset:56px 64px 56px 64px;display:flex;flex-direction:column}
+.kicker{font-weight:700;font-size:16px;letter-spacing:.3em;color:#22d3ee;text-transform:uppercase}
+.title{font-weight:800;font-size:54px;line-height:1.08;letter-spacing:-.02em;margin-top:10px}
+.sub{font-weight:700;font-size:21px;color:#93a4b3;margin-top:10px}
+.cards{display:flex;gap:26px;margin-top:30px;flex:1}
+.card{flex:1;background:rgba(255,255,255,.045);border:1px solid rgba(34,211,238,.2);border-radius:20px;padding:22px 24px;display:flex;gap:22px;align-items:center}
+.how{flex:1}
+.how .ic{font-size:34px}
+.how h3{font-weight:800;font-size:22px;margin-top:8px;line-height:1.25}
+.how p{font-weight:600;font-size:16px;color:#a9b6c2;margin-top:6px;line-height:1.4}
+.mock{width:230px;display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+.srv{width:56px;height:56px;border-radius:18px;background:linear-gradient(135deg,#22d3ee,#10b981);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:24px;color:#04131c;box-shadow:0 0 0 4px rgba(34,211,238,.25)}
+.menu{width:230px;background:#111a22;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:8px;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.menu.sheet{border-radius:16px 16px 12px 12px}
+.bar{height:12px;border-radius:6px;background:rgba(255,255,255,.12);margin:9px 8px}
+.bar.s{width:60%}
+.item{display:flex;align-items:center;justify-content:space-between;gap:8px;background:rgba(34,211,238,.16);border:1px solid #22d3ee;border-radius:8px;padding:8px 10px;margin:6px 0;font-weight:700;font-size:15px;color:#e6fbff}
+.tick{width:20px;height:20px;border-radius:5px;background:#22d3ee;color:#04131c;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;flex:none}
+</style></head><body>
+<div class="glow1"></div><div class="glow2"></div><div class="grid"></div><div class="line"></div>
+<div class="wrap">
+  <div class="kicker" id="kicker"></div>
+  <div class="title" id="title"></div>
+  <div class="sub" id="sub"></div>
+  <div class="cards">
+    <div class="card"><div class="how"><div class="ic">🖥️</div><h3 id="dTitle"></h3><p id="dBody"></p></div>
+      <div class="mock"><div class="srv">B</div><div class="menu"><div class="bar"></div><div class="bar s"></div><div class="item"><span class="opt"></span><span class="tick">✓</span></div><div class="bar"></div></div></div></div>
+    <div class="card"><div class="how"><div class="ic">📱</div><h3 id="mTitle"></h3><p id="mBody"></p></div>
+      <div class="mock"><div class="srv">B</div><div class="menu sheet"><div class="bar s"></div><div class="bar"></div><div class="item"><span class="opt"></span><span class="tick">✓</span></div></div></div></div>
+  </div>
+</div>
+<script>
+window.draw = (t) => {
+  for (const k of ["kicker", "title", "sub", "dTitle", "dBody", "mTitle", "mBody"]) document.getElementById(k).textContent = t[k];
+  for (const e of document.querySelectorAll(".opt")) e.textContent = t.option;
+};
+</script></body></html>

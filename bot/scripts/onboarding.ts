@@ -508,7 +508,7 @@ const VIP_OLD: Record<string, string> = { [VIP_CAT]: "👑 VIP", [VIP_CHAT]: "�
 /**
  * The VIP lounge sits right under the picker, shared by every language: the
  * legacy VIPs role and the commission tiers VIP 1-4 see it, staff keep their
- * access. The weekly report goes to an admin-only channel, because it lists
+ * access. The weekly report goes to a channel only admins and the team see, because it lists
  * what we earn per client. The concierge gives each VIP a private thread with
  * the team, like help-desk but answered by people only.
  */
@@ -611,19 +611,26 @@ async function stepVip(ctx: Ctx) {
 
   let report = guild.channels.cache.find((c): c is TextChannel => c.type === ChannelType.GuildText && c.name === "📊・vip-report");
   if (!report) {
-    log("  create #📊・vip-report (admins only)");
+    log("  create #📊・vip-report (admins and team)");
     if (ctx.apply) report = await guild.channels.create({
-      name: "📊・vip-report", type: ChannelType.GuildText, topic: "Weekly commission per client and VIP tier changes. Admins only.",
+      name: "📊・vip-report", type: ChannelType.GuildText, topic: "Weekly commission per client and VIP tier changes. Admins and team only.",
       permissionOverwrites: [{ id: guild.roles.everyone.id, deny: [P.ViewChannel] }, { id: me.id, type: OverwriteType.Member, allow: [P.ViewChannel, P.SendMessages, P.ReadMessageHistory, P.EmbedLinks] }],
       reason: "VIP report",
     });
   }
   if (report && ctx.apply) await db.setSetting(guild.id, "vip_report_channel", report.id);
-  // Internal revenue: moderators see the rest of the VIP folder, never this.
+  // Internal revenue: the team reads it, moderators see the rest of the VIP folder but never this.
+  for (const id of teamRoleIds) {
+    const o = report?.permissionOverwrites.cache.get(id);
+    if (report && !(o?.allow.has(P.ViewChannel) && o.allow.has(P.ReadMessageHistory))) {
+      log(`  show #${report.name} to the team`);
+      if (ctx.apply) await report.permissionOverwrites.edit(id, { ViewChannel: true, ReadMessageHistory: true }, { reason: "VIP report: team can read" });
+    }
+  }
   for (const id of modRoleIds(guild)) {
     if (report && !report.permissionOverwrites.cache.get(id)?.deny.has(P.ViewChannel)) {
       log(`  hide #${report.name} from Moderators`);
-      if (ctx.apply) await report.permissionOverwrites.edit(id, { ViewChannel: false }, { reason: "VIP report: admins only" });
+      if (ctx.apply) await report.permissionOverwrites.edit(id, { ViewChannel: false }, { reason: "VIP report: not for moderators" });
     }
   }
 

@@ -7,8 +7,10 @@ import { bitgetCommission, blofinCommission, bybitCommission, Prices, type Commi
 /**
  * VIP tiers from what we earn per member: once a week, every member with a
  * linked exchange UID gets their last-30-days commission totalled across
- * exchanges, stored as a snapshot, and the matching VIP role. Thresholds are
- * USD per 30 days, lowest first, in the `vip_tiers` setting.
+ * exchanges, stored as a snapshot, and a higher VIP role if they earned one.
+ * The check only upgrades: nobody loses a tier here, the report just lists who
+ * sits below theirs. Thresholds are USD per 30 days, lowest first, in the
+ * `vip_tiers` setting.
  */
 export const DEFAULT_TIERS = [1000, 2500, 5000, 10000];
 const WEEK = 7 * 86_400_000;
@@ -20,11 +22,18 @@ export function tierFor(usd: number, thresholds: number[]): number {
   return tier;
 }
 
+/** The tier a member ends up on: raised to what they earned, never lowered. */
+export function nextTier(earned: number, held: number): number {
+  return Math.max(earned, held);
+}
+
 export interface VipRow {
   userId: string;
   usd: number;
   tier: number;
   previous: number;
+  /** What the commission alone would give; below `tier` when they sit under their tier. */
+  earned: number;
   parts: { exchange: ExchangeId; usd: number; method: Commission["method"] }[];
   errors: string[];
 }
@@ -92,7 +101,7 @@ export class VipTracker {
       const byUser = new Map<string, VipRow>();
 
       for (const l of links ?? []) {
-        const row: VipRow = byUser.get(l.discord_user_id) ?? { userId: l.discord_user_id, usd: 0, tier: 0, previous: 0, parts: [], errors: [] };
+        const row: VipRow = byUser.get(l.discord_user_id) ?? { userId: l.discord_user_id, usd: 0, tier: 0, previous: 0, earned: 0, parts: [], errors: [] };
         byUser.set(l.discord_user_id, row);
         try {
           const c = await this.fetch(l.exchange as ExchangeId, l.uid, prices);
@@ -113,9 +122,10 @@ export class VipTracker {
 
       for (const row of byUser.values()) {
         const m = members.get(row.userId);
-        row.previous = m ? vipRoles.findIndex((r) => !!r && m.roles.cache.has(r.id)) + 1 : 0;
-        // A failed lookup keeps the member where they were rather than demoting on our error.
-        row.tier = row.errors.length && row.parts.length === 0 ? row.previous : tierFor(row.usd, thresholds);
+        row.previous = m ? vipRoles.reduce((top, r, k) => (r && m.roles.cache.has(r.id) ? k + 1 : top), 0) : 0;
+        // A failed lookup says nothing about what they earned, so it can't count against them in the report either.
+        row.earned = row.errors.length && row.parts.length === 0 ? row.previous : tierFor(row.usd, thresholds);
+        row.tier = nextTier(row.earned, row.previous);
         if (!opts.apply || !m || row.tier === row.previous) continue;
         const want = row.tier ? vipRoles[row.tier - 1] : null;
         const remove = vipRoles.filter((r): r is Role => !!r && r !== want && m.roles.cache.has(r.id));
@@ -144,6 +154,7 @@ export class VipTracker {
     const total = rows.reduce((a, r) => a + r.usd, 0);
     const counts = thresholds.map((_, i) => rows.filter((r) => r.tier === i + 1).length);
     const moves = rows.filter((r) => r.tier !== r.previous);
+    const below = rows.filter((r) => r.earned < r.tier);
     const failed = rows.filter((r) => r.errors.length);
     const lines = [
       `## Weekly VIP report`,
@@ -153,6 +164,7 @@ export class VipTracker {
       "**Top 10**",
       ...rows.slice(0, 10).map((r, i) => `${i + 1}. <@${r.userId}>  ${usd(r.usd)}${r.tier ? `  · VIP ${r.tier}` : ""}${r.parts.some((p) => p.method === "volume_estimate") ? "  *(est.)*" : ""}`),
       ...(moves.length ? ["", "**Tier changes**", ...moves.slice(0, 20).map((r) => `<@${r.userId}>  ${r.previous ? `VIP ${r.previous}` : "none"} → ${r.tier ? `VIP ${r.tier}` : "none"}  (${usd(r.usd)})`)] : []),
+      ...(below.length ? ["", "**Below their tier** *(no change, for info)*", ...below.slice(0, 20).map((r) => `<@${r.userId}>  VIP ${r.tier}, earned ${r.earned ? `VIP ${r.earned}` : "none"}  (${usd(r.usd)})`)] : []),
       ...(failed.length ? ["", `-# ${failed.length} lookups failed and kept their tier: ${[...new Set(failed.flatMap((r) => r.errors.map((e) => e.split(":")[0])))].join(", ")}`] : []),
       "-# *(est.)* = Blofin estimate from volume until four weeks of history exist.",
     ];

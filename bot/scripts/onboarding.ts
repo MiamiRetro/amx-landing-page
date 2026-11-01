@@ -627,7 +627,7 @@ async function stepVip(ctx: Ctx) {
   }
   if (report && ctx.apply) await db.setSetting(guild.id, "vip_report_channel", report.id);
   // Internal revenue: the team reads it, moderators see the rest of the VIP folder but never this.
-  for (const id of teamRoleIds) {
+  for (const id of teamRoleIds.filter((x) => !modRoleIds(guild).includes(x))) {
     const o = report?.permissionOverwrites.cache.get(id);
     if (report && !(o?.allow.has(P.ViewChannel) && o.allow.has(P.ReadMessageHistory))) {
       log(`  show #${report.name} to the team`);

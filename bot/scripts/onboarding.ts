@@ -274,9 +274,13 @@ for (const lang of LANGS) {
   for (const l of LAYOUT) {
     const plain = NAMES[lang][l.kind];
     const name = l.top ? plain : branchOf(l) + plain;
-    const legacy = lang === "en"
-      ? [{ name: plain, parent: EN_OLD[l.kind] ?? null }, ...(l.kind === "start" ? [{ name: "📍・start-here", parent: null }] : [])]
-      : [{ name: plain, parent: OLD_CATS[lang as Exclude<Lang, "en">] }];
+    // The old ⚡ trade-alerts channels carry the bot signals (the TradingView webhooks), so they become 🤖 bot-alerts,
+    // and ⚡ trade-alerts starts fresh (JT, 1 Nov).
+    const oldName = l.kind === "daytrade" ? NAMES[lang].signals : l.kind === "signals" ? null : plain;
+    const oldKind: Kind = l.kind === "daytrade" ? "signals" : l.kind;
+    const legacy = !oldName ? [] : lang === "en"
+      ? [{ name: oldName, parent: EN_OLD[oldKind] ?? null }, ...(l.kind === "start" ? [{ name: "📍・start-here", parent: null }] : [])]
+      : [{ name: oldName, parent: OLD_CATS[lang as Exclude<Lang, "en">] }];
     // Before the folder style the channel carried no branch, then the same ┣ on every channel; its category had other names.
     if (!l.top) {
       for (const parent of [CATS[lang][l.cat], CATS_V1[lang][l.cat], CATS_EMOJI[lang][l.cat]]) {

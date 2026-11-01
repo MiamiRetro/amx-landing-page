@@ -30,8 +30,8 @@ export const CONCIERGE_PREFIX = "concierge:";
 export const CONCIERGE_CHANNEL = "🛎️・concierge";
 export const BOOKINGS_CHANNEL = "📅・vip-bookings";
 
-/** The legacy VIPs role and the commission tiers; any one of them opens the concierge. */
-export const VIP_ROLES = ["VIPs", "VIP 1", "VIP 2", "VIP 3", "VIP 4"];
+/** The commission tiers; any one of them opens the concierge. */
+export const VIP_ROLES = ["VIP 1", "VIP 2", "VIP 3", "VIP 4"];
 /** Thread names carry the state, so it survives a restart: the e-butler looks after 🛎️ threads, a person owns 🤝 ones. */
 const BUTLER = "🛎️";
 const PERSON = "🤝";

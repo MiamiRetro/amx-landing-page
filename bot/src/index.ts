@@ -84,7 +84,7 @@ async function main() {
       // Help-desk threads. Without an Anthropic key every thread goes straight to a moderator.
       const assistant = process.env.ANTHROPIC_API_KEY && process.env.SUPPORT_ASSISTANT !== "off" ? new SupportAssistant() : null;
       notify = new NotifyCenter(guild, db, roles);
-      support = new SupportDesk(guild, db, roles, c.user.id, assistant);
+      support = new SupportDesk(guild, db, roles, c.user.id, assistant, translator);
       log.info("support desk ready", { assistant: assistant?.model ?? "off" });
       concierge = new Concierge(guild, db, c.user.id, process.env.ANTHROPIC_API_KEY && process.env.CONCIERGE_BUTLER !== "off" ? new Butler() : null);
       if (SupportReview.enabled()) {

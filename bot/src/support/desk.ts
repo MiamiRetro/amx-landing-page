@@ -22,6 +22,18 @@ import { guideFile } from "./guides.js";
 import { confirmButtons, langName, scriptMismatch, SWITCH_CANCEL, SWITCH_CONFIRM, SWITCH_PICK, SWITCH_TEXT, switchButtons, switchKey } from "./switch.js";
 import { SUPPORT_TEXT } from "./text.js";
 
+/** What help threads need from the translator: the same polite, glossary-aware one the mirror uses. */
+export interface ThreadTranslator {
+  translate(segments: string[], entities: string[][], sourceLang: Lang, targets: Lang[], glossary: { term: string; note: string | null }[]): Promise<{ translations: Record<Lang, string[]>; translated: boolean }>;
+}
+
+const FLAG: Record<Lang, string> = { en: "🇬🇧", zh: "🇨🇳", ko: "🇰🇷", id: "🇮🇩", vi: "🇻🇳", es: "🇪🇸", pt: "🇧🇷", tr: "🇹🇷", ru: "🇷🇺", ja: "🇯🇵" };
+/** Under a team reply translated for the member. */
+const TRANSLATED: Record<Lang, string> = {
+  en: "Auto-translated for the team", zh: "自动翻译", ko: "자동 번역", id: "Diterjemahkan otomatis", vi: "Đã dịch tự động",
+  es: "Traducido automáticamente", pt: "Traduzido automaticamente", tr: "Otomatik çevrildi", ru: "Автоматический перевод", ja: "自動翻訳",
+};
+
 export const SUPPORT_OPEN = "support:open";
 export const SUPPORT_HUMAN = "support:human";
 export const SUPPORT_CLOSE = "support:close";
@@ -95,6 +107,7 @@ export class SupportDesk {
     private roles: LanguageRoles,
     private botUserId: string,
     private assistant: SupportAssistant | null,
+    private translator: ThreadTranslator | null = null,
   ) {}
 
   private modRoleIds() {
@@ -189,12 +202,13 @@ export class SupportDesk {
     if (!m.inGuild() || m.guildId !== this.guild.id || m.author.bot || !m.channel.isThread()) return;
     const thread = m.channel;
     const state = await this.stateOf(thread);
-    if (!state || state.handedOff) return;
+    if (!state) return;
+    if (state.handedOff) return this.relay(m, state);
     if (m.author.id !== state.userId) {
       // Someone else speaking up (a moderator stepping in) takes the thread over.
       state.handedOff = true;
       await thread.setName(`${HANDED} ${thread.name.slice(OPEN.length).trim()}`.slice(0, 90)).catch(() => {});
-      return;
+      return this.relay(m, state);
     }
     if (state.busy || (!m.content.trim() && shots(m).length === 0)) return;
     // With the assistant unreachable, the "offline, a moderator is coming" line still goes in the language they wrote in when the script shows it.
@@ -208,6 +222,27 @@ export class SupportDesk {
       await this.handoff(thread, state, `assistant unreachable (${e instanceof Error ? e.message.slice(0, 80) : "error"}); member asked: ${m.content.slice(0, 200)}`, offline);
     } finally {
       state.busy = false;
+    }
+  }
+
+  /**
+   * Once the team is in a thread (the team works in English), each message gets a translation under it:
+   * the member's into English for the team, the team's into the member's language. Nothing for English members.
+   */
+  private async relay(m: Message, state: ThreadState) {
+    if (!this.translator || state.lang === "en" || !m.content.trim()) return;
+    const fromMember = m.author.id === state.userId;
+    const [from, to] = fromMember ? [state.lang, "en" as Lang] : (["en", state.lang] as Lang[]);
+    try {
+      const r = await this.translator.translate([m.content], [[]], from, [to], []);
+      const text = r.translations[to]?.[0]?.trim();
+      if (!r.translated || !text || text === m.content.trim()) return;
+      await m.reply({
+        embeds: [{ description: text.slice(0, 4000), color: 0x22d3ee, footer: { text: `${FLAG[to]} ${TRANSLATED[to]}` } }],
+        allowedMentions: { parse: [], repliedUser: false },
+      });
+    } catch (e) {
+      log.warn("help thread translation failed", { thread: m.channelId, ...errInfo(e) });
     }
   }
 

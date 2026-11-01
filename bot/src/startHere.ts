@@ -242,7 +242,8 @@ export function startHereMessages(opts: { helpDeskUrl: string; picker?: boolean;
   return [
     { components: [welcome], files: [asset("hero.png", opts.lang)], flags: V2, allowedMentions: NO_PINGS },
     { components: [rules], files: [asset("rules.png", opts.lang)], flags: V2, allowedMentions: NO_PINGS },
-    { components: [start], files: [asset("start.png", opts.lang), asset("exchanges.png", opts.lang)], flags: V2, allowedMentions: NO_PINGS },
     { components: [community], files: [asset("community.png", opts.lang)], flags: V2, allowedMentions: NO_PINGS },
+    // The card with the buttons that matter most goes last, right above the chat bar where it is seen first (JT, 1 Nov).
+    { components: [start], files: [asset("start.png", opts.lang), asset("exchanges.png", opts.lang)], flags: V2, allowedMentions: NO_PINGS },
   ];
 }

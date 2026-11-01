@@ -215,7 +215,7 @@ const EN_OLD: Partial<Record<Kind, string | null>> = {
 /** Kinds whose chat the bot mirrors and translates, keyed to their mirror group (names match the live server's groups). */
 const MIRROR_GROUP: Partial<Record<Kind, string>> = {
   announcements: "announcements", teaser: "trade-alerts-teaser", signals: "trade-alerts",
-  general: "general", trader: "trader-chat", bitcoin: "bitcoin", help: "help-desk", memes: "memes",
+  general: "general", trader: "trader-chat", bitcoin: "bitcoin", memes: "memes",
   guides: "setup-guides", strategies: "trading-strategies", forums: "forums", academy: "academy",
   crypto: "crypto", stocks: "stocks", commodities: "commodities",
   flagship: "alphanumetrix", daytrade: "bot-alerts",
@@ -296,7 +296,9 @@ for (const lang of LANGS) {
     }
     const topic = l.lockFor ? bare(NAMES[lang][l.lockFor]) : l.panel === "locked" ? bare(name) : undefined;
     // The English server guide is the server's rules channel (the one with the book icon).
-    const tier: Tier = lang === "en" && l.kind === "start" ? "rules" : l.tier;
+    // The English guide is an ordinary guide: the Community rules channel is #🌐・choose-language,
+    // since Discord wants the rules channel open to @everyone and the guides wait for a language.
+    const tier: Tier = l.tier;
     SPECS.push({ name, parent: l.top ? null : CATS[lang][l.cat], lang, tier, kind: l.kind, readOnly: l.readOnly, noHistory: l.noHistory, type: l.type, panel: l.panel, topic, legacy });
   }
 }
@@ -531,6 +533,8 @@ async function stepVip(ctx: Ctx) {
     { id: guild.roles.everyone.id, deny: [P.ViewChannel] },
     ...vipRoleIds.map((id) => ({ id, allow: [P.ViewChannel] })),
     ...["Moderators", "Team - Will Not DM"].map((n) => guild.roles.cache.find((r) => r.name === n)).filter((r) => !!r).map((r) => ({ id: r!.id, allow: [P.ViewChannel] })),
+    // The bot keeps sight of the folder, or without Administrator it can't edit it again.
+    { id: me.id, type: OverwriteType.Member, allow: [P.ViewChannel, P.ManageChannels, P.ManageRoles] },
   ];
   if (cat && ctx.apply) await cat.permissionOverwrites.set(lounge, "VIP lounge");
 
@@ -791,6 +795,9 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
   for (const o of ch.permissionOverwrites.cache.values()) {
     if (langRoleIds.has(o.id)) continue;
     let allow = o.allow.bitfield, deny = o.deny.bitfield;
+    // An old member role keeps only its denies (a mute still mutes): any allow it carried, like
+    // Send Messages, would beat the language roles' read-only denies on the channels it was on.
+    if (replaced.has(o.id)) allow = 0n;
     if (replaced.has(o.id) || o.id === guild.roles.everyone.id) {
       allow &= ~P.ViewChannel;
       deny &= ~P.ViewChannel;
@@ -838,13 +845,16 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
         base && set(base, OverwriteType.Role, P.ViewChannel, P.SendMessages | P.SendMessagesInThreads | P.CreatePublicThreads | P.AddReactions);
         member && set(member, OverwriteType.Role, P.ViewChannel | P.ReadMessageHistory, 0n);
       }
-      if (tier === "member") member && set(member, OverwriteType.Role, P.ViewChannel | P.ReadMessageHistory, 0n);
+      // Chat channels say "post" outright: a renamed old channel may deny Send to @everyone, which only the old member role used to undo.
+      const chat = P.SendMessages | P.SendMessagesInThreads | P.AddReactions | P.EmbedLinks | P.AttachFiles | P.UseExternalEmojis;
+      if (tier === "member") member && set(member, OverwriteType.Role, P.ViewChannel | P.ReadMessageHistory | (readOnly ? 0n : chat), 0n);
     }
   }
   // Every member sees it, whatever their language, and so does someone who hasn't picked one yet.
   if (tier === "rules") set(everyone, OverwriteType.Role, P.ViewChannel | P.ReadMessageHistory, 0n);
   if (readOnly) set(everyone, OverwriteType.Role, 0n, P.SendMessages);
-  if (ch.type !== ChannelType.GuildCategory) set(me.id, OverwriteType.Member, BOT_ALLOW.reduce((a, b) => a | b, 0n), 0n);
+  // Categories too: they are born hidden from @everyone, and a bot without Administrator can't edit what it can't see.
+  set(me.id, OverwriteType.Member, BOT_ALLOW.reduce((a, b) => a | b, 0n), 0n);
   return [...out.values()].map((o) => ({ id: o.id, type: o.type, allow: o.allow, deny: o.deny }));
 }
 
@@ -967,14 +977,14 @@ async function stepPanels(ctx: Ctx) {
 async function stepRules(ctx: Ctx) {
   const { guild } = ctx;
   if (!guild.features.includes("COMMUNITY")) { log("  not a Community server, nothing to do"); return; }
-  const spec = SPECS.find((s) => s.tier === "rules")!;
+  const spec = PICKER;
   const guide = findChannel(guild, spec);
   if (!guide) { log(`  ! #${spec.name} missing`); return; }
   const old = guild.rulesChannelId && guild.rulesChannelId !== guide.id ? guild.channels.cache.get(guild.rulesChannelId) : undefined;
   if (guild.rulesChannelId !== guide.id) {
     log(`  rules channel: #${old?.name ?? "none"} → #${guide.name}`);
     if (ctx.apply) {
-      const after = await guild.setRulesChannel(guide.id, "onboarding: the English server guide is the rules channel");
+      const after = await guild.setRulesChannel(guide.id, "onboarding: the language picker is the rules channel");
       // Discord answers 200 and keeps the old channel when it won't take the new one.
       if (after.rulesChannelId !== guide.id) {
         log(`  ! Discord kept #${old?.name} as the rules channel. Set it by hand: Server Settings → Community → Overview → Rules channel → #${guide.name}. The old channel is left as it is.`);
@@ -982,7 +992,9 @@ async function stepRules(ctx: Ctx) {
       }
     }
   }
-  if (old && "permissionOverwrites" in old) {
+  // A channel the layout uses (the English guide was the rules channel before) keeps the permissions the perms step gives it.
+  const ours = old && SPECS.some((s) => findChannel(guild, s)?.id === old.id);
+  if (old && !ours && "permissionOverwrites" in old) {
     const everyone = old.permissionOverwrites.cache.get(guild.roles.everyone.id);
     if (!everyone?.deny.has(P.ViewChannel) || old.permissionOverwrites.cache.some((o) => o.id !== guild.roles.everyone.id && o.allow.has(P.ViewChannel))) {
       log(`  hide #${old.name} from everyone but staff`);

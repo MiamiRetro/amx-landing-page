@@ -13,7 +13,7 @@ import {
   type TextChannel,
   type ThreadChannel,
 } from "discord.js";
-import { isLang, type Lang } from "../config.js";
+import { isLang, LANG_NAMES, type Lang } from "../config.js";
 import type { Db } from "../db/index.js";
 import { log, errInfo } from "../log.js";
 import type { LanguageRoles } from "../roles.js";
@@ -32,6 +32,8 @@ export const SUPPORT_PREFIX = "support:";
 
 /** Thread names carry the state, so it survives a restart: the assistant answers 🤖 threads, moderators own 🙋 ones. */
 const OPEN = "🤖";
+/** The team's English twin of a non-English help thread, in the English help-desk. */
+const BRIDGE = "🌐";
 const HANDED = "🙋";
 /** Unanswered questions, or assistant replies, before the moderator button shows anyway. */
 const OFFER_AFTER_MISSES = 2;
@@ -91,6 +93,9 @@ export class SupportDesk {
   /** Members whose language switch is under way, so a double tap can't run it twice. */
   private switching = new Set<string>();
   private membersFetchedAt = 0;
+  /** Member thread → its team twin, and back (kept in settings too, so restarts keep the link). */
+  private bridges = new Map<string, string>();
+  private bridgeBack = new Map<string, { memberThread: string; userId: string; lang: Lang }>();
 
   constructor(
     private guild: Guild,
@@ -158,6 +163,14 @@ export class SupportDesk {
       log.info("support thread closed", { thread: thread.id, by: i.user.id, answers: state.answers, handedOff: state.handedOff });
       await thread.setLocked(true, "support: closed").catch((e) => log.warn("support lock failed", errInfo(e)));
       await thread.setArchived(true, "support: closed").catch((e) => log.warn("support archive failed", errInfo(e)));
+      // Its English twin closes with it.
+      const twinId = await this.twinOf(thread.id);
+      const twin = twinId ? await this.guild.channels.fetch(twinId).catch(() => null) : null;
+      if (twin?.isThread()) {
+        await twin.send("✅ The member closed this request.").catch(() => {});
+        await twin.setLocked(true, "support: member closed it").catch(() => {});
+        await twin.setArchived(true, "support: member closed it").catch(() => {});
+      }
     }
   }
 
@@ -192,9 +205,13 @@ export class SupportDesk {
   async onMessage(m: Message) {
     if (!m.inGuild() || m.guildId !== this.guild.id || m.author.bot || !m.channel.isThread()) return;
     const thread = m.channel;
+    if (thread.name.startsWith(BRIDGE)) return this.fromTeam(m, thread);
     const state = await this.stateOf(thread);
     if (!state) return;
-    if (state.handedOff) return this.relay(m, state);
+    if (state.handedOff) {
+      const twin = await this.twinOf(thread.id);
+      return twin && m.author.id === state.userId ? this.toTeam(m, state, twin) : this.relay(m, state);
+    }
     if (m.author.id !== state.userId) {
       // Someone else speaking up (a moderator stepping in) takes the thread over.
       state.handedOff = true;
@@ -222,6 +239,92 @@ export class SupportDesk {
    */
   private async relay(m: Message, state: ThreadState) {
     return relayTranslation(this.translator, m, state.userId, state.lang);
+  }
+
+  private async twinOf(memberThread: string): Promise<string | null> {
+    const known = this.bridges.get(memberThread);
+    if (known) return known;
+    const id = await this.db.getSetting(this.guild.id, `support_bridge:${memberThread}`).catch(() => null);
+    if (id) this.bridges.set(memberThread, id);
+    return id;
+  }
+
+  private async backOf(teamThread: string) {
+    const known = this.bridgeBack.get(teamThread);
+    if (known) return known;
+    const v = await this.db.getSetting(this.guild.id, `support_bridge_back:${teamThread}`).catch(() => null);
+    if (!v) return null;
+    const [memberThread, userId, lang] = v.split("|");
+    const back = { memberThread, userId, lang: lang as Lang };
+    this.bridgeBack.set(teamThread, back);
+    return back;
+  }
+
+  /** Opens the English twin of a non-English help thread with the team in it, and posts the request so far in English. */
+  private async openBridge(thread: ThreadChannel, state: ThreadState, mods: string[], summary: string): Promise<boolean> {
+    const en = await this.helpChannel("en", null);
+    if (!en) return false;
+    const member = await this.guild.members.fetch(state.userId).catch(() => null);
+    const name = member?.displayName ?? "member";
+    const twin = await en.threads.create({
+      name: `${BRIDGE} ${LANG_NAMES[state.lang]} · ${name}`.slice(0, 90),
+      type: ChannelType.PrivateThread,
+      invitable: false,
+      autoArchiveDuration: ThreadAutoArchiveDuration.OneWeek,
+      reason: `support: English twin of ${thread.id}`,
+    });
+    for (const id of mods.slice(0, 25)) await twin.members.add(id).catch(() => {});
+    await this.db.setSetting(this.guild.id, `support_bridge:${thread.id}`, twin.id);
+    await this.db.setSetting(this.guild.id, `support_bridge_back:${twin.id}`, `${thread.id}|${state.userId}|${state.lang}`);
+    this.bridges.set(thread.id, twin.id);
+    this.bridgeBack.set(twin.id, { memberThread: thread.id, userId: state.userId, lang: state.lang });
+    // What they wrote so far, in English, so the team doesn't start blind.
+    const earlier = [...(await thread.messages.fetch({ limit: 15 })).values()].reverse().filter((x) => x.author.id === state.userId && x.content.trim());
+    let context = "";
+    if (earlier.length && this.translator) {
+      const r = await this.translator.translate(earlier.map((x) => x.content), earlier.map(() => []), state.lang, ["en"], []).catch(() => null);
+      context = (r?.translations.en ?? earlier.map((x) => x.content)).map((x) => `> ${x.replace(/\n/g, "\n> ")}`).join("\n").slice(0, 1500);
+    }
+    const roles = this.modRoleIds();
+    await twin.send({
+      content: [
+        `${roles.map((id) => `<@&${id}>`).join(" ")} 🌐 **Help request from <@${state.userId}> in ${LANG_NAMES[state.lang]}.**`,
+        "Write here in English: each message is translated and passed to them, and their replies come back here in English.",
+        summary ? `-# ${summary.slice(0, 200)}` : "",
+        context ? `**So far:**\n${context}` : "",
+      ].filter(Boolean).join("\n"),
+      allowedMentions: { roles },
+    });
+    await this.alert(`🛟 ${LANG_NAMES[state.lang]} help request from <@${state.userId}>, answer in English here: ${twin.url}`);
+    return true;
+  }
+
+  /** The member wrote in their thread: pass it to the team's twin, in English. */
+  private async toTeam(m: Message, state: ThreadState, twinId: string) {
+    const twin = await this.guild.channels.fetch(twinId).catch(() => null);
+    if (!twin?.isThread()) return;
+    const text = m.content.trim() ? await this.say(m.content, state.lang, "en") : "";
+    const files = [...m.attachments.values()].map((a) => a.url);
+    await twin.send({ content: [`**${m.member?.displayName ?? m.author.username}:** ${text}`, text && text !== m.content.trim() ? `-# ${m.content.slice(0, 300)}` : "", ...files].filter(Boolean).join("\n").slice(0, 2000), allowedMentions: { parse: [] } });
+  }
+
+  /** The team wrote in the twin: pass it to the member, in their language. */
+  private async fromTeam(m: Message, twin: ThreadChannel) {
+    const back = await this.backOf(twin.id);
+    if (!back) return;
+    const thread = await this.guild.channels.fetch(back.memberThread).catch(() => null);
+    if (!thread?.isThread()) return;
+    if (thread.archived) await thread.setArchived(false).catch(() => {});
+    const text = m.content.trim() ? await this.say(m.content, "en", back.lang) : "";
+    const files = [...m.attachments.values()].map((a) => a.url);
+    await thread.send({ content: [`**${m.member?.displayName ?? m.author.username}** (BLKBöX team): ${text}`, ...files].filter(Boolean).join("\n").slice(0, 2000), allowedMentions: { parse: [] } });
+  }
+
+  /** One message translated; the original when translation isn't possible. */
+  private async say(text: string, from: Lang, to: Lang): Promise<string> {
+    if (!this.translator || from === to) return text;
+    const r = await this.translator.translate([text], [[]], from, [to], []).catch(() => null);
+    return r?.translated ? r.translations[to]?.[0] ?? text : text;
   }
 
   /** The thread so far, oldest first, as the assistant reads it. */
@@ -386,8 +489,15 @@ export class SupportDesk {
       this.membersFetchedAt = Date.now();
     }
     const mods = new Set(modRoles.flatMap((id) => [...(this.guild.roles.cache.get(id)?.members.keys() ?? [])]));
-    for (const id of [...mods].slice(0, 25)) await thread.members.add(id).catch(() => {});
     const t = SUPPORT_TEXT[state.lang];
+    // The team works in English: a non-English request gets a twin thread in the English help-desk instead,
+    // and the bot carries messages both ways, translated (JT, 1 Nov).
+    if (state.lang !== "en" && this.translator && (await this.openBridge(thread, state, [...mods], summary))) {
+      await thread.send({ content: [lead, fill(t.handedOff, { mods: "" }).trim()].filter(Boolean).join("\n"), allowedMentions: { parse: [] } });
+      log.info("support handed off", { thread: thread.id, user: state.userId, lang: state.lang, summary, bridged: true });
+      return;
+    }
+    for (const id of [...mods].slice(0, 25)) await thread.members.add(id).catch(() => {});
     const mention = modRoles.map((id) => `<@&${id}>`).join(" ") || "Moderators,";
     await thread.send({ content: [lead, fill(t.handedOff, { mods: mention })].filter(Boolean).join("\n"), allowedMentions: { roles: modRoles } });
     log.info("support handed off", { thread: thread.id, user: state.userId, lang: state.lang, summary });

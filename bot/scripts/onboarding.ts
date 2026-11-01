@@ -920,8 +920,8 @@ async function stepPerms(ctx: Ctx) {
     const ch = findChannel(guild, s);
     if (!ch) { log(`  ! skip #${s.name} (missing)`); continue; }
     const ows = overwritesFor(ctx, ch, s.lang, s.tier, !!s.readOnly, !!s.noHistory);
-    // Certified Analysts post trade alerts in English; the mirror carries them into every other language (JT, 1 Nov).
-    if (s.kind === "signals" && s.lang === "en") {
+    // Certified Analysts post trade alerts in any language; the mirror translates each one into the others (JT, 1 Nov).
+    if (s.kind === "signals") {
       const analysts = guild.roles.cache.find((r) => r.name === "Certified Analysts");
       if (analysts) {
         const i = ows.findIndex((o) => String(o.id) === analysts.id);

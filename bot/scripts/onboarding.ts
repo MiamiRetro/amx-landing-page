@@ -507,7 +507,7 @@ const VIP_OLD: Record<string, string> = { [VIP_CAT]: "ðŸ‘‘ VIP", [VIP_CHAT]: "ðŸ
 
 /**
  * The VIP lounge sits right under the picker, shared by every language: the
- * legacy VIPs role and the commission tiers VIP 1-4 see it, staff keep their
+ * commission tiers VIP 1-4 see it, staff keep their
  * access. The weekly report goes to an admin-only channel, because it lists
  * what we earn per client. The concierge gives each VIP a private thread with
  * the team, like help-desk but answered by people only.
@@ -515,7 +515,7 @@ const VIP_OLD: Record<string, string> = { [VIP_CAT]: "ðŸ‘‘ VIP", [VIP_CHAT]: "ðŸ
 async function stepVip(ctx: Ctx) {
   const { guild, db } = ctx;
   const me = guild.members.me!;
-  for (const name of VIP_ROLES.slice(1)) {
+  for (const name of VIP_ROLES) {
     if (guild.roles.cache.some((r) => r.name === name)) continue;
     log(`  create role ${name}`);
     if (ctx.apply) await guild.roles.create({ name, permissions: [], reason: "VIP tiers" });

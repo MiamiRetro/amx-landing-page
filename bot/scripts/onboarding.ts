@@ -800,7 +800,7 @@ const roleIdsNamed = (guild: Guild, names: string[]) => {
   const want = new Set(names.map((n) => n.trim().toLowerCase()).filter(Boolean));
   return guild.roles.cache.filter((r) => want.has(r.name.toLowerCase())).map((r) => r.id);
 };
-/** The team that answers help threads in every language (HELP_TEAM_ROLES). */
+/** The team (HELP_TEAM_ROLES): English only, help requests reach it through English twin threads. */
 const helpTeamRoleIds = (guild: Guild) => roleIdsNamed(guild, (process.env.HELP_TEAM_ROLES ?? "Team - Will Not DM").split(","));
 /**
  * Moderators get their own grants only on #🛡️・mod-chat and the VIP folder (not #📊・vip-report);
@@ -882,12 +882,9 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
   // languages' channels stay out of their list. Help-desk is the exception in every language: a private help thread
   // only shows to someone who can see its channel, and the team is pulled into those threads (JT, 1 Nov).
   for (const id of modRoleIds(guild)) out.delete(id);
-  if (lang !== "en" && lang !== "all") {
-    for (const id of helpTeamRoleIds(guild)) {
-      out.delete(id);
-      if (tier === "help") set(id, OverwriteType.Role, P.ViewChannel | P.ReadMessageHistory | P.SendMessagesInThreads | P.ManageThreads | P.EmbedLinks | P.AttachFiles, 0n);
-    }
-  }
+  // Non-English help requests reach the team through an English twin thread (support/desk.ts), so outside
+  // English the team gets no channels at all, help-desk included (JT, 1 Nov).
+  if (lang !== "en" && lang !== "all") for (const id of helpTeamRoleIds(guild)) out.delete(id);
   return [...out.values()].map((o) => ({ id: o.id, type: o.type, allow: o.allow, deny: o.deny }));
 }
 

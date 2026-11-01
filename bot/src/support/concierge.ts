@@ -16,7 +16,9 @@ import type { Db } from "../db/index.js";
 import { log, errInfo } from "../log.js";
 import { busyTimes } from "../calendar/google.js";
 import { findSlots, parseHours } from "../calendar/slots.js";
+import type { LanguageRoles } from "../roles.js";
 import { HOSTS, hostIds, type Butler, type ButlerTurn, type HostKey } from "./butler.js";
+import { relayTranslation, type ThreadTranslator } from "./relay.js";
 
 export const CONCIERGE_OPEN = "concierge:open";
 export const CONCIERGE_CLOSE = "concierge:close";
@@ -98,7 +100,20 @@ export class Concierge {
   private owners = new Map<string, string>();
   private busy = new Set<string>();
 
-  constructor(private guild: Guild, private db: Db, private botUserId: string, private butler: Butler | null) {}
+  constructor(
+    private guild: Guild,
+    private db: Db,
+    private botUserId: string,
+    private butler: Butler | null,
+    private roles: LanguageRoles | null = null,
+    private translator: ThreadTranslator | null = null,
+  ) {}
+
+  /** VIPs come from every language: once a person from the team is in the thread, each side reads the other in its own language. */
+  private async relay(m: Message, owner: string) {
+    const member = await this.guild.members.fetch(owner).catch(() => null);
+    return relayTranslation(this.translator, m, owner, member && this.roles ? this.roles.langOf(member) : null);
+  }
 
   private roleIds(names: string[]) {
     const wanted = names.map((n) => n.toLowerCase());
@@ -186,16 +201,20 @@ export class Concierge {
   }
 
   async onMessage(m: Message) {
-    if (!this.butler || !m.inGuild() || m.guildId !== this.guild.id || m.author.bot || !m.channel.isThread()) return;
+    if (!m.inGuild() || m.guildId !== this.guild.id || m.author.bot || !m.channel.isThread()) return;
     const thread = m.channel;
-    if (thread.ownerId !== this.botUserId || !thread.name.startsWith(BUTLER) || !thread.parent?.name.includes(CONCIERGE_CHANNEL)) return;
+    if (thread.ownerId !== this.botUserId || !thread.parent?.name.includes(CONCIERGE_CHANNEL)) return;
+    if (!thread.name.startsWith(BUTLER) && !thread.name.startsWith(PERSON)) return;
     const owner = await this.ownerOf(thread);
     if (!owner) return;
+    // A person is in the thread: the e-butler stays quiet and messages are translated both ways.
+    if (thread.name.startsWith(PERSON)) return this.relay(m, owner);
     if (m.author.id !== owner) {
       // A person from the team speaking up takes the thread over; the e-butler steps back.
       await thread.setName(`${PERSON} ${strip(thread.name)}`.slice(0, 90)).catch(() => {});
-      return;
+      return this.relay(m, owner);
     }
+    if (!this.butler) return;
     if (this.busy.has(thread.id) || !m.content.trim()) return;
     this.busy.add(thread.id);
     try {

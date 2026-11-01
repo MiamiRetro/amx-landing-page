@@ -65,7 +65,7 @@ try {
     const since = Date.now() - days * 86_400_000;
     const msgs = await fetchSince(source, since);
     const candidates = guild.channels.cache
-      .filter((c) => c.type === ChannelType.GuildText && CANDIDATES.includes(c.name) && c.parentId !== archive.id)
+      .filter((c) => c.type === ChannelType.GuildText && CANDIDATES.includes(c.name.replace(/^[┏┣┗━\s]+/, "")) && c.parentId !== archive.id)
       .map((c) => ({ id: c.id, name: c.name, category: c.parent?.name ?? null }));
     const out = {
       source: { id: source.id, name: source.name },

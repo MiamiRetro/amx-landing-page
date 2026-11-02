@@ -217,7 +217,12 @@ export class Mirror {
       }
     }
 
-    content = await remapForTarget(content, this.d.db, this.d.groups, this.d.guild.id, lang, target.channel_id);
+    const remap = (t: string) => remapForTarget(t, this.d.db, this.d.groups, this.d.guild.id, lang, target.channel_id);
+    content = await remap(content);
+    for (const e of embeds) {
+      if (e.description) e.description = await remap(e.description);
+      for (const f of e.fields ?? []) f.value = await remap(f.value);
+    }
     const contentSeg = segments.find((s) => s.path[0] === "content");
     const header = await replyHeader(message, this.d.db, this.d.guild.id, target.channel_id, null);
     const extras = [renderForward(message), renderPoll(message)].filter(Boolean) as string[];

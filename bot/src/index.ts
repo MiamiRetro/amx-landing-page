@@ -1,11 +1,12 @@
 import { createServer } from "node:http";
 import { Client, Events, GatewayIntentBits, Partials } from "discord.js";
-import { config } from "./config.js";
+import { config, type Lang } from "./config.js";
 import { commandDefinitions, handleCommand } from "./commands/index.js";
 import { Db } from "./db/index.js";
 import { log, setLogLevel, errInfo } from "./log.js";
 import { GroupIndex } from "./mirror/groups.js";
 import { Mirror } from "./mirror/mirror.js";
+import { remapForTarget } from "./mirror/render.js";
 import { Semaphore } from "./mirror/queue.js";
 import { Funnel, InviteTracker } from "./funnel.js";
 import { LanguageRoles } from "./roles.js";
@@ -84,9 +85,12 @@ async function main() {
       // Help-desk threads. Without an Anthropic key every thread goes straight to a moderator.
       const assistant = process.env.ANTHROPIC_API_KEY && process.env.SUPPORT_ASSISTANT !== "off" ? new SupportAssistant() : null;
       notify = new NotifyCenter(guild, db, roles);
-      support = new SupportDesk(guild, db, roles, c.user.id, assistant, translator);
+      // Help and concierge translations point channel tags at the reader's language twin, like the mirror does.
+      const mirrorGroups = groups;
+      const localize = (text: string, lang: Lang) => remapForTarget(text, db, mirrorGroups, guild.id, lang);
+      support = new SupportDesk(guild, db, roles, c.user.id, assistant, translator, localize);
       log.info("support desk ready", { assistant: assistant?.model ?? "off" });
-      concierge = new Concierge(guild, db, c.user.id, process.env.ANTHROPIC_API_KEY && process.env.CONCIERGE_BUTLER !== "off" ? new Butler() : null, roles, translator);
+      concierge = new Concierge(guild, db, c.user.id, process.env.ANTHROPIC_API_KEY && process.env.CONCIERGE_BUTLER !== "off" ? new Butler() : null, roles, translator, localize);
       if (SupportReview.enabled()) {
         const desk = support;
         review = new SupportReview(guild, db, c.user.id, assistant, (m) => desk.isMod(m));

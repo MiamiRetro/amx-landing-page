@@ -20,7 +20,7 @@ import type { LanguageRoles } from "../roles.js";
 import type { SupportAssistant, Turn } from "./assistant.js";
 import { guideFile } from "./guides.js";
 import { confirmButtons, langName, scriptMismatch, SWITCH_CANCEL, SWITCH_CONFIRM, SWITCH_PICK, SWITCH_TEXT, switchButtons, switchKey } from "./switch.js";
-import { relayTranslation, type ThreadTranslator } from "./relay.js";
+import { relayTranslation, translateForReader, type ChannelLocalizer, type ThreadTranslator } from "./relay.js";
 import { SUPPORT_TEXT } from "./text.js";
 
 export type { ThreadTranslator } from "./relay.js";
@@ -104,6 +104,7 @@ export class SupportDesk {
     private botUserId: string,
     private assistant: SupportAssistant | null,
     private translator: ThreadTranslator | null = null,
+    private localize: ChannelLocalizer | null = null,
   ) {}
 
   private modRoleIds() {
@@ -238,7 +239,7 @@ export class SupportDesk {
    * the member's into English for the team, the team's into the member's language. Nothing for English members.
    */
   private async relay(m: Message, state: ThreadState) {
-    return relayTranslation(this.translator, m, state.userId, state.lang);
+    return relayTranslation(this.translator, m, state.userId, state.lang, this.localize);
   }
 
   private async twinOf(memberThread: string): Promise<string | null> {
@@ -282,8 +283,8 @@ export class SupportDesk {
     const earlier = [...(await thread.messages.fetch({ limit: 15 })).values()].reverse().filter((x) => x.author.id === state.userId && x.content.trim());
     let context = "";
     if (earlier.length && this.translator) {
-      const r = await this.translator.translate(earlier.map((x) => x.content), earlier.map(() => []), state.lang, ["en"], []).catch(() => null);
-      context = (r?.translations.en ?? earlier.map((x) => x.content)).map((x) => `> ${x.replace(/\n/g, "\n> ")}`).join("\n").slice(0, 1500);
+      const said = await Promise.all(earlier.map((x) => this.say(x.content, state.lang, "en")));
+      context = said.map((x) => `> ${x.replace(/\n/g, "\n> ")}`).join("\n").slice(0, 1500);
     }
     const roles = this.modRoleIds();
     await twin.send({
@@ -322,9 +323,7 @@ export class SupportDesk {
 
   /** One message translated; the original when translation isn't possible. */
   private async say(text: string, from: Lang, to: Lang): Promise<string> {
-    if (!this.translator || from === to) return text;
-    const r = await this.translator.translate([text], [[]], from, [to], []).catch(() => null);
-    return r?.translated ? r.translations[to]?.[0] ?? text : text;
+    return (await translateForReader(this.translator, text, from, to, this.localize)).text;
   }
 
   /** The thread so far, oldest first, as the assistant reads it. */

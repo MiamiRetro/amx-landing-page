@@ -103,3 +103,45 @@ export function platformOf(url: string): string {
 }
 
 export const PLATFORM_LABEL: Record<WatchPlatform, string> = { youtube: "YouTube", twitch: "Twitch" };
+
+/** The UC… id from a channel page (the RSS link or the channel metadata). */
+export function parseChannelId(html: string): string | null {
+  return html.match(/feeds\/videos\.xml\?channel_id=(UC[\w-]{22})/)?.[1]
+    ?? html.match(/"externalId":"(UC[\w-]{22})"/)?.[1]
+    ?? html.match(/<meta itemprop="identifier" content="(UC[\w-]{22})"/)?.[1]
+    ?? null;
+}
+
+export async function youtubeChannelId(channel: string): Promise<string> {
+  const c = channel.trim();
+  if (/^UC[\w-]{22}$/.test(c)) return c;
+  const page = youtubeLivePage(c).replace(/\/live$/, "");
+  const res = await fetch(page, { headers: { "user-agent": UA, "accept-language": "en-US,en;q=0.9", cookie: "SOCS=CAI; CONSENT=YES+1" }, signal: AbortSignal.timeout(15_000) });
+  if (!res.ok) throw new Error(`YouTube ${res.status} for ${channel}`);
+  const id = parseChannelId(await res.text());
+  if (!id) throw new Error(`no channel id on ${page}`);
+  return id;
+}
+
+export interface Upload { id: string; url: string; title: string; published: string }
+
+/** Entries of a YouTube RSS feed, newest first. */
+export function parseFeed(xml: string): Upload[] {
+  return [...xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)].map(([, e]) => {
+    const id = e.match(/<yt:videoId>([\w-]{11})<\/yt:videoId>/)?.[1] ?? "";
+    return { id, url: `https://www.youtube.com/watch?v=${id}`, title: decodeEntities(e.match(/<title>([\s\S]*?)<\/title>/)?.[1] ?? ""), published: e.match(/<published>([^<]+)<\/published>/)?.[1] ?? "" };
+  }).filter((u) => u.id);
+}
+
+/**
+ * A channel's full-length uploads. YouTube keeps a playlist per kind next to
+ * the uploads one: UULF holds long videos only, without shorts (UUSH) or past
+ * live streams (UULV), so shorts never come through here.
+ */
+export async function youtubeLongUploads(channelId: string): Promise<Upload[]> {
+  const res = await fetch(`https://www.youtube.com/feeds/videos.xml?playlist_id=UULF${channelId.slice(2)}`, { headers: { "user-agent": UA }, signal: AbortSignal.timeout(15_000) });
+  // A channel without any long video has no such playlist yet.
+  if (res.status === 404) return [];
+  if (!res.ok) throw new Error(`YouTube feed ${res.status}`);
+  return parseFeed(await res.text());
+}

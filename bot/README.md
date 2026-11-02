@@ -52,6 +52,7 @@ Create a project (or reuse one), open the SQL editor, paste `src/db/schema.sql`,
 | `SIGNAL_FEED` | `1` posts each new BTC signal as a card in every language's AlphanumetriX channel and refreshes the pinned board in place (`src/signals`). Needs the two above; post the history once with `scripts/post-signals.ts` first |
 | `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET` | Optional. A free app from dev.twitch.tv, so `/live watch` can see Twitch streams. YouTube needs no key |
 | `LIVE_WATCH` | `off` stops the go-live watcher (`/live now` still works). Default on: watched channels are checked every 2 minutes and each stream gets one alert in every language's announcements, pinging 🔔 Videos & Streams (`src/live`) |
+| `VIDEO_ALERTS` | `off` stops new-video alerts. Default on: each watched YouTube channel's new full-length uploads (the UULF playlist feed, so never shorts or past lives) get one alert, same channels and ping |
 | `HEARTBEAT_URL` | Pinged every `HEARTBEAT_MIN` (5) minutes while connected, for an outside monitor such as healthchecks.io to alert on silence |
 
 ### 4. Run locally

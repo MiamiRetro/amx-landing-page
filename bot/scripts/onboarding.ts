@@ -711,7 +711,7 @@ async function stepAcademy(ctx: Ctx) {
   }
 }
 
-/** Where channels the layout no longer has go: out of members' sight, history kept, staff can still read it. */
+/** Where channels the layout no longer has go: out of everyone's sight, history kept; only Administrators (and the bot) can read it. */
 const ARCHIVE_CAT = "🗄️ ARCHIVE";
 
 async function archive(ctx: Ctx, ch: NonThreadGuildBasedChannel, why: string) {
@@ -720,27 +720,25 @@ async function archive(ctx: Ctx, ch: NonThreadGuildBasedChannel, why: string) {
   if (!ctx.apply) return;
   let cat = findCategory(guild, ARCHIVE_CAT);
   if (!cat) {
-    const staff = ["Team - Will Not DM"].map((n) => guild.roles.cache.find((r) => r.name === n)).filter((r) => !!r);
     cat = await guild.channels.create({
       name: ARCHIVE_CAT,
       type: ChannelType.GuildCategory,
       position: 999,
       permissionOverwrites: [
         { id: guild.roles.everyone.id, deny: [P.ViewChannel] },
-        ...staff.map((r) => ({ id: r!.id, allow: [P.ViewChannel, P.ReadMessageHistory], deny: [P.SendMessages, P.SendMessagesInThreads, P.CreatePublicThreads] })),
         { id: guild.members.me!.id, type: OverwriteType.Member, allow: [P.ViewChannel, P.ManageChannels] },
       ],
       reason: "onboarding: archive",
     });
   }
-  // Synced to the archive's permissions, so language and member roles no longer reach it.
+  // Synced to the archive's permissions, so no language, member or staff role reaches it.
   await ch.setParent(cat.id, { lockPermissions: true, reason: `onboarding: archived (${why})` });
 }
 
 /**
  * Channels from before the restructure that the layout has no place for. The
  * live server's trader chats and the old 🔒 trade-alerts are archived, not
- * deleted, so their history stays readable by staff.
+ * deleted, so their history stays readable by Administrators.
  */
 async function stepArchive(ctx: Ctx) {
   const { guild } = ctx;

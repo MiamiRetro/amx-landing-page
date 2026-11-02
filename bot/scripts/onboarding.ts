@@ -96,11 +96,11 @@ const LAYOUT: { cat: "ann" | "com" | "ref"; top?: true; kind: Kind; tier: Tier; 
   // One 🔒 trade-signals channel stands in for alphanumetrix, bot-alerts and trade-alerts.
   { cat: "ann", kind: "teaser", tier: "teaser", readOnly: true, panel: "locked" },
   // General and memes are open to everyone who picked a language, backlog included; the 🔒 panels carry the Verify button.
+  { cat: "com", kind: "general", tier: "free" },
   { cat: "com", kind: "bitcoin", tier: "member" },
   { cat: "com", kind: "crypto", tier: "member" },
   { cat: "com", kind: "stocks", tier: "member" },
   { cat: "com", kind: "commodities", tier: "member" },
-  { cat: "com", kind: "general", tier: "free" },
   { cat: "com", kind: "memes", tier: "free" },
   { cat: "com", kind: "help", tier: "help", readOnly: true, panel: "support" },
   // One forum for guides, strategies, videos and questions, under help-desk, for verified members.

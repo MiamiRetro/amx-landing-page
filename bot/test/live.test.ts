@@ -38,3 +38,20 @@ test("every language has alert text; the alert pings the role and keeps the link
   assert.equal(m, "<@&123> 🔴 **LIVE NOW** · **Tone** · YouTube\n> Market open\nJoin the stream: https://youtu.be/x");
   assert.equal(liveMessage("ja", { who: "Matt", platform: "", url: "https://a.b" }), "🔴 **ライブ配信中** · **Matt**\n配信はこちら： https://a.b");
 });
+
+test("a YouTube feed gives its videos, newest first, and channel pages give the UC id", async () => {
+  const { parseFeed, parseChannelId } = await import("../src/live/detect.js");
+  const xml = `<feed><entry><id>yt:video:AAAAAAAAAAA</id><yt:videoId>AAAAAAAAAAA</yt:videoId><title>BTC &amp; the halving</title><published>2026-11-02T10:00:00+00:00</published></entry>
+<entry><id>yt:video:BBBBBBBBBBB</id><yt:videoId>BBBBBBBBBBB</yt:videoId><title>Older</title><published>2026-10-30T10:00:00+00:00</published></entry></feed>`;
+  assert.deepEqual(parseFeed(xml).map((u) => [u.id, u.title, u.published]), [["AAAAAAAAAAA", "BTC & the halving", "2026-11-02T10:00:00+00:00"], ["BBBBBBBBBBB", "Older", "2026-10-30T10:00:00+00:00"]]);
+  assert.equal(parseChannelId(`<link rel="alternate" type="application/rss+xml" title="RSS" href="https://www.youtube.com/feeds/videos.xml?channel_id=UCabcdefghijklmnopqrstuv">`), "UCabcdefghijklmnopqrstuv");
+  assert.equal(parseChannelId(`{"externalId":"UCabcdefghijklmnopqrstuv"}`), "UCabcdefghijklmnopqrstuv");
+  assert.equal(parseChannelId("<html></html>"), null);
+});
+
+test("a new-video alert reads differently from a live one", () => {
+  assert.equal(
+    liveMessage("es", { who: "Tone", platform: "YouTube", url: "https://youtu.be/x", title: "Plan", kind: "video" }, "9"),
+    "<@&9> 🎬 **NUEVO VIDEO** · **Tone** · YouTube\n> Plan\nMíralo ya: https://youtu.be/x",
+  );
+});

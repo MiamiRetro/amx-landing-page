@@ -149,7 +149,7 @@ export const commandDefinitions = [
         .addStringOption((o) => o.setName("title").setDescription("What the stream is about (optional)").setMaxLength(200)),
     )
     .addSubcommand((s) =>
-      s.setName("watch").setDescription("Post automatically whenever this channel goes live")
+      s.setName("watch").setDescription("Post automatically when this channel goes live (YouTube: new full-length videos too)")
         .addStringOption((o) => o.setName("who").setDescription("Name shown in the alert, e.g. Tone").setRequired(true).setMaxLength(60))
         .addStringOption((o) => o.setName("platform").setDescription("Platform").setRequired(true).addChoices(...PLATFORMS.map((p) => ({ name: PLATFORM_LABEL[p], value: p }))))
         .addStringOption((o) => o.setName("channel").setDescription("YouTube @handle or channel link, or Twitch name").setRequired(true)),
@@ -422,7 +422,7 @@ async function liveCommand(i: ChatInputCommandInteraction, d: CommandDeps): Prom
     const w = { who: i.options.getString("who", true).trim(), platform: i.options.getString("platform", true) as WatchPlatform, channel: i.options.getString("channel", true).trim() };
     await d.live.watch(w);
     const note = w.platform === "twitch" && !twitchConfigured() ? "\n⚠️ Twitch checks need TWITCH_CLIENT_ID and TWITCH_CLIENT_SECRET in the bot's variables; until then this watch does nothing." : "";
-    return `Watching ${w.who} on ${PLATFORM_LABEL[w.platform]} (\`${w.channel}\`). The bot checks every 2 minutes and posts once per stream.${note}`;
+    return `Watching ${w.who} on ${PLATFORM_LABEL[w.platform]} (\`${w.channel}\`). The bot checks every 2 minutes and posts once per stream${w.platform === "youtube" ? ", plus each new full-length video (never shorts)" : ""}.${note}`;
   }
   if (sub === "unwatch") {
     const ok = await d.live.unwatch(i.options.getString("who", true).trim(), i.options.getString("platform", true) as WatchPlatform);

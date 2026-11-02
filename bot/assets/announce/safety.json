@@ -1,162 +1,532 @@
 {
-  "en": {
-    "kicker": "BLKBöX Trading Floor · Stay safe", "title": "We will never DM you first", "sub": "The server is open to everyone now. Scammers too. Here's how to protect yourself.",
-    "cards": [["🚫", "Never share", "Seed phrase, passwords, 2FA codes or API keys. Not with anyone, not even us."],
-              ["🔒", "Turn off DMs", "Tap the server name → Privacy Settings → switch off Direct Messages."],
-              ["🔍", "Verify, then block", "Scammers copy our names and photos. Check in help-desk, then block and report."],
-              ["💬", "Keep it on the server", "Anyone moving you to DMs, Telegram or WhatsApp is a red flag."]],
-    "help": "Need help? Tap 🛟 Get help in help-desk. Your private thread with our team and mods.",
-    "text": ["🛡️ **Stay safe: the Trading Floor is open to everyone now**", "We've removed the verification gate and new members can read the full chat history. That's great for the community, but it also makes it easier for scammers to get in. Please look out for yourself and each other.", "",
-      "🚫 **We will never DM you first. Not for anything.**", "No admin, mod or team member will DM you first, offer to trade for you, ask you to send money, or ask for your seed phrase, passwords, 2FA codes or API keys. A \"BLKBöX\" account in your DMs is a scammer.", "",
-      "🔍 **Verify, then block**", "Scammers copy our names and profile pictures. Real staff have the **Team** or **Moderators** role here in the server. Not sure? Ask in {help}, then block and report the account.", "",
-      "🔒 **Turn off DMs from this server**", "Tap the server name → **Privacy Settings** → switch off **Direct Messages**. Your friends can still reach you. Turn on 2FA for Discord, your exchange and your email too.", "",
-      "💬 **Keep conversations on the server**", "Questions, trade talk and support all happen here, where the team and the community can see. Anyone pulling you into DMs, Telegram or WhatsApp is a red flag.", "",
-      "🛟 **Need help?**", "Tap 🛟 **Get help** in {help}. It opens a private thread just for you, with our team and mods. That's the only place we do one-on-one support.", "",
-      "⚠️ Never click links or QR codes sent in DMs, never screen share your wallet or exchange, and ignore \"guaranteed returns\", \"account managers\" and \"fund recovery\" offers. If it sounds too good to be true, it is.", "",
-      "Stay sharp. ⚡"]
-  },
-  "zh": {
-    "kicker": "BLKBöX 交易大厅 · 安全提醒", "title": "我们绝不会主动私信你", "sub": "服务器现在对所有人开放，骗子也能进来。请这样保护自己。",
-    "cards": [["🚫", "绝不透露", "助记词、密码、2FA 验证码或 API 密钥，对任何人都不要给，包括我们。"],
-              ["🔒", "关闭私信", "点击服务器名称 → 隐私设置 → 关闭「私信」。"],
-              ["🔍", "先核实，再拉黑", "骗子会冒用我们的名字和头像。先在帮助台核实，再拉黑并举报。"],
-              ["💬", "留在服务器里聊", "任何把你拉去私信、Telegram 或 WhatsApp 的人都是危险信号。"]],
-    "help": "需要帮助？在帮助台点击 🛟 获取帮助，开启你与团队和管理员的私密话题。",
-    "text": ["🛡️ **安全提醒：交易大厅现已对所有人开放**", "我们取消了验证门槛，新成员也能看到完整的聊天记录。这对社区是好事，但骗子也更容易混进来。请保护好自己，也互相提醒。", "",
-      "🚫 **我们绝不会主动私信你，任何事情都不会。**", "管理员、版主或团队成员都不会主动私信你，不会提出替你交易，不会让你转账，也不会索要你的助记词、密码、2FA 验证码或 API 密钥。私信你的「BLKBöX」账号一定是骗子。", "",
-      "🔍 **先核实，再拉黑**", "骗子会冒用我们的名字和头像。真正的工作人员在服务器里带有 **Team** 或 **Moderators** 身份组。不确定？先在 {help} 询问，然后拉黑并举报该账号。", "",
-      "🔒 **关闭来自本服务器的私信**", "点击服务器名称 → **隐私设置** → 关闭 **私信**。你的好友仍然可以联系你。另外，请为 Discord、交易所和邮箱开启 2FA。", "",
-      "💬 **在服务器里交流**", "提问、交易讨论和支持都在这里公开进行，团队和社区都看得到。任何把你拉去私信、Telegram 或 WhatsApp 的人都是危险信号。", "",
-      "🛟 **需要帮助？**", "在 {help} 点击 🛟 **获取帮助**，会为你开启一个只有你、团队和管理员能看到的私密话题。这是我们唯一的一对一支持渠道。", "",
-      "⚠️ 不要点击私信里的链接或二维码，不要共享屏幕展示你的钱包或交易所，忽略任何「保证收益」「客户经理」和「资金追回」的说法。好得不像真的，那就不是真的。", "",
-      "保持警惕。⚡"]
-  },
-  "ko": {
-    "kicker": "BLKBöX 트레이딩 플로어 · 안전 수칙", "title": "저희는 절대 먼저 DM하지 않습니다", "sub": "이제 서버가 모두에게 열려 있어 사기꾼도 들어올 수 있습니다. 이렇게 스스로를 지키세요.",
-    "cards": [["🚫", "절대 공유 금지", "시드 문구, 비밀번호, 2FA 코드, API 키. 누구에게도, 저희에게도 주지 마세요."],
-              ["🔒", "DM 끄기", "서버 이름 탭 → 개인정보 보호 설정 → 다이렉트 메시지 끄기."],
-              ["🔍", "확인 후 차단", "사기꾼은 저희 이름과 사진을 베낍니다. 도움말에서 확인한 뒤 차단하고 신고하세요."],
-              ["💬", "대화는 서버에서", "DM, 텔레그램, 왓츠앱으로 옮기자는 사람은 위험 신호입니다."]],
-    "help": "도움이 필요하세요? 도움말에서 🛟 도움 받기를 누르세요. 나와 팀, 모더레이터만 보는 비공개 스레드입니다.",
-    "text": ["🛡️ **안전 수칙: 이제 트레이딩 플로어가 모두에게 열렸습니다**", "인증 절차를 없앴고, 새 멤버도 전체 채팅 기록을 볼 수 있습니다. 커뮤니티에는 좋은 일이지만 사기꾼이 들어오기도 쉬워졌습니다. 스스로를 지키고 서로 챙겨 주세요.", "",
-      "🚫 **저희는 어떤 일로도 먼저 DM하지 않습니다.**", "관리자, 모더레이터, 팀원 누구도 먼저 DM하거나, 대신 거래해 주겠다고 하거나, 송금을 요구하거나, 시드 문구·비밀번호·2FA 코드·API 키를 묻지 않습니다. DM으로 연락하는 \"BLKBöX\" 계정은 사기꾼입니다.", "",
-      "🔍 **확인한 다음 차단하세요**", "사기꾼은 저희 이름과 프로필 사진을 베낍니다. 진짜 운영진은 이 서버에서 **Team** 또는 **Moderators** 역할을 가지고 있습니다. 확실하지 않다면 {help}에서 물어본 뒤 해당 계정을 차단하고 신고하세요.", "",
-      "🔒 **이 서버의 DM을 꺼 두세요**", "서버 이름 탭 → **개인정보 보호 설정** → **다이렉트 메시지** 끄기. 친구는 계속 연락할 수 있습니다. Discord, 거래소, 이메일에도 2FA를 켜 두세요.", "",
-      "💬 **대화는 서버 안에서**", "질문, 트레이딩 이야기, 지원 모두 팀과 커뮤니티가 볼 수 있는 이곳에서 이루어집니다. DM, 텔레그램, 왓츠앱으로 끌어내려는 사람은 위험 신호입니다.", "",
-      "🛟 **도움이 필요하세요?**", "{help}에서 🛟 **도움 받기**를 누르면 나와 팀, 모더레이터만 볼 수 있는 비공개 스레드가 열립니다. 1:1 지원은 이곳에서만 합니다.", "",
-      "⚠️ DM으로 받은 링크나 QR 코드는 누르지 말고, 지갑이나 거래소 화면을 공유하지 마세요. \"수익 보장\", \"계정 매니저\", \"자금 회수\" 제안은 무시하세요. 너무 좋아 보이면 사기입니다.", "",
-      "항상 조심하세요. ⚡"]
-  },
-  "id": {
-    "kicker": "BLKBöX Trading Floor · Tetap aman", "title": "Kami tidak akan pernah DM kamu duluan", "sub": "Server ini sekarang terbuka untuk semua orang, termasuk penipu. Begini cara melindungi dirimu.",
-    "cards": [["🚫", "Jangan pernah bagikan", "Seed phrase, kata sandi, kode 2FA atau API key. Ke siapa pun, termasuk kami."],
-              ["🔒", "Matikan DM", "Ketuk nama server → Pengaturan Privasi → matikan Pesan Langsung."],
-              ["🔍", "Cek dulu, lalu blokir", "Penipu meniru nama dan foto kami. Tanyakan di bantuan, lalu blokir dan laporkan."],
-              ["💬", "Ngobrol di server saja", "Siapa pun yang mengajak pindah ke DM, Telegram atau WhatsApp adalah tanda bahaya."]],
-    "help": "Butuh bantuan? Ketuk 🛟 Minta bantuan di bantuan. Thread pribadimu dengan tim dan moderator.",
-    "text": ["🛡️ **Tetap aman: Trading Floor sekarang terbuka untuk semua orang**", "Kami sudah menghapus verifikasi, dan member baru bisa membaca seluruh riwayat chat. Ini bagus untuk komunitas, tapi juga memudahkan penipu masuk. Jaga dirimu dan saling mengingatkan, ya.", "",
-      "🚫 **Kami tidak akan pernah DM kamu duluan. Untuk urusan apa pun.**", "Admin, moderator, atau anggota tim tidak akan DM kamu duluan, menawarkan untuk trading atas namamu, memintamu mengirim uang, atau meminta seed phrase, kata sandi, kode 2FA, atau API key. Akun \"BLKBöX\" di DM kamu pasti penipu.", "",
-      "🔍 **Cek dulu, lalu blokir**", "Penipu meniru nama dan foto profil kami. Staf asli punya role **Team** atau **Moderators** di server ini. Ragu? Tanyakan di {help}, lalu blokir dan laporkan akunnya.", "",
-      "🔒 **Matikan DM dari server ini**", "Ketuk nama server → **Pengaturan Privasi** → matikan **Pesan Langsung**. Temanmu tetap bisa menghubungimu. Aktifkan juga 2FA di Discord, exchange, dan email kamu.", "",
-      "💬 **Ngobrol tetap di server**", "Pertanyaan, diskusi trading, dan bantuan semuanya ada di sini, di tempat yang bisa dilihat tim dan komunitas. Siapa pun yang menarikmu ke DM, Telegram, atau WhatsApp adalah tanda bahaya.", "",
-      "🛟 **Butuh bantuan?**", "Ketuk 🛟 **Minta bantuan** di {help}. Ini membuka thread pribadi khusus untukmu, bersama tim dan moderator kami. Hanya di sana kami memberi bantuan satu per satu.", "",
-      "⚠️ Jangan klik link atau kode QR dari DM, jangan pernah share layar dompet atau exchange kamu, dan abaikan tawaran \"profit pasti\", \"account manager\", atau \"pemulihan dana\". Kalau terdengar terlalu bagus untuk jadi kenyataan, itu penipuan.", "",
-      "Tetap waspada. ⚡"]
-  },
-  "vi": {
-    "kicker": "BLKBöX Trading Floor · An toàn", "title": "Chúng tôi không bao giờ nhắn riêng cho bạn trước", "sub": "Server giờ mở cho tất cả mọi người, kể cả kẻ lừa đảo. Đây là cách bảo vệ bạn.",
-    "cards": [["🚫", "Không bao giờ chia sẻ", "Cụm từ khôi phục, mật khẩu, mã 2FA hay API key. Với bất kỳ ai, kể cả chúng tôi."],
-              ["🔒", "Tắt tin nhắn riêng", "Nhấn tên server → Cài đặt quyền riêng tư → tắt Tin nhắn trực tiếp."],
-              ["🔍", "Kiểm tra rồi chặn", "Kẻ lừa đảo giả tên và ảnh của chúng tôi. Hỏi trong hỗ trợ, rồi chặn và báo cáo."],
-              ["💬", "Trò chuyện trong server", "Ai rủ bạn sang tin nhắn riêng, Telegram hay WhatsApp là dấu hiệu nguy hiểm."]],
-    "help": "Cần giúp đỡ? Nhấn 🛟 Nhận hỗ trợ trong hỗ trợ. Thread riêng của bạn với đội ngũ và mod.",
-    "text": ["🛡️ **An toàn là trên hết: Trading Floor giờ đã mở cho tất cả mọi người**", "Chúng tôi đã bỏ bước xác minh và thành viên mới có thể đọc toàn bộ lịch sử trò chuyện. Điều này tốt cho cộng đồng, nhưng cũng khiến kẻ lừa đảo dễ vào hơn. Bạn hãy tự bảo vệ mình và nhắc nhau nhé.", "",
-      "🚫 **Chúng tôi không bao giờ nhắn riêng cho bạn trước, vì bất kỳ lý do gì.**", "Không admin, mod hay thành viên đội ngũ nào sẽ nhắn riêng cho bạn trước, đề nghị giao dịch thay bạn, yêu cầu bạn chuyển tiền, hay hỏi cụm từ khôi phục, mật khẩu, mã 2FA hoặc API key. Tài khoản \"BLKBöX\" nhắn riêng cho bạn chính là kẻ lừa đảo.", "",
-      "🔍 **Kiểm tra trước, rồi chặn**", "Kẻ lừa đảo sao chép tên và ảnh đại diện của chúng tôi. Nhân sự thật có vai trò **Team** hoặc **Moderators** trong server này. Không chắc? Hãy hỏi trong {help}, rồi chặn và báo cáo tài khoản đó.", "",
-      "🔒 **Tắt tin nhắn riêng từ server này**", "Nhấn tên server → **Cài đặt quyền riêng tư** → tắt **Tin nhắn trực tiếp**. Bạn bè vẫn liên lạc được với bạn. Hãy bật 2FA cho Discord, sàn giao dịch và email của bạn nữa.", "",
-      "💬 **Trò chuyện ngay trong server**", "Câu hỏi, bàn chuyện giao dịch và hỗ trợ đều diễn ra ở đây, nơi đội ngũ và cộng đồng cùng thấy. Ai kéo bạn sang tin nhắn riêng, Telegram hay WhatsApp là dấu hiệu nguy hiểm.", "",
-      "🛟 **Cần giúp đỡ?**", "Nhấn 🛟 **Nhận hỗ trợ** trong {help}. Một thread riêng chỉ dành cho bạn sẽ mở ra, cùng đội ngũ và mod của chúng tôi. Đó là nơi duy nhất chúng tôi hỗ trợ riêng từng người.", "",
-      "⚠️ Đừng bấm vào link hay mã QR gửi qua tin nhắn riêng, đừng chia sẻ màn hình ví hay sàn giao dịch, và bỏ qua mọi lời mời \"lợi nhuận đảm bảo\", \"quản lý tài khoản\" hay \"lấy lại tiền\". Nghe quá tốt để là sự thật thì đó là lừa đảo.", "",
-      "Luôn cảnh giác nhé. ⚡"]
-  },
-  "es": {
-    "kicker": "BLKBöX Trading Floor · Protégete", "title": "Nunca te escribiremos primero por DM", "sub": "El servidor ahora está abierto a todos, también a los estafadores. Así te proteges.",
-    "cards": [["🚫", "Nunca compartas", "Frase semilla, contraseñas, códigos 2FA o claves API. Con nadie, ni siquiera con nosotros."],
-              ["🔒", "Desactiva los DM", "Toca el nombre del servidor → Ajustes de privacidad → desactiva Mensajes directos."],
-              ["🔍", "Verifica y bloquea", "Los estafadores copian nuestros nombres y fotos. Pregunta en ayuda, luego bloquea y denuncia."],
-              ["💬", "Habla en el servidor", "Quien te lleve a DM, Telegram o WhatsApp es una señal de alarma."]],
-    "help": "¿Necesitas ayuda? Toca 🛟 Pedir ayuda en ayuda. Tu hilo privado con el equipo y los mods.",
-    "text": ["🛡️ **Protégete: el Trading Floor ya está abierto a todos**", "Hemos quitado la verificación y los nuevos miembros pueden leer todo el historial del chat. Es genial para la comunidad, pero también facilita que entren estafadores. Cuídate y cuidémonos entre todos.", "",
-      "🚫 **Nunca te escribiremos primero por DM. Por nada.**", "Ningún admin, mod o miembro del equipo te escribirá primero, se ofrecerá a operar por ti, te pedirá que envíes dinero ni te pedirá tu frase semilla, contraseñas, códigos 2FA o claves API. Una cuenta \"BLKBöX\" en tus DM es un estafador.", "",
-      "🔍 **Verifica y luego bloquea**", "Los estafadores copian nuestros nombres y fotos de perfil. El equipo real tiene el rol **Team** o **Moderators** aquí en el servidor. ¿Dudas? Pregunta en {help}, luego bloquea y denuncia la cuenta.", "",
-      "🔒 **Desactiva los DM de este servidor**", "Toca el nombre del servidor → **Ajustes de privacidad** → desactiva **Mensajes directos**. Tus amigos podrán seguir escribiéndote. Activa también el 2FA en Discord, tu exchange y tu correo.", "",
-      "💬 **Mantén las conversaciones en el servidor**", "Preguntas, charla de trading y soporte, todo pasa aquí, donde el equipo y la comunidad lo ven. Quien intente llevarte a DM, Telegram o WhatsApp es una señal de alarma.", "",
-      "🛟 **¿Necesitas ayuda?**", "Toca 🛟 **Pedir ayuda** en {help}. Se abre un hilo privado solo para ti, con nuestro equipo y los mods. Es el único lugar donde damos soporte uno a uno.", "",
-      "⚠️ No abras enlaces ni códigos QR que te lleguen por DM, nunca compartas pantalla de tu wallet o exchange e ignora ofertas de \"ganancias garantizadas\", \"gestores de cuenta\" o \"recuperación de fondos\". Si suena demasiado bueno para ser verdad, no lo es.", "",
-      "Mantente alerta. ⚡"]
-  },
-  "pt": {
-    "kicker": "BLKBöX Trading Floor · Fique seguro", "title": "Nunca vamos te chamar no DM primeiro", "sub": "O servidor agora está aberto a todos, inclusive golpistas. Veja como se proteger.",
-    "cards": [["🚫", "Nunca compartilhe", "Frase-semente, senhas, códigos 2FA ou chaves de API. Com ninguém, nem com a gente."],
-              ["🔒", "Desative as DMs", "Toque no nome do servidor → Configurações de privacidade → desative Mensagens diretas."],
-              ["🔍", "Confira e bloqueie", "Golpistas copiam nossos nomes e fotos. Pergunte em ajuda, depois bloqueie e denuncie."],
-              ["💬", "Converse no servidor", "Quem tenta te levar para DM, Telegram ou WhatsApp é sinal de alerta."]],
-    "help": "Precisa de ajuda? Toque em 🛟 Pedir ajuda em ajuda. Seu tópico privado com a equipe e os mods.",
-    "text": ["🛡️ **Fique seguro: o Trading Floor agora está aberto a todos**", "Tiramos a verificação e os novos membros podem ler todo o histórico do chat. Isso é ótimo para a comunidade, mas também facilita a entrada de golpistas. Cuide de você e dos outros.", "",
-      "🚫 **Nunca vamos te chamar no DM primeiro. Para nada.**", "Nenhum admin, mod ou membro da equipe vai te chamar no DM primeiro, se oferecer para operar por você, pedir para você enviar dinheiro ou pedir sua frase-semente, senhas, códigos 2FA ou chaves de API. Uma conta \"BLKBöX\" no seu DM é golpista.", "",
-      "🔍 **Confira e depois bloqueie**", "Golpistas copiam nossos nomes e fotos de perfil. A equipe de verdade tem o cargo **Team** ou **Moderators** aqui no servidor. Na dúvida? Pergunte em {help}, depois bloqueie e denuncie a conta.", "",
-      "🔒 **Desative as DMs deste servidor**", "Toque no nome do servidor → **Configurações de privacidade** → desative **Mensagens diretas**. Seus amigos continuam podendo falar com você. Ative também o 2FA no Discord, na sua corretora e no seu e-mail.", "",
-      "💬 **Mantenha as conversas no servidor**", "Perguntas, papo de trade e suporte acontecem aqui, onde a equipe e a comunidade veem. Quem tenta te puxar para DM, Telegram ou WhatsApp é sinal de alerta.", "",
-      "🛟 **Precisa de ajuda?**", "Toque em 🛟 **Pedir ajuda** em {help}. Abre um tópico privado só para você, com nossa equipe e os mods. É o único lugar onde damos suporte individual.", "",
-      "⚠️ Não clique em links ou QR codes recebidos por DM, nunca compartilhe a tela da sua carteira ou corretora e ignore ofertas de \"lucro garantido\", \"gerente de conta\" ou \"recuperação de fundos\". Se parece bom demais para ser verdade, não é.", "",
-      "Fique esperto. ⚡"]
-  },
-  "tr": {
-    "kicker": "BLKBöX Trading Floor · Güvende kal", "title": "Sana asla ilk biz DM atmayız", "sub": "Sunucu artık herkese açık, dolandırıcılara da. Kendini böyle koru.",
-    "cards": [["🚫", "Asla paylaşma", "Seed phrase, şifre, 2FA kodu veya API anahtarı. Kimseyle, bizimle bile."],
-              ["🔒", "DM'leri kapat", "Sunucu adına dokun → Gizlilik Ayarları → Doğrudan Mesajlar'ı kapat."],
-              ["🔍", "Doğrula, sonra engelle", "Dolandırıcılar adlarımızı ve fotoğraflarımızı kopyalar. Yardım'da sor, sonra engelle ve bildir."],
-              ["💬", "Sohbet sunucuda kalsın", "Seni DM'e, Telegram'a veya WhatsApp'a çeken herkes tehlike işaretidir."]],
-    "help": "Yardım mı lazım? Yardım kanalında 🛟 Yardım al'a dokun. Ekip ve modlarla özel konun.",
-    "text": ["🛡️ **Güvende kal: Trading Floor artık herkese açık**", "Doğrulama adımını kaldırdık ve yeni üyeler tüm sohbet geçmişini okuyabiliyor. Bu topluluk için harika, ama dolandırıcıların girmesini de kolaylaştırıyor. Lütfen kendini ve birbirinizi koruyun.", "",
-      "🚫 **Sana asla ilk biz DM atmayız. Hiçbir konuda.**", "Hiçbir admin, mod veya ekip üyesi sana ilk DM atmaz, senin yerine işlem yapmayı teklif etmez, para göndermeni istemez, seed phrase, şifre, 2FA kodu veya API anahtarı sormaz. DM'ine gelen \"BLKBöX\" hesabı dolandırıcıdır.", "",
-      "🔍 **Önce doğrula, sonra engelle**", "Dolandırıcılar adlarımızı ve profil fotoğraflarımızı kopyalar. Gerçek ekip bu sunucuda **Team** veya **Moderators** rolüne sahiptir. Emin değil misin? {help} kanalında sor, sonra hesabı engelle ve bildir.", "",
-      "🔒 **Bu sunucudan gelen DM'leri kapat**", "Sunucu adına dokun → **Gizlilik Ayarları** → **Doğrudan Mesajlar**'ı kapat. Arkadaşların sana yine ulaşabilir. Discord, borsa ve e-posta hesaplarında 2FA'yı da aç.", "",
-      "💬 **Sohbetleri sunucuda tut**", "Sorular, trade sohbeti ve destek hepsi burada, ekibin ve topluluğun görebildiği yerde olur. Seni DM'e, Telegram'a veya WhatsApp'a çekmeye çalışan herkes tehlike işaretidir.", "",
-      "🛟 **Yardım mı lazım?**", "{help} kanalında 🛟 **Yardım al**'a dokun. Sadece sana özel, ekibimiz ve modlarla bir konu açılır. Birebir destek verdiğimiz tek yer burası.", "",
-      "⚠️ DM'den gelen linklere veya QR kodlarına tıklama, cüzdanının ya da borsanın ekranını asla paylaşma ve \"garantili kazanç\", \"hesap yöneticisi\" veya \"fon kurtarma\" tekliflerini görmezden gel. Gerçek olamayacak kadar iyiyse, gerçek değildir.", "",
-      "Dikkatli ol. ⚡"]
-  },
-  "ru": {
-    "kicker": "BLKBöX Trading Floor · Безопасность", "title": "Мы никогда не пишем в ЛС первыми", "sub": "Сервер теперь открыт для всех, в том числе для мошенников. Вот как защитить себя.",
-    "cards": [["🚫", "Никому не сообщайте", "Сид-фразу, пароли, коды 2FA и API-ключи. Никому, даже нам."],
-              ["🔒", "Отключите ЛС", "Нажмите на название сервера → Настройки конфиденциальности → выключите Личные сообщения."],
-              ["🔍", "Проверьте и заблокируйте", "Мошенники копируют наши имена и фото. Спросите в канале помощь, затем заблокируйте и пожалуйтесь."],
-              ["💬", "Общайтесь на сервере", "Любой, кто зовёт вас в ЛС, Telegram или WhatsApp, — тревожный знак."]],
-    "help": "Нужна помощь? Нажмите 🛟 Получить помощь в канале помощь. Личная ветка с командой и модераторами.",
-    "text": ["🛡️ **Безопасность: Trading Floor теперь открыт для всех**", "Мы убрали верификацию, и новые участники видят всю историю чата. Для сообщества это здорово, но и мошенникам стало проще попасть внутрь. Берегите себя и друг друга.", "",
-      "🚫 **Мы никогда не пишем в ЛС первыми. Ни по какому поводу.**", "Ни админ, ни модератор, ни кто-либо из команды не напишет вам первым, не предложит торговать за вас, не попросит перевести деньги и не спросит сид-фразу, пароли, коды 2FA или API-ключи. Аккаунт \"BLKBöX\" у вас в ЛС — это мошенник.", "",
-      "🔍 **Проверьте, затем заблокируйте**", "Мошенники копируют наши имена и аватарки. У настоящей команды на этом сервере есть роль **Team** или **Moderators**. Сомневаетесь? Спросите в {help}, затем заблокируйте аккаунт и пожалуйтесь на него.", "",
-      "🔒 **Отключите ЛС с этого сервера**", "Нажмите на название сервера → **Настройки конфиденциальности** → выключите **Личные сообщения**. Друзья по-прежнему смогут вам писать. Включите 2FA в Discord, на бирже и в почте.", "",
-      "💬 **Общайтесь на сервере**", "Вопросы, обсуждение сделок и поддержка — всё здесь, на виду у команды и сообщества. Любой, кто тянет вас в ЛС, Telegram или WhatsApp, — тревожный знак.", "",
-      "🛟 **Нужна помощь?**", "Нажмите 🛟 **Получить помощь** в {help}. Откроется личная ветка только для вас, с нашей командой и модераторами. Только там мы помогаем один на один.", "",
-      "⚠️ Не переходите по ссылкам и QR-кодам из ЛС, никогда не показывайте экран кошелька или биржи и игнорируйте предложения про «гарантированный доход», «персональных менеджеров» и «возврат средств». Если звучит слишком хорошо, чтобы быть правдой, это неправда.", "",
-      "Будьте начеку. ⚡"]
-  },
-  "ja": {
-    "kicker": "BLKBöX Trading Floor · 安全のために", "title": "運営から先にDMすることはありません", "sub": "サーバーは誰でも参加できるようになり、詐欺師も入りやすくなりました。自分の身を守りましょう。",
-    "cards": [["🚫", "絶対に教えない", "シードフレーズ、パスワード、2FAコード、APIキー。誰にも、運営にもです。"],
-              ["🔒", "DMをオフに", "サーバー名をタップ → プライバシー設定 → ダイレクトメッセージをオフ。"],
-              ["🔍", "確認してからブロック", "詐欺師は運営の名前や写真をまねします。ヘルプで確認し、ブロックして報告を。"],
-              ["💬", "会話はサーバーで", "DM、Telegram、WhatsAppへ誘ってくる人は要注意です。"]],
-    "help": "お困りですか？ヘルプで 🛟 ヘルプを依頼 を押してください。あなたとチーム、モデレーターだけの非公開スレッドです。",
-    "text": ["🛡️ **安全のために：Trading Floor は誰でも参加できるようになりました**", "認証をなくし、新しいメンバーもチャット履歴をすべて読めるようになりました。コミュニティには良いことですが、詐欺師も入りやすくなっています。ご自身の身を守り、お互いに気をつけましょう。", "",
-      "🚫 **運営から先にDMすることは、どんな用件でも絶対にありません。**", "管理者、モデレーター、チームの誰も、先にDMを送ったり、代わりに取引すると持ちかけたり、送金を求めたり、シードフレーズ・パスワード・2FAコード・APIキーを聞いたりすることはありません。DMしてくる「BLKBöX」アカウントは詐欺師です。", "",
-      "🔍 **確認してからブロック**", "詐欺師は運営の名前やプロフィール画像をまねします。本物のスタッフはこのサーバーで **Team** または **Moderators** のロールを持っています。迷ったら {help} で確認してから、そのアカウントをブロックして報告してください。", "",
-      "🔒 **このサーバーからのDMをオフにしましょう**", "サーバー名をタップ → **プライバシー設定** → **ダイレクトメッセージ** をオフ。フレンドからは引き続き連絡が届きます。Discord、取引所、メールの2FAもオンにしておきましょう。", "",
-      "💬 **会話はサーバー内で**", "質問もトレードの話もサポートも、チームとコミュニティが見えるここで行います。DM、Telegram、WhatsAppへ誘ってくる人は要注意です。", "",
-      "🛟 **お困りですか？**", "{help} で 🛟 **ヘルプを依頼** を押すと、あなたとチーム、モデレーターだけが見られる非公開スレッドが開きます。個別サポートはここだけで行っています。", "",
-      "⚠️ DMで送られてきたリンクやQRコードは開かず、ウォレットや取引所の画面共有は絶対にしないでください。「利益保証」「アカウントマネージャー」「資金回収」といった話は無視しましょう。うますぎる話は詐欺です。", "",
-      "油断せずにいきましょう。⚡"]
-  }
+ "en": {
+  "kicker": "BLKBöX Trading Floor · Stay safe",
+  "title": "We will never DM you first",
+  "sub": "The server is open to everyone now. Scammers too. Here's how to protect yourself.",
+  "cards": [
+   [
+    "🚫",
+    "Never share",
+    "Seed phrase, passwords, 2FA codes or API keys. Not with anyone, not even us."
+   ],
+   [
+    "🔒",
+    "Turn off DMs",
+    "Tap the server name → Privacy Settings → switch off Direct Messages."
+   ],
+   [
+    "🔍",
+    "Verify, then block",
+    "Scammers copy our names and photos. Check in help-desk, then block and report."
+   ],
+   [
+    "💬",
+    "Keep it on the server",
+    "Anyone moving you to DMs, Telegram or WhatsApp is a red flag."
+   ]
+  ],
+  "help": "Need help? Tap 🛟 Get help in help-desk. Your private thread with our team and mods.",
+  "text": [
+   "🛡️ **Stay safe: the Trading Floor is open to everyone now**",
+   "We've removed the verification gate and new members can read the full chat history. That's great for the community, but it also makes it easier for scammers to get in. Please look out for yourself and each other.",
+   "",
+   "🚫 **We will never DM you first. Not for anything.**",
+   "No admin, mod or team member will DM you first, offer to trade for you, ask you to send money, or ask for your seed phrase, passwords, 2FA codes or API keys. A \"BLKBöX\" account in your DMs is a scammer.",
+   "",
+   "🔍 **Verify, then block**",
+   "Scammers copy our names and profile pictures. Real staff have the **Team** or **Moderators** role here in the server. Not sure? Ask in {help}, then block and report the account.",
+   "",
+   "🔒 **Turn off DMs from this server**",
+   "Tap the server name → **Privacy Settings** → switch off **Direct Messages**. Your friends can still reach you. Turn on 2FA for Discord, your exchange and your email too.",
+   "",
+   "💬 **Keep conversations on the server**",
+   "Questions, trade talk and support all happen here, where the team and the community can see. Anyone pulling you into DMs, Telegram or WhatsApp is a red flag.",
+   "",
+   "🛟 **Need help?**",
+   "Tap 🛟 **Get help** in {help}. It opens a private thread just for you, with our team and mods. That's the only place we do one-on-one support.",
+   "",
+   "⚠️ Never click links or QR codes sent in DMs, never screen share your wallet or exchange, and ignore \"guaranteed returns\", \"account managers\" and \"fund recovery\" offers. If it sounds too good to be true, it is.",
+   "",
+   "📣 **This is our last @everyone ping.** From now on we'll use notification roles instead. Open {guide}, tap 🔔 **Choose notifications** and pick what you want to hear about.",
+   "",
+   "Stay sharp. ⚡"
+  ]
+ },
+ "zh": {
+  "kicker": "BLKBöX 交易大厅 · 安全提醒",
+  "title": "我们绝不会主动私信你",
+  "sub": "服务器现在对所有人开放，骗子也能进来。请这样保护自己。",
+  "cards": [
+   [
+    "🚫",
+    "绝不透露",
+    "助记词、密码、2FA 验证码或 API 密钥，对任何人都不要给，包括我们。"
+   ],
+   [
+    "🔒",
+    "关闭私信",
+    "点击服务器名称 → 隐私设置 → 关闭「私信」。"
+   ],
+   [
+    "🔍",
+    "先核实，再拉黑",
+    "骗子会冒用我们的名字和头像。先在帮助台核实，再拉黑并举报。"
+   ],
+   [
+    "💬",
+    "留在服务器里聊",
+    "任何把你拉去私信、Telegram 或 WhatsApp 的人都是危险信号。"
+   ]
+  ],
+  "help": "需要帮助？在帮助台点击 🛟 获取帮助，开启你与团队和管理员的私密话题。",
+  "text": [
+   "🛡️ **安全提醒：交易大厅现已对所有人开放**",
+   "我们取消了验证门槛，新成员也能看到完整的聊天记录。这对社区是好事，但骗子也更容易混进来。请保护好自己，也互相提醒。",
+   "",
+   "🚫 **我们绝不会主动私信你，任何事情都不会。**",
+   "管理员、版主或团队成员都不会主动私信你，不会提出替你交易，不会让你转账，也不会索要你的助记词、密码、2FA 验证码或 API 密钥。私信你的「BLKBöX」账号一定是骗子。",
+   "",
+   "🔍 **先核实，再拉黑**",
+   "骗子会冒用我们的名字和头像。真正的工作人员在服务器里带有 **Team** 或 **Moderators** 身份组。不确定？先在 {help} 询问，然后拉黑并举报该账号。",
+   "",
+   "🔒 **关闭来自本服务器的私信**",
+   "点击服务器名称 → **隐私设置** → 关闭 **私信**。你的好友仍然可以联系你。另外，请为 Discord、交易所和邮箱开启 2FA。",
+   "",
+   "💬 **在服务器里交流**",
+   "提问、交易讨论和支持都在这里公开进行，团队和社区都看得到。任何把你拉去私信、Telegram 或 WhatsApp 的人都是危险信号。",
+   "",
+   "🛟 **需要帮助？**",
+   "在 {help} 点击 🛟 **获取帮助**，会为你开启一个只有你、团队和管理员能看到的私密话题。这是我们唯一的一对一支持渠道。",
+   "",
+   "⚠️ 不要点击私信里的链接或二维码，不要共享屏幕展示你的钱包或交易所，忽略任何「保证收益」「客户经理」和「资金追回」的说法。好得不像真的，那就不是真的。",
+   "",
+   "📣 **这是我们最后一次使用 @everyone。** 以后我们会改用通知身份组。请打开 {guide}，点击 🔔 **选择通知**，选好你想接收的内容。",
+   "",
+   "保持警惕。⚡"
+  ]
+ },
+ "ko": {
+  "kicker": "BLKBöX 트레이딩 플로어 · 안전 수칙",
+  "title": "저희는 절대 먼저 DM하지 않습니다",
+  "sub": "이제 서버가 모두에게 열려 있어 사기꾼도 들어올 수 있습니다. 이렇게 스스로를 지키세요.",
+  "cards": [
+   [
+    "🚫",
+    "절대 공유 금지",
+    "시드 문구, 비밀번호, 2FA 코드, API 키. 누구에게도, 저희에게도 주지 마세요."
+   ],
+   [
+    "🔒",
+    "DM 끄기",
+    "서버 이름 탭 → 개인정보 보호 설정 → 다이렉트 메시지 끄기."
+   ],
+   [
+    "🔍",
+    "확인 후 차단",
+    "사기꾼은 저희 이름과 사진을 베낍니다. 도움말에서 확인한 뒤 차단하고 신고하세요."
+   ],
+   [
+    "💬",
+    "대화는 서버에서",
+    "DM, 텔레그램, 왓츠앱으로 옮기자는 사람은 위험 신호입니다."
+   ]
+  ],
+  "help": "도움이 필요하세요? 도움말에서 🛟 도움 받기를 누르세요. 나와 팀, 모더레이터만 보는 비공개 스레드입니다.",
+  "text": [
+   "🛡️ **안전 수칙: 이제 트레이딩 플로어가 모두에게 열렸습니다**",
+   "인증 절차를 없앴고, 새 멤버도 전체 채팅 기록을 볼 수 있습니다. 커뮤니티에는 좋은 일이지만 사기꾼이 들어오기도 쉬워졌습니다. 스스로를 지키고 서로 챙겨 주세요.",
+   "",
+   "🚫 **저희는 어떤 일로도 먼저 DM하지 않습니다.**",
+   "관리자, 모더레이터, 팀원 누구도 먼저 DM하거나, 대신 거래해 주겠다고 하거나, 송금을 요구하거나, 시드 문구·비밀번호·2FA 코드·API 키를 묻지 않습니다. DM으로 연락하는 \"BLKBöX\" 계정은 사기꾼입니다.",
+   "",
+   "🔍 **확인한 다음 차단하세요**",
+   "사기꾼은 저희 이름과 프로필 사진을 베낍니다. 진짜 운영진은 이 서버에서 **Team** 또는 **Moderators** 역할을 가지고 있습니다. 확실하지 않다면 {help}에서 물어본 뒤 해당 계정을 차단하고 신고하세요.",
+   "",
+   "🔒 **이 서버의 DM을 꺼 두세요**",
+   "서버 이름 탭 → **개인정보 보호 설정** → **다이렉트 메시지** 끄기. 친구는 계속 연락할 수 있습니다. Discord, 거래소, 이메일에도 2FA를 켜 두세요.",
+   "",
+   "💬 **대화는 서버 안에서**",
+   "질문, 트레이딩 이야기, 지원 모두 팀과 커뮤니티가 볼 수 있는 이곳에서 이루어집니다. DM, 텔레그램, 왓츠앱으로 끌어내려는 사람은 위험 신호입니다.",
+   "",
+   "🛟 **도움이 필요하세요?**",
+   "{help}에서 🛟 **도움 받기**를 누르면 나와 팀, 모더레이터만 볼 수 있는 비공개 스레드가 열립니다. 1:1 지원은 이곳에서만 합니다.",
+   "",
+   "⚠️ DM으로 받은 링크나 QR 코드는 누르지 말고, 지갑이나 거래소 화면을 공유하지 마세요. \"수익 보장\", \"계정 매니저\", \"자금 회수\" 제안은 무시하세요. 너무 좋아 보이면 사기입니다.",
+   "",
+   "📣 **이번이 마지막 @everyone 알림입니다.** 앞으로는 알림 역할을 사용합니다. {guide}에서 🔔 **알림 선택**을 누르고 받고 싶은 알림을 골라 주세요.",
+   "",
+   "항상 조심하세요. ⚡"
+  ]
+ },
+ "id": {
+  "kicker": "BLKBöX Trading Floor · Tetap aman",
+  "title": "Kami tidak akan pernah DM kamu duluan",
+  "sub": "Server ini sekarang terbuka untuk semua orang, termasuk penipu. Begini cara melindungi dirimu.",
+  "cards": [
+   [
+    "🚫",
+    "Jangan pernah bagikan",
+    "Seed phrase, kata sandi, kode 2FA atau API key. Ke siapa pun, termasuk kami."
+   ],
+   [
+    "🔒",
+    "Matikan DM",
+    "Ketuk nama server → Pengaturan Privasi → matikan Pesan Langsung."
+   ],
+   [
+    "🔍",
+    "Cek dulu, lalu blokir",
+    "Penipu meniru nama dan foto kami. Tanyakan di bantuan, lalu blokir dan laporkan."
+   ],
+   [
+    "💬",
+    "Ngobrol di server saja",
+    "Siapa pun yang mengajak pindah ke DM, Telegram atau WhatsApp adalah tanda bahaya."
+   ]
+  ],
+  "help": "Butuh bantuan? Ketuk 🛟 Minta bantuan di bantuan. Thread pribadimu dengan tim dan moderator.",
+  "text": [
+   "🛡️ **Tetap aman: Trading Floor sekarang terbuka untuk semua orang**",
+   "Kami sudah menghapus verifikasi, dan member baru bisa membaca seluruh riwayat chat. Ini bagus untuk komunitas, tapi juga memudahkan penipu masuk. Jaga dirimu dan saling mengingatkan, ya.",
+   "",
+   "🚫 **Kami tidak akan pernah DM kamu duluan. Untuk urusan apa pun.**",
+   "Admin, moderator, atau anggota tim tidak akan DM kamu duluan, menawarkan untuk trading atas namamu, memintamu mengirim uang, atau meminta seed phrase, kata sandi, kode 2FA, atau API key. Akun \"BLKBöX\" di DM kamu pasti penipu.",
+   "",
+   "🔍 **Cek dulu, lalu blokir**",
+   "Penipu meniru nama dan foto profil kami. Staf asli punya role **Team** atau **Moderators** di server ini. Ragu? Tanyakan di {help}, lalu blokir dan laporkan akunnya.",
+   "",
+   "🔒 **Matikan DM dari server ini**",
+   "Ketuk nama server → **Pengaturan Privasi** → matikan **Pesan Langsung**. Temanmu tetap bisa menghubungimu. Aktifkan juga 2FA di Discord, exchange, dan email kamu.",
+   "",
+   "💬 **Ngobrol tetap di server**",
+   "Pertanyaan, diskusi trading, dan bantuan semuanya ada di sini, di tempat yang bisa dilihat tim dan komunitas. Siapa pun yang menarikmu ke DM, Telegram, atau WhatsApp adalah tanda bahaya.",
+   "",
+   "🛟 **Butuh bantuan?**",
+   "Ketuk 🛟 **Minta bantuan** di {help}. Ini membuka thread pribadi khusus untukmu, bersama tim dan moderator kami. Hanya di sana kami memberi bantuan satu per satu.",
+   "",
+   "⚠️ Jangan klik link atau kode QR dari DM, jangan pernah share layar dompet atau exchange kamu, dan abaikan tawaran \"profit pasti\", \"account manager\", atau \"pemulihan dana\". Kalau terdengar terlalu bagus untuk jadi kenyataan, itu penipuan.",
+   "",
+   "📣 **Ini ping @everyone terakhir dari kami.** Mulai sekarang kami pakai role notifikasi. Buka {guide}, ketuk 🔔 **Pilih notifikasi**, lalu pilih kabar yang ingin kamu terima.",
+   "",
+   "Tetap waspada. ⚡"
+  ]
+ },
+ "vi": {
+  "kicker": "BLKBöX Trading Floor · An toàn",
+  "title": "Chúng tôi không bao giờ nhắn riêng cho bạn trước",
+  "sub": "Server giờ mở cho tất cả mọi người, kể cả kẻ lừa đảo. Đây là cách bảo vệ bạn.",
+  "cards": [
+   [
+    "🚫",
+    "Không bao giờ chia sẻ",
+    "Cụm từ khôi phục, mật khẩu, mã 2FA hay API key. Với bất kỳ ai, kể cả chúng tôi."
+   ],
+   [
+    "🔒",
+    "Tắt tin nhắn riêng",
+    "Nhấn tên server → Cài đặt quyền riêng tư → tắt Tin nhắn trực tiếp."
+   ],
+   [
+    "🔍",
+    "Kiểm tra rồi chặn",
+    "Kẻ lừa đảo giả tên và ảnh của chúng tôi. Hỏi trong hỗ trợ, rồi chặn và báo cáo."
+   ],
+   [
+    "💬",
+    "Trò chuyện trong server",
+    "Ai rủ bạn sang tin nhắn riêng, Telegram hay WhatsApp là dấu hiệu nguy hiểm."
+   ]
+  ],
+  "help": "Cần giúp đỡ? Nhấn 🛟 Nhận hỗ trợ trong hỗ trợ. Thread riêng của bạn với đội ngũ và mod.",
+  "text": [
+   "🛡️ **An toàn là trên hết: Trading Floor giờ đã mở cho tất cả mọi người**",
+   "Chúng tôi đã bỏ bước xác minh và thành viên mới có thể đọc toàn bộ lịch sử trò chuyện. Điều này tốt cho cộng đồng, nhưng cũng khiến kẻ lừa đảo dễ vào hơn. Bạn hãy tự bảo vệ mình và nhắc nhau nhé.",
+   "",
+   "🚫 **Chúng tôi không bao giờ nhắn riêng cho bạn trước, vì bất kỳ lý do gì.**",
+   "Không admin, mod hay thành viên đội ngũ nào sẽ nhắn riêng cho bạn trước, đề nghị giao dịch thay bạn, yêu cầu bạn chuyển tiền, hay hỏi cụm từ khôi phục, mật khẩu, mã 2FA hoặc API key. Tài khoản \"BLKBöX\" nhắn riêng cho bạn chính là kẻ lừa đảo.",
+   "",
+   "🔍 **Kiểm tra trước, rồi chặn**",
+   "Kẻ lừa đảo sao chép tên và ảnh đại diện của chúng tôi. Nhân sự thật có vai trò **Team** hoặc **Moderators** trong server này. Không chắc? Hãy hỏi trong {help}, rồi chặn và báo cáo tài khoản đó.",
+   "",
+   "🔒 **Tắt tin nhắn riêng từ server này**",
+   "Nhấn tên server → **Cài đặt quyền riêng tư** → tắt **Tin nhắn trực tiếp**. Bạn bè vẫn liên lạc được với bạn. Hãy bật 2FA cho Discord, sàn giao dịch và email của bạn nữa.",
+   "",
+   "💬 **Trò chuyện ngay trong server**",
+   "Câu hỏi, bàn chuyện giao dịch và hỗ trợ đều diễn ra ở đây, nơi đội ngũ và cộng đồng cùng thấy. Ai kéo bạn sang tin nhắn riêng, Telegram hay WhatsApp là dấu hiệu nguy hiểm.",
+   "",
+   "🛟 **Cần giúp đỡ?**",
+   "Nhấn 🛟 **Nhận hỗ trợ** trong {help}. Một thread riêng chỉ dành cho bạn sẽ mở ra, cùng đội ngũ và mod của chúng tôi. Đó là nơi duy nhất chúng tôi hỗ trợ riêng từng người.",
+   "",
+   "⚠️ Đừng bấm vào link hay mã QR gửi qua tin nhắn riêng, đừng chia sẻ màn hình ví hay sàn giao dịch, và bỏ qua mọi lời mời \"lợi nhuận đảm bảo\", \"quản lý tài khoản\" hay \"lấy lại tiền\". Nghe quá tốt để là sự thật thì đó là lừa đảo.",
+   "",
+   "📣 **Đây là lần cuối chúng tôi dùng @everyone.** Từ giờ chúng tôi sẽ dùng vai trò thông báo. Hãy mở {guide}, nhấn 🔔 **Chọn thông báo** và chọn những gì bạn muốn nhận.",
+   "",
+   "Luôn cảnh giác nhé. ⚡"
+  ]
+ },
+ "es": {
+  "kicker": "BLKBöX Trading Floor · Protégete",
+  "title": "Nunca te escribiremos primero por DM",
+  "sub": "El servidor ahora está abierto a todos, también a los estafadores. Así te proteges.",
+  "cards": [
+   [
+    "🚫",
+    "Nunca compartas",
+    "Frase semilla, contraseñas, códigos 2FA o claves API. Con nadie, ni siquiera con nosotros."
+   ],
+   [
+    "🔒",
+    "Desactiva los DM",
+    "Toca el nombre del servidor → Ajustes de privacidad → desactiva Mensajes directos."
+   ],
+   [
+    "🔍",
+    "Verifica y bloquea",
+    "Los estafadores copian nuestros nombres y fotos. Pregunta en ayuda, luego bloquea y denuncia."
+   ],
+   [
+    "💬",
+    "Habla en el servidor",
+    "Quien te lleve a DM, Telegram o WhatsApp es una señal de alarma."
+   ]
+  ],
+  "help": "¿Necesitas ayuda? Toca 🛟 Pedir ayuda en ayuda. Tu hilo privado con el equipo y los mods.",
+  "text": [
+   "🛡️ **Protégete: el Trading Floor ya está abierto a todos**",
+   "Hemos quitado la verificación y los nuevos miembros pueden leer todo el historial del chat. Es genial para la comunidad, pero también facilita que entren estafadores. Cuídate y cuidémonos entre todos.",
+   "",
+   "🚫 **Nunca te escribiremos primero por DM. Por nada.**",
+   "Ningún admin, mod o miembro del equipo te escribirá primero, se ofrecerá a operar por ti, te pedirá que envíes dinero ni te pedirá tu frase semilla, contraseñas, códigos 2FA o claves API. Una cuenta \"BLKBöX\" en tus DM es un estafador.",
+   "",
+   "🔍 **Verifica y luego bloquea**",
+   "Los estafadores copian nuestros nombres y fotos de perfil. El equipo real tiene el rol **Team** o **Moderators** aquí en el servidor. ¿Dudas? Pregunta en {help}, luego bloquea y denuncia la cuenta.",
+   "",
+   "🔒 **Desactiva los DM de este servidor**",
+   "Toca el nombre del servidor → **Ajustes de privacidad** → desactiva **Mensajes directos**. Tus amigos podrán seguir escribiéndote. Activa también el 2FA en Discord, tu exchange y tu correo.",
+   "",
+   "💬 **Mantén las conversaciones en el servidor**",
+   "Preguntas, charla de trading y soporte, todo pasa aquí, donde el equipo y la comunidad lo ven. Quien intente llevarte a DM, Telegram o WhatsApp es una señal de alarma.",
+   "",
+   "🛟 **¿Necesitas ayuda?**",
+   "Toca 🛟 **Pedir ayuda** en {help}. Se abre un hilo privado solo para ti, con nuestro equipo y los mods. Es el único lugar donde damos soporte uno a uno.",
+   "",
+   "⚠️ No abras enlaces ni códigos QR que te lleguen por DM, nunca compartas pantalla de tu wallet o exchange e ignora ofertas de \"ganancias garantizadas\", \"gestores de cuenta\" o \"recuperación de fondos\". Si suena demasiado bueno para ser verdad, no lo es.",
+   "",
+   "📣 **Este es nuestro último aviso con @everyone.** A partir de ahora usaremos roles de notificación. Abre {guide}, toca 🔔 **Elegir notificaciones** y elige de qué quieres enterarte.",
+   "",
+   "Mantente alerta. ⚡"
+  ]
+ },
+ "pt": {
+  "kicker": "BLKBöX Trading Floor · Fique seguro",
+  "title": "Nunca vamos te chamar no DM primeiro",
+  "sub": "O servidor agora está aberto a todos, inclusive golpistas. Veja como se proteger.",
+  "cards": [
+   [
+    "🚫",
+    "Nunca compartilhe",
+    "Frase-semente, senhas, códigos 2FA ou chaves de API. Com ninguém, nem com a gente."
+   ],
+   [
+    "🔒",
+    "Desative as DMs",
+    "Toque no nome do servidor → Configurações de privacidade → desative Mensagens diretas."
+   ],
+   [
+    "🔍",
+    "Confira e bloqueie",
+    "Golpistas copiam nossos nomes e fotos. Pergunte em ajuda, depois bloqueie e denuncie."
+   ],
+   [
+    "💬",
+    "Converse no servidor",
+    "Quem tenta te levar para DM, Telegram ou WhatsApp é sinal de alerta."
+   ]
+  ],
+  "help": "Precisa de ajuda? Toque em 🛟 Pedir ajuda em ajuda. Seu tópico privado com a equipe e os mods.",
+  "text": [
+   "🛡️ **Fique seguro: o Trading Floor agora está aberto a todos**",
+   "Tiramos a verificação e os novos membros podem ler todo o histórico do chat. Isso é ótimo para a comunidade, mas também facilita a entrada de golpistas. Cuide de você e dos outros.",
+   "",
+   "🚫 **Nunca vamos te chamar no DM primeiro. Para nada.**",
+   "Nenhum admin, mod ou membro da equipe vai te chamar no DM primeiro, se oferecer para operar por você, pedir para você enviar dinheiro ou pedir sua frase-semente, senhas, códigos 2FA ou chaves de API. Uma conta \"BLKBöX\" no seu DM é golpista.",
+   "",
+   "🔍 **Confira e depois bloqueie**",
+   "Golpistas copiam nossos nomes e fotos de perfil. A equipe de verdade tem o cargo **Team** ou **Moderators** aqui no servidor. Na dúvida? Pergunte em {help}, depois bloqueie e denuncie a conta.",
+   "",
+   "🔒 **Desative as DMs deste servidor**",
+   "Toque no nome do servidor → **Configurações de privacidade** → desative **Mensagens diretas**. Seus amigos continuam podendo falar com você. Ative também o 2FA no Discord, na sua corretora e no seu e-mail.",
+   "",
+   "💬 **Mantenha as conversas no servidor**",
+   "Perguntas, papo de trade e suporte acontecem aqui, onde a equipe e a comunidade veem. Quem tenta te puxar para DM, Telegram ou WhatsApp é sinal de alerta.",
+   "",
+   "🛟 **Precisa de ajuda?**",
+   "Toque em 🛟 **Pedir ajuda** em {help}. Abre um tópico privado só para você, com nossa equipe e os mods. É o único lugar onde damos suporte individual.",
+   "",
+   "⚠️ Não clique em links ou QR codes recebidos por DM, nunca compartilhe a tela da sua carteira ou corretora e ignore ofertas de \"lucro garantido\", \"gerente de conta\" ou \"recuperação de fundos\". Se parece bom demais para ser verdade, não é.",
+   "",
+   "📣 **Esta é a nossa última menção @everyone.** A partir de agora vamos usar cargos de notificação. Abra {guide}, toque em 🔔 **Escolher notificações** e escolha o que você quer receber.",
+   "",
+   "Fique esperto. ⚡"
+  ]
+ },
+ "tr": {
+  "kicker": "BLKBöX Trading Floor · Güvende kal",
+  "title": "Sana asla ilk biz DM atmayız",
+  "sub": "Sunucu artık herkese açık, dolandırıcılara da. Kendini böyle koru.",
+  "cards": [
+   [
+    "🚫",
+    "Asla paylaşma",
+    "Seed phrase, şifre, 2FA kodu veya API anahtarı. Kimseyle, bizimle bile."
+   ],
+   [
+    "🔒",
+    "DM'leri kapat",
+    "Sunucu adına dokun → Gizlilik Ayarları → Doğrudan Mesajlar'ı kapat."
+   ],
+   [
+    "🔍",
+    "Doğrula, sonra engelle",
+    "Dolandırıcılar adlarımızı ve fotoğraflarımızı kopyalar. Yardım'da sor, sonra engelle ve bildir."
+   ],
+   [
+    "💬",
+    "Sohbet sunucuda kalsın",
+    "Seni DM'e, Telegram'a veya WhatsApp'a çeken herkes tehlike işaretidir."
+   ]
+  ],
+  "help": "Yardım mı lazım? Yardım kanalında 🛟 Yardım al'a dokun. Ekip ve modlarla özel konun.",
+  "text": [
+   "🛡️ **Güvende kal: Trading Floor artık herkese açık**",
+   "Doğrulama adımını kaldırdık ve yeni üyeler tüm sohbet geçmişini okuyabiliyor. Bu topluluk için harika, ama dolandırıcıların girmesini de kolaylaştırıyor. Lütfen kendini ve birbirinizi koruyun.",
+   "",
+   "🚫 **Sana asla ilk biz DM atmayız. Hiçbir konuda.**",
+   "Hiçbir admin, mod veya ekip üyesi sana ilk DM atmaz, senin yerine işlem yapmayı teklif etmez, para göndermeni istemez, seed phrase, şifre, 2FA kodu veya API anahtarı sormaz. DM'ine gelen \"BLKBöX\" hesabı dolandırıcıdır.",
+   "",
+   "🔍 **Önce doğrula, sonra engelle**",
+   "Dolandırıcılar adlarımızı ve profil fotoğraflarımızı kopyalar. Gerçek ekip bu sunucuda **Team** veya **Moderators** rolüne sahiptir. Emin değil misin? {help} kanalında sor, sonra hesabı engelle ve bildir.",
+   "",
+   "🔒 **Bu sunucudan gelen DM'leri kapat**",
+   "Sunucu adına dokun → **Gizlilik Ayarları** → **Doğrudan Mesajlar**'ı kapat. Arkadaşların sana yine ulaşabilir. Discord, borsa ve e-posta hesaplarında 2FA'yı da aç.",
+   "",
+   "💬 **Sohbetleri sunucuda tut**",
+   "Sorular, trade sohbeti ve destek hepsi burada, ekibin ve topluluğun görebildiği yerde olur. Seni DM'e, Telegram'a veya WhatsApp'a çekmeye çalışan herkes tehlike işaretidir.",
+   "",
+   "🛟 **Yardım mı lazım?**",
+   "{help} kanalında 🛟 **Yardım al**'a dokun. Sadece sana özel, ekibimiz ve modlarla bir konu açılır. Birebir destek verdiğimiz tek yer burası.",
+   "",
+   "⚠️ DM'den gelen linklere veya QR kodlarına tıklama, cüzdanının ya da borsanın ekranını asla paylaşma ve \"garantili kazanç\", \"hesap yöneticisi\" veya \"fon kurtarma\" tekliflerini görmezden gel. Gerçek olamayacak kadar iyiyse, gerçek değildir.",
+   "",
+   "📣 **Bu son @everyone bildirimimiz.** Bundan sonra bildirim rollerini kullanacağız. {guide} kanalını aç, 🔔 **Bildirimleri seç**'e dokun ve neyden haberdar olmak istediğini seç.",
+   "",
+   "Dikkatli ol. ⚡"
+  ]
+ },
+ "ru": {
+  "kicker": "BLKBöX Trading Floor · Безопасность",
+  "title": "Мы никогда не пишем в ЛС первыми",
+  "sub": "Сервер теперь открыт для всех, в том числе для мошенников. Вот как защитить себя.",
+  "cards": [
+   [
+    "🚫",
+    "Никому не сообщайте",
+    "Сид-фразу, пароли, коды 2FA и API-ключи. Никому, даже нам."
+   ],
+   [
+    "🔒",
+    "Отключите ЛС",
+    "Нажмите на название сервера → Настройки конфиденциальности → выключите Личные сообщения."
+   ],
+   [
+    "🔍",
+    "Проверьте и заблокируйте",
+    "Мошенники копируют наши имена и фото. Спросите в канале помощь, затем заблокируйте и пожалуйтесь."
+   ],
+   [
+    "💬",
+    "Общайтесь на сервере",
+    "Любой, кто зовёт вас в ЛС, Telegram или WhatsApp, — тревожный знак."
+   ]
+  ],
+  "help": "Нужна помощь? Нажмите 🛟 Получить помощь в канале помощь. Личная ветка с командой и модераторами.",
+  "text": [
+   "🛡️ **Безопасность: Trading Floor теперь открыт для всех**",
+   "Мы убрали верификацию, и новые участники видят всю историю чата. Для сообщества это здорово, но и мошенникам стало проще попасть внутрь. Берегите себя и друг друга.",
+   "",
+   "🚫 **Мы никогда не пишем в ЛС первыми. Ни по какому поводу.**",
+   "Ни админ, ни модератор, ни кто-либо из команды не напишет вам первым, не предложит торговать за вас, не попросит перевести деньги и не спросит сид-фразу, пароли, коды 2FA или API-ключи. Аккаунт \"BLKBöX\" у вас в ЛС — это мошенник.",
+   "",
+   "🔍 **Проверьте, затем заблокируйте**",
+   "Мошенники копируют наши имена и аватарки. У настоящей команды на этом сервере есть роль **Team** или **Moderators**. Сомневаетесь? Спросите в {help}, затем заблокируйте аккаунт и пожалуйтесь на него.",
+   "",
+   "🔒 **Отключите ЛС с этого сервера**",
+   "Нажмите на название сервера → **Настройки конфиденциальности** → выключите **Личные сообщения**. Друзья по-прежнему смогут вам писать. Включите 2FA в Discord, на бирже и в почте.",
+   "",
+   "💬 **Общайтесь на сервере**",
+   "Вопросы, обсуждение сделок и поддержка — всё здесь, на виду у команды и сообщества. Любой, кто тянет вас в ЛС, Telegram или WhatsApp, — тревожный знак.",
+   "",
+   "🛟 **Нужна помощь?**",
+   "Нажмите 🛟 **Получить помощь** в {help}. Откроется личная ветка только для вас, с нашей командой и модераторами. Только там мы помогаем один на один.",
+   "",
+   "⚠️ Не переходите по ссылкам и QR-кодам из ЛС, никогда не показывайте экран кошелька или биржи и игнорируйте предложения про «гарантированный доход», «персональных менеджеров» и «возврат средств». Если звучит слишком хорошо, чтобы быть правдой, это неправда.",
+   "",
+   "📣 **Это наше последнее упоминание @everyone.** Дальше мы переходим на роли уведомлений. Откройте {guide}, нажмите 🔔 **Выбрать уведомления** и выберите, о чём хотите получать оповещения.",
+   "",
+   "Будьте начеку. ⚡"
+  ]
+ },
+ "ja": {
+  "kicker": "BLKBöX Trading Floor · 安全のために",
+  "title": "運営から先にDMすることはありません",
+  "sub": "サーバーは誰でも参加できるようになり、詐欺師も入りやすくなりました。自分の身を守りましょう。",
+  "cards": [
+   [
+    "🚫",
+    "絶対に教えない",
+    "シードフレーズ、パスワード、2FAコード、APIキー。誰にも、運営にもです。"
+   ],
+   [
+    "🔒",
+    "DMをオフに",
+    "サーバー名をタップ → プライバシー設定 → ダイレクトメッセージをオフ。"
+   ],
+   [
+    "🔍",
+    "確認してからブロック",
+    "詐欺師は運営の名前や写真をまねします。ヘルプで確認し、ブロックして報告を。"
+   ],
+   [
+    "💬",
+    "会話はサーバーで",
+    "DM、Telegram、WhatsAppへ誘ってくる人は要注意です。"
+   ]
+  ],
+  "help": "お困りですか？ヘルプで 🛟 ヘルプを依頼 を押してください。あなたとチーム、モデレーターだけの非公開スレッドです。",
+  "text": [
+   "🛡️ **安全のために：Trading Floor は誰でも参加できるようになりました**",
+   "認証をなくし、新しいメンバーもチャット履歴をすべて読めるようになりました。コミュニティには良いことですが、詐欺師も入りやすくなっています。ご自身の身を守り、お互いに気をつけましょう。",
+   "",
+   "🚫 **運営から先にDMすることは、どんな用件でも絶対にありません。**",
+   "管理者、モデレーター、チームの誰も、先にDMを送ったり、代わりに取引すると持ちかけたり、送金を求めたり、シードフレーズ・パスワード・2FAコード・APIキーを聞いたりすることはありません。DMしてくる「BLKBöX」アカウントは詐欺師です。",
+   "",
+   "🔍 **確認してからブロック**",
+   "詐欺師は運営の名前やプロフィール画像をまねします。本物のスタッフはこのサーバーで **Team** または **Moderators** のロールを持っています。迷ったら {help} で確認してから、そのアカウントをブロックして報告してください。",
+   "",
+   "🔒 **このサーバーからのDMをオフにしましょう**",
+   "サーバー名をタップ → **プライバシー設定** → **ダイレクトメッセージ** をオフ。フレンドからは引き続き連絡が届きます。Discord、取引所、メールの2FAもオンにしておきましょう。",
+   "",
+   "💬 **会話はサーバー内で**",
+   "質問もトレードの話もサポートも、チームとコミュニティが見えるここで行います。DM、Telegram、WhatsAppへ誘ってくる人は要注意です。",
+   "",
+   "🛟 **お困りですか？**",
+   "{help} で 🛟 **ヘルプを依頼** を押すと、あなたとチーム、モデレーターだけが見られる非公開スレッドが開きます。個別サポートはここだけで行っています。",
+   "",
+   "⚠️ DMで送られてきたリンクやQRコードは開かず、ウォレットや取引所の画面共有は絶対にしないでください。「利益保証」「アカウントマネージャー」「資金回収」といった話は無視しましょう。うますぎる話は詐欺です。",
+   "",
+   "📣 **@everyone でのお知らせはこれが最後です。** 今後は通知ロールを使います。{guide} を開いて 🔔 **通知を選ぶ** を押し、受け取りたい通知を選んでください。",
+   "",
+   "油断せずにいきましょう。⚡"
+  ]
+ }
 }

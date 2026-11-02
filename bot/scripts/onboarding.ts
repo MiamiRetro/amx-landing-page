@@ -65,8 +65,6 @@ interface Spec {
   tier: Tier;
   kind?: Kind;
   readOnly?: boolean;
-  /** Members see only messages sent while they're there, not the backlog. */
-  noHistory?: boolean;
   type?: "text" | "voice" | "forum";
   topic?: string;
   /** Where this channel lived before the restructure; it is moved from there instead of recreated. */
@@ -88,7 +86,7 @@ interface Spec {
  * No voice channels: one per language is more rooms than anyone would use.
  */
 // Members see the real channel, unverified members see its 🔒 stand-in with the Verify button; each sees one set.
-const LAYOUT: { cat: "ann" | "com" | "ref"; top?: true; kind: Kind; tier: Tier; readOnly?: boolean; noHistory?: true; type?: "voice" | "forum"; panel?: Spec["panel"]; lockFor?: Kind }[] = [
+const LAYOUT: { cat: "ann" | "com" | "ref"; top?: true; kind: Kind; tier: Tier; readOnly?: boolean; type?: "voice" | "forum"; panel?: Spec["panel"]; lockFor?: Kind }[] = [
   // Outside every category, so it sits above them all; each language role sees only its own.
   { cat: "ann", top: true, kind: "start", tier: "free", readOnly: true, panel: "start" },
   { cat: "ann", kind: "announcements", tier: "free", readOnly: true },
@@ -97,13 +95,13 @@ const LAYOUT: { cat: "ann" | "com" | "ref"; top?: true; kind: Kind; tier: Tier; 
   { cat: "ann", kind: "signals", tier: "member", readOnly: true },
   // One 🔒 trade-signals channel stands in for alphanumetrix, bot-alerts and trade-alerts.
   { cat: "ann", kind: "teaser", tier: "teaser", readOnly: true, panel: "locked" },
-  // General and memes are open to everyone who picked a language, without the backlog; the 🔒 panels carry the Verify button.
+  // General and memes are open to everyone who picked a language, backlog included; the 🔒 panels carry the Verify button.
   { cat: "com", kind: "bitcoin", tier: "member" },
   { cat: "com", kind: "crypto", tier: "member" },
   { cat: "com", kind: "stocks", tier: "member" },
   { cat: "com", kind: "commodities", tier: "member" },
-  { cat: "com", kind: "general", tier: "free", noHistory: true },
-  { cat: "com", kind: "memes", tier: "free", noHistory: true },
+  { cat: "com", kind: "general", tier: "free" },
+  { cat: "com", kind: "memes", tier: "free" },
   { cat: "com", kind: "help", tier: "help", readOnly: true, panel: "support" },
   // One forum for guides, strategies, videos and questions, under help-desk, for verified members.
   { cat: "com", kind: "academy", tier: "member", type: "forum" },
@@ -303,7 +301,7 @@ for (const lang of LANGS) {
     // The English guide is an ordinary guide: the Community rules channel is #🌐・choose-language,
     // since Discord wants the rules channel open to @everyone and the guides wait for a language.
     const tier: Tier = l.tier;
-    SPECS.push({ name, parent: l.top ? null : CATS[lang][l.cat], lang, tier, kind: l.kind, readOnly: l.readOnly, noHistory: l.noHistory, type: l.type, panel: l.panel, topic, legacy });
+    SPECS.push({ name, parent: l.top ? null : CATS[lang][l.cat], lang, tier, kind: l.kind, readOnly: l.readOnly, type: l.type, panel: l.panel, topic, legacy });
   }
 }
 
@@ -825,7 +823,7 @@ const helpTeamRoleIds = (guild: Guild) => roleIdsNamed(guild, (process.env.HELP_
  */
 const modRoleIds = (guild: Guild) => roleIdsNamed(guild, ["Moderators"]);
 
-function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChannel, lang: Lang | "all", tier: Tier, readOnly: boolean, noHistory = false): OverwriteResolvable[] {
+function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChannel, lang: Lang | "all", tier: Tier, readOnly: boolean): OverwriteResolvable[] {
   const { guild } = ctx;
   const me = guild.members.me!;
   const langRoleIds = new Set(LANGS.flatMap((l) => [ctx.role(l, "base"), ctx.role(l, "member")]).filter((x): x is string => !!x));
@@ -841,8 +839,6 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
     if (replaced.has(o.id) || o.id === guild.roles.everyone.id) {
       allow &= ~P.ViewChannel;
       deny &= ~P.ViewChannel;
-      // A leftover history allow on an old member role would bring the backlog back.
-      if (noHistory) allow &= ~P.ReadMessageHistory;
       if (allow === 0n && deny === 0n) continue;
     }
     out.set(o.id, { id: o.id, type: o.type, allow, deny });
@@ -868,11 +864,10 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
       if (tier === "verify" || tier === "teaser") base && set(base, OverwriteType.Role, P.ViewChannel | P.ReadMessageHistory, 0n);
       if (tier === "free" || tier === "rules") {
         // An open channel allows Send outright, so a leftover @everyone deny can't mute it.
-        // History allowed outright too (unless the channel hides it), so an old @everyone history deny can't hide the backlog.
-        const allow = (readOnly ? P.ViewChannel : P.ViewChannel | P.SendMessages | P.SendMessagesInThreads) | (noHistory ? 0n : P.ReadMessageHistory);
-        const deny = noHistory ? P.ReadMessageHistory : 0n;
-        base && set(base, OverwriteType.Role, allow, deny);
-        member && set(member, OverwriteType.Role, allow, deny);
+        // History allowed outright too, so an old @everyone history deny can't hide the backlog.
+        const allow = (readOnly ? P.ViewChannel : P.ViewChannel | P.SendMessages | P.SendMessagesInThreads) | P.ReadMessageHistory;
+        base && set(base, OverwriteType.Role, allow, 0n);
+        member && set(member, OverwriteType.Role, allow, 0n);
       }
       if (tier === "help") {
         // Members write only inside the private thread the Get help button opens for them, never in the channel.
@@ -933,7 +928,7 @@ async function stepPerms(ctx: Ctx) {
   for (const s of [...SPECS.slice(1), PICKER]) {
     const ch = findChannel(guild, s);
     if (!ch) { log(`  ! skip #${s.name} (missing)`); continue; }
-    const ows = overwritesFor(ctx, ch, s.lang, s.tier, !!s.readOnly, !!s.noHistory);
+    const ows = overwritesFor(ctx, ch, s.lang, s.tier, !!s.readOnly);
     // Certified Analysts post trade alerts in their own language; the mirror translates each one into the others.
     // Post only, no View: they see channels through their language and member roles like anyone else (JT, 1 Nov).
     if (s.kind === "signals") {

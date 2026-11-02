@@ -21,6 +21,7 @@ import { checkProviders, HealthWatch } from "./verify/health.js";
 import { VipTracker } from "./vip/tracker.js";
 import { FlagshipWatch } from "./flagship.js";
 import { SignalFeed } from "./signals/feed.js";
+import { LiveAnnouncer } from "./live/announce.js";
 import { SupportAssistant } from "./support/assistant.js";
 import { handleCalendarHttp } from "./calendar/google.js";
 import { Butler } from "./support/butler.js";
@@ -67,6 +68,7 @@ async function main() {
   let concierge: Concierge | null = null;
   let review: SupportReview | null = null;
   let notify: NotifyCenter | null = null;
+  let live: LiveAnnouncer | null = null;
   const funnel = new Funnel(db, guildId);
 
   client.once(Events.ClientReady, async (c) => {
@@ -118,6 +120,9 @@ async function main() {
       // New signals become cards in every language's AlphanumetriX channel, and the pinned board follows.
       // Opt-in per environment, since the live server has no such channels yet.
       if (flagship.signals && process.env.SIGNAL_FEED === "1") { new SignalFeed(guild, db, translator, flagship.signals).start(); log.info("signal feed on"); }
+      // Go-live alerts: /live now posts by hand; watched YouTube/Twitch channels post by themselves.
+      live = new LiveAnnouncer(guild, db);
+      if (process.env.LIVE_WATCH !== "off") live.start();
       log.info("uid verification ready", { exchanges: [...affiliates.values()].map((p) => `${p.id}:${p.live ? "live" : "stand-in"}`) });
 
       // Affiliate keys die quietly: Bybit expires an unbound key after 90 days,
@@ -203,7 +208,7 @@ async function main() {
       }
     }
     if (!i.isChatInputCommand()) return;
-    void handleCommand(i, { guild: mirror.guild, db, groups, mirror, providerId: primary.id, roles, verify, vip: vip!, funnel });
+    void handleCommand(i, { guild: mirror.guild, db, groups, mirror, providerId: primary.id, roles, verify, vip: vip!, funnel, live });
   });
   client.on(Events.GuildMemberUpdate, (before, after) => {
     if (after.guild.id !== guildId) return;

@@ -240,13 +240,17 @@ export function notifyButton(lang: Lang) {
   return new ButtonBuilder().setCustomId(NOTIFY_OPEN).setStyle(ButtonStyle.Primary).setLabel(NOTIFY_TEXT[lang].button).setEmoji("🔔");
 }
 
+/** A topic's role: recorded by the onboarding notify step, found by name otherwise. */
+export async function notifyRole(guild: Guild, db: Db, topic: NotifyTopic): Promise<Role | undefined> {
+  const id = await db.getSetting(guild.id, `notify_role:${topic}`);
+  return (id ? guild.roles.cache.get(id) : undefined) ?? guild.roles.cache.find((r) => r.name === NOTIFY_ROLES[topic].name);
+}
+
 export class NotifyCenter {
   constructor(private guild: Guild, private db: Db, private roles: LanguageRoles) {}
 
-  /** The topic's role: recorded by the onboarding notify step, found by name otherwise. */
-  private async role(topic: NotifyTopic): Promise<Role | undefined> {
-    const id = await this.db.getSetting(this.guild.id, `notify_role:${topic}`);
-    return (id ? this.guild.roles.cache.get(id) : undefined) ?? this.guild.roles.cache.find((r) => r.name === NOTIFY_ROLES[topic].name);
+  private role(topic: NotifyTopic): Promise<Role | undefined> {
+    return notifyRole(this.guild, this.db, topic);
   }
 
   private async topicRoles() {

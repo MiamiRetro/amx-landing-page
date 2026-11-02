@@ -1,10 +1,10 @@
-import { WebhookClient, type APIEmbed, type Guild, type TextChannel } from "discord.js";
+import type { APIEmbed, Guild, TextChannel } from "discord.js";
+import { groupTargets, type GroupTarget } from "../lib/groupHooks.js";
 import type { SignalSource } from "../flagship.js";
 import type { Lang } from "../config.js";
 import type { Db } from "../db/index.js";
 import { log, errInfo } from "../log.js";
 import { detokenize, tokenize } from "../mirror/placeholders.js";
-import { WEBHOOK_NAME } from "../mirror/webhooks.js";
 import type { Translator } from "../translate/index.js";
 import { boardEmbed, boardSpec, cardSpec, signalEmbed, toEvents, type EventRow, type SignalEvent } from "./model.js";
 import { renderSignalImage } from "./render.js";
@@ -14,7 +14,7 @@ const LAST = "signals:last_id";
 const boardKey = (channelId: string) => `signals:board:${channelId}`;
 const AVATAR_KEY = "signals:avatar";
 
-interface Target { lang: Lang; channelId: string; hook: WebhookClient }
+type Target = GroupTarget;
 
 /** The translatable strings of an embed, in a fixed order, and the way back. */
 function strings(e: APIEmbed): string[] {
@@ -25,32 +25,12 @@ function rebuild(e: APIEmbed, s: string[]): APIEmbed {
   return { ...e, title: s[0], description: s[1], fields: e.fields?.map((f) => ({ ...f, name: s[i++], value: s[i++] })), footer: { text: s[i] } };
 }
 
-/**
- * Posts to every language's AlphanumetriX channel in its own language, through
- * the mirror's own webhooks so the mirror leaves the posts alone. The English
- * channel has no mirror webhook; one named like the mirror's is skipped too.
- */
+/** Posts to every language's AlphanumetriX channel in its own language, through the mirror's own webhooks. */
 export class SignalPoster {
   constructor(private guild: Guild, private db: Db, private translator: Translator) {}
 
-  async targets(): Promise<Target[]> {
-    const group = (await this.db.loadGroups(this.guild.id)).find((g) => g.name === GROUP);
-    if (!group) throw new Error(`no ${GROUP} mirror group`);
-    const out: Target[] = [];
-    for (const m of group.members) {
-      if (m.lang === "en" || !m.webhook_id || !m.webhook_token) {
-        const ch = (await this.guild.channels.fetch(m.channel_id)) as TextChannel;
-        const me = this.guild.client.user!.id;
-        const hook = (await ch.fetchWebhooks()).find((w) => w.name === WEBHOOK_NAME && w.owner?.id === me && w.token)
-          ?? (await ch.createWebhook({ name: WEBHOOK_NAME, reason: "AlphanumetriX signals" }));
-        // A language channel's webhook is the mirror's own: record it so the mirror reuses it.
-        if (m.lang !== "en") await this.db.upsertMember({ channel_id: m.channel_id, group_id: m.group_id, lang: m.lang, webhook_id: hook.id, webhook_token: hook.token! });
-        out.push({ lang: m.lang as Lang, channelId: m.channel_id, hook: new WebhookClient({ id: hook.id, token: hook.token! }) });
-      } else {
-        out.push({ lang: m.lang as Lang, channelId: m.channel_id, hook: new WebhookClient({ id: m.webhook_id, token: m.webhook_token }) });
-      }
-    }
-    return out.sort((a, b) => (a.lang === "en" ? -1 : b.lang === "en" ? 1 : 0));
+  targets(): Promise<Target[]> {
+    return groupTargets(this.guild, this.db, GROUP, "AlphanumetriX signals");
   }
 
   /** The English embed in each target language, one language per call so long cards fit. */

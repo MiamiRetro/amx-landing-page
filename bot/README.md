@@ -50,6 +50,8 @@ Create a project (or reuse one), open the SQL editor, paste `src/db/schema.sql`,
 | `SUPPORT_ALERT_CHANNEL_ID` | Where handoffs are announced; falls back to `VERIFY_ALERT_CHANNEL_ID` |
 | `FLAGSHIP_SUPABASE_URL`, `FLAGSHIP_SUPABASE_KEY`, `SIGNAL_FEED_TOKEN` | The dashboard's Supabase URL, its publishable key and a feed token for the read-only `public.signal_feed` RPC (the database keeps only the token's SHA-256, in `blkbox.signal_feed_tokens`). Turns on the AlphanumetriX channel icon that follows the model |
 | `SIGNAL_FEED` | `1` posts each new BTC signal as a card in every language's AlphanumetriX channel and refreshes the pinned board in place (`src/signals`). Needs the two above; post the history once with `scripts/post-signals.ts` first |
+| `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET` | Optional. A free app from dev.twitch.tv, so `/live watch` can see Twitch streams. YouTube needs no key |
+| `LIVE_WATCH` | `off` stops the go-live watcher (`/live now` still works). Default on: watched channels are checked every 2 minutes and each stream gets one alert in every language's announcements, pinging 🔔 Videos & Streams (`src/live`) |
 | `HEARTBEAT_URL` | Pinged every `HEARTBEAT_MIN` (5) minutes while connected, for an outside monitor such as healthchecks.io to alert on silence |
 
 ### 4. Run locally

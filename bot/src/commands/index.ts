@@ -18,6 +18,8 @@ import type { VerifyService } from "../verify/service.js";
 import type { VipTracker } from "../vip/tracker.js";
 import { applyFlagship, ICONS, LABELS, type FlagshipState } from "../flagship.js";
 import { EXCHANGES, EXCHANGE_LABELS, isExchange, ProviderError } from "../verify/types.js";
+import type { LiveAnnouncer } from "../live/announce.js";
+import { PLATFORM_LABEL, PLATFORMS, platformOf, twitchConfigured, type WatchPlatform } from "../live/detect.js";
 
 const langChoices = LANGS.map((l) => ({ name: `${LANG_NAMES[l]} (${l})`, value: l }));
 
@@ -135,6 +137,29 @@ export const commandDefinitions = [
         { name: "🔴🔴 Strong Bear Trend", value: "strong-bear" },
       ),
     ),
+  new SlashCommandBuilder()
+    .setName("live")
+    .setDescription("Go-live alerts: ping 🔔 Videos & Streams in every language's announcements")
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
+    .setDMPermission(false)
+    .addSubcommand((s) =>
+      s.setName("now").setDescription("Post a go-live alert right now, for any platform")
+        .addStringOption((o) => o.setName("link").setDescription("The stream link").setRequired(true))
+        .addStringOption((o) => o.setName("who").setDescription("Who is live, e.g. Tone, Matt, or Tone & Matt").setRequired(true).setMaxLength(60))
+        .addStringOption((o) => o.setName("title").setDescription("What the stream is about (optional)").setMaxLength(200)),
+    )
+    .addSubcommand((s) =>
+      s.setName("watch").setDescription("Post automatically whenever this channel goes live")
+        .addStringOption((o) => o.setName("who").setDescription("Name shown in the alert, e.g. Tone").setRequired(true).setMaxLength(60))
+        .addStringOption((o) => o.setName("platform").setDescription("Platform").setRequired(true).addChoices(...PLATFORMS.map((p) => ({ name: PLATFORM_LABEL[p], value: p }))))
+        .addStringOption((o) => o.setName("channel").setDescription("YouTube @handle or channel link, or Twitch name").setRequired(true)),
+    )
+    .addSubcommand((s) =>
+      s.setName("unwatch").setDescription("Stop watching someone's channel")
+        .addStringOption((o) => o.setName("who").setDescription("Name used with /live watch").setRequired(true))
+        .addStringOption((o) => o.setName("platform").setDescription("Platform").setRequired(true).addChoices(...PLATFORMS.map((p) => ({ name: PLATFORM_LABEL[p], value: p })))),
+    )
+    .addSubcommand((s) => s.setName("list").setDescription("Channels the bot watches for go-live")),
 ].map((c) => c.toJSON());
 
 export interface CommandDeps {
@@ -147,6 +172,7 @@ export interface CommandDeps {
   verify: VerifyService;
   vip: VipTracker;
   funnel: Funnel;
+  live: LiveAnnouncer | null;
 }
 
 export async function handleCommand(i: ChatInputCommandInteraction, d: CommandDeps) {
@@ -160,6 +186,7 @@ export async function handleCommand(i: ChatInputCommandInteraction, d: CommandDe
       : i.commandName === "vip" ? await vipCommand(i, d)
       : i.commandName === "flagship" ? await flagshipCommand(i, d)
       : i.commandName === "funnel" ? await funnelCommand(i, d)
+      : i.commandName === "live" ? await liveCommand(i, d)
       : await glossaryCommand(i, d);
     await i.editReply(text.slice(0, 1900));
   } catch (e) {
@@ -379,4 +406,28 @@ async function glossaryCommand(i: ChatInputCommandInteraction, d: CommandDeps): 
   const rows = await d.db.glossary(d.guild.id);
   if (rows.length === 0) return "Glossary is empty.";
   return rows.map((r) => `• **${r.term}**${r.note ? ` — ${r.note}` : ""}`).join("\n");
+}
+
+async function liveCommand(i: ChatInputCommandInteraction, d: CommandDeps): Promise<string> {
+  if (!d.live) return "Go-live alerts aren't running.";
+  const sub = i.options.getSubcommand();
+  if (sub === "now") {
+    const url = i.options.getString("link", true).trim();
+    if (!/^https?:\/\/\S+$/.test(url)) return "That doesn't look like a link. Paste the full stream URL, starting with https://";
+    const who = i.options.getString("who", true).trim();
+    const channels = await d.live.announce({ who, platform: platformOf(url), url, title: i.options.getString("title") ?? undefined });
+    return channels.length ? `Posted in ${channels.length} channels: <#${channels[0]}>` : "Nothing was posted. Check the bot's log.";
+  }
+  if (sub === "watch") {
+    const w = { who: i.options.getString("who", true).trim(), platform: i.options.getString("platform", true) as WatchPlatform, channel: i.options.getString("channel", true).trim() };
+    await d.live.watch(w);
+    const note = w.platform === "twitch" && !twitchConfigured() ? "\n⚠️ Twitch checks need TWITCH_CLIENT_ID and TWITCH_CLIENT_SECRET in the bot's variables; until then this watch does nothing." : "";
+    return `Watching ${w.who} on ${PLATFORM_LABEL[w.platform]} (\`${w.channel}\`). The bot checks every 2 minutes and posts once per stream.${note}`;
+  }
+  if (sub === "unwatch") {
+    const ok = await d.live.unwatch(i.options.getString("who", true).trim(), i.options.getString("platform", true) as WatchPlatform);
+    return ok ? "Stopped watching." : "Nothing matched that name and platform. See `/live list`.";
+  }
+  const ws = await d.live.watches();
+  return ws.length ? ws.map((w) => `• **${w.who}** · ${PLATFORM_LABEL[w.platform]} · \`${w.channel}\``).join("\n") : "Not watching anyone yet. Add a channel with `/live watch`.";
 }

@@ -18,7 +18,7 @@ import { busyTimes } from "../calendar/google.js";
 import { findSlots, parseHours } from "../calendar/slots.js";
 import type { LanguageRoles } from "../roles.js";
 import { HOSTS, hostIds, type Butler, type ButlerTurn, type HostKey } from "./butler.js";
-import { relayTranslation, type ThreadTranslator } from "./relay.js";
+import { relayTranslation, type ChannelLocalizer, type ThreadTranslator } from "./relay.js";
 
 export const CONCIERGE_OPEN = "concierge:open";
 export const CONCIERGE_CLOSE = "concierge:close";
@@ -107,12 +107,13 @@ export class Concierge {
     private butler: Butler | null,
     private roles: LanguageRoles | null = null,
     private translator: ThreadTranslator | null = null,
+    private localize: ChannelLocalizer | null = null,
   ) {}
 
   /** VIPs come from every language: once a person from the team is in the thread, each side reads the other in its own language. */
   private async relay(m: Message, owner: string) {
     const member = await this.guild.members.fetch(owner).catch(() => null);
-    return relayTranslation(this.translator, m, owner, member && this.roles ? this.roles.langOf(member) : null);
+    return relayTranslation(this.translator, m, owner, member && this.roles ? this.roles.langOf(member) : null, this.localize);
   }
 
   private roleIds(names: string[]) {

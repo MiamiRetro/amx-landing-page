@@ -8,6 +8,8 @@
  *   npx tsx scripts/announce.ts --post live --apply        # once the final checks pass (@everyone)
  *   npx tsx scripts/announce.ts --post mess --apply        # before the window: "pardon our mess", with its
  *                                                          # infographic (assets/announce), in the languages it has
+ *   npx tsx scripts/announce.ts --post safety --apply      # "stay safe, we never DM first" (@everyone), with its
+ *                                                          # infographic; {help} becomes a link to that language's help-desk
  *
  * Each person only sees their own language's announcements channel, so the
  * @everyone in "live" pings everyone once. The bot is given Mention @everyone
@@ -138,6 +140,19 @@ const ANNOUNCE = join(dirname(fileURLToPath(import.meta.url)), "..", "assets", "
 const MESS = JSON.parse(readFileSync(join(ANNOUNCE, "mess.json"), "utf8")) as Partial<Record<Lang, { text: string[] }>>;
 /** "Don't see the new channels?": the tip line and its picture (channels-<lang>.png) for the live post. */
 const CHANNELS_TIP = JSON.parse(readFileSync(join(ANNOUNCE, "channels.json"), "utf8")) as Record<Lang, { tip: string }>;
+/** "Stay safe": the server is open to everyone, so scam-safety advice with its infographic (safety-<lang>.png). */
+const SAFETY = JSON.parse(readFileSync(join(ANNOUNCE, "safety.json"), "utf8")) as Record<Lang, { text: string[] }>;
+
+/** Each language's server guide (where the 🔔 notification picker lives), linked from {guide}. */
+const GUIDE: Record<Lang, string> = {
+  en: "🧭・server-guide", zh: "🧭・服务器指南", ko: "🧭・서버-가이드", id: "🧭・panduan-server", vi: "🧭・hướng-dẫn-server",
+  es: "🧭・guía-del-servidor", pt: "🧭・guia-do-servidor", tr: "🧭・sunucu-rehberi", ru: "🧭・гид-по-серверу", ja: "🧭・サーバーガイド",
+};
+/** Each language's help-desk channel, linked from {help} in a post; falls back to its name in bold. */
+const HELP: Record<Lang, string> = {
+  en: "☎️・help-desk", zh: "☎️・帮助台", ko: "☎️・도움말", id: "☎️・bantuan", vi: "☎️・hỗ-trợ",
+  es: "☎️・ayuda", pt: "☎️・ajuda", tr: "☎️・yardım", ru: "☎️・помощь", ja: "☎️・ヘルプ",
+};
 
 type Post = { ping: boolean; text: (l: Lang) => string | null; file?: (l: Lang) => string };
 const POSTS: Record<string, Post> = {
@@ -148,6 +163,7 @@ const POSTS: Record<string, Post> = {
     file: (l) => join(ANNOUNCE, `channels-${l}.png`),
   },
   mess: { ping: false, text: (l) => MESS[l]?.text.join("\n") ?? null, file: (l) => join(ANNOUNCE, `mess-${l}.png`) },
+  safety: { ping: true, text: (l) => ["@everyone", "", ...SAFETY[l].text].join("\n"), file: (l) => join(ANNOUNCE, `safety-${l}.png`) },
 };
 
 function arg(name: string): string | undefined {
@@ -172,20 +188,24 @@ async function main() {
           (c.type === ChannelType.GuildText || c.type === ChannelType.GuildAnnouncement) && c.name.replace(/^[┣┗]/u, "") === CHANNEL[lang],
       );
       if (!ch) { console.log(`  ${lang}: no #${CHANNEL[lang]} (skipped)`); if (which === "live") missing++; continue; }
-      const text = post.text(lang);
+      const help = guild.channels.cache.find((c) => c.name.replace(/^[┣┗]/u, "") === HELP[lang]);
+      const guide = guild.channels.cache.find((c) => c.name.replace(/^[┣┗]/u, "") === GUIDE[lang]);
+      const text = post.text(lang)?.replaceAll("{help}", help ? `<#${help.id}>` : `**${HELP[lang]}**`)
+        .replaceAll("{guide}", guide ? `<#${guide.id}>` : `**${GUIDE[lang]}**`) ?? null;
       if (text === null) { console.log(`  ${lang}: no text for "${which}" (skipped)`); continue; }
       // Already posted: the bot's own message with the same headline in the last day.
       const headline = text.split("\n").find((l) => l && l !== "@everyone")!;
+      if (text.length > 2000) { console.log(`  ${lang}: text is ${text.length} characters, over Discord's 2000 (skipped)`); continue; }
       const recent = await ch.messages.fetch({ limit: 30 }).catch(() => null);
       if (recent?.some((m) => m.author.id === me.id && m.content.includes(headline) && Date.now() - m.createdTimestamp < 86_400_000)) {
         console.log(`  ${lang}: already posted in #${ch.name}`);
         continue;
       }
       const canPing = ch.permissionsFor(me).has(P.MentionEveryone);
-      console.log(`  ${lang}: post in #${ch.name}${post.ping && !canPing ? " (first allows the bot to @everyone in this channel)" : ""}`);
+      console.log(`  ${lang}: post in #${ch.name}${help ? "" : ` (no #${HELP[lang]} found, named in bold)`}${guide ? "" : ` (no #${GUIDE[lang]} found, named in bold)`}${post.ping && !canPing ? " (first allows the bot to @everyone in this channel)" : ""}`);
       if (!apply) continue;
       if (post.ping && !canPing) {
-        await ch.permissionOverwrites.edit(me.id, { MentionEveryone: true }, { type: OverwriteType.Member, reason: "migration announcement" });
+        await ch.permissionOverwrites.edit(me.id, { MentionEveryone: true }, { type: OverwriteType.Member, reason: `${which} announcement` });
       }
       await ch.send({ content: text, files: post.file ? [{ attachment: post.file(lang), name: `${which}-${lang}.png` }] : [], allowedMentions: { parse: post.ping ? ["everyone"] : [] } });
     }

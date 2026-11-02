@@ -1,0 +1,58 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+@font-face{font-family:Sora;src:url(../../node_modules/@fontsource/sora/files/sora-latin-800-normal.woff2) format("woff2");font-weight:800}
+@font-face{font-family:Sora;src:url(../../node_modules/@fontsource/sora/files/sora-latin-700-normal.woff2) format("woff2");font-weight:700}
+@font-face{font-family:Sora;src:url(../../node_modules/@fontsource/sora/files/sora-latin-600-normal.woff2) format("woff2");font-weight:600}
+*{margin:0;box-sizing:border-box;word-break:keep-all;overflow-wrap:anywhere}
+body{width:1200px;height:675px;background:#050d14;overflow:hidden;font-family:Sora,"Noto Sans","Noto Sans CJK SC","PingFang SC","Hiragino Sans","Apple SD Gothic Neo",sans-serif;color:#fff;position:relative}
+.glow1{position:absolute;left:-10%;top:-40%;width:70%;height:160%;background:radial-gradient(48% 50% at 40% 45%,rgba(34,211,238,.20) 0%,rgba(34,211,238,.05) 55%,transparent 100%)}
+.glow2{position:absolute;right:-15%;bottom:-60%;width:80%;height:160%;background:radial-gradient(50% 50% at 60% 50%,rgba(220,38,38,.16) 0%,rgba(220,38,38,.04) 55%,transparent 100%)}
+.grid{position:absolute;inset:0;background-image:linear-gradient(rgba(34,211,238,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(34,211,238,.06) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(70% 80% at 50% 45%,#000 30%,transparent 100%);-webkit-mask-image:radial-gradient(70% 80% at 50% 45%,#000 30%,transparent 100%)}
+.line{position:absolute;left:0;right:0;bottom:0;height:4px;background:linear-gradient(90deg,#22d3ee,#10b981 55%,transparent)}
+.wrap{position:absolute;inset:48px 60px 44px 60px;display:flex;flex-direction:column}
+.top{display:flex;align-items:center;gap:28px}
+.shield{flex:none;width:96px;height:108px}
+.kicker{font-weight:700;font-size:15px;letter-spacing:.28em;color:#22d3ee;text-transform:uppercase}
+.title{font-weight:800;font-size:50px;line-height:1.08;letter-spacing:-.02em;margin-top:8px}
+.title em{font-style:normal;color:#f87171}
+.sub{font-weight:700;font-size:19px;color:#93a4b3;margin-top:10px;line-height:1.35}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:30px;flex:1}
+.card{background:rgba(255,255,255,.045);border:1px solid rgba(34,211,238,.2);border-radius:18px;padding:30px 22px 24px;display:flex;flex-direction:column}
+.card:first-child{border-color:rgba(248,113,113,.45);background:rgba(220,38,38,.07)}
+.ic{width:60px;height:60px;border-radius:16px;background:rgba(34,211,238,.12);display:flex;align-items:center;justify-content:center;font-size:32px}
+.card:first-child .ic{background:rgba(248,113,113,.15)}
+.card h3{font-weight:800;font-size:25px;margin-top:20px;line-height:1.2}
+.card p{font-weight:600;font-size:18px;color:#a9b6c2;margin-top:12px;line-height:1.45}
+.help{margin-top:22px;display:flex;align-items:center;gap:14px;background:linear-gradient(90deg,rgba(34,211,238,.16),rgba(16,185,129,.10));border:1px solid rgba(34,211,238,.45);border-radius:14px;padding:14px 20px;font-weight:700;font-size:18px;color:#e6fbff}
+.help b{flex:none;font-size:22px}
+</style></head><body>
+<div class="glow1"></div><div class="glow2"></div><div class="grid"></div><div class="line"></div>
+<div class="wrap">
+  <div class="top">
+    <svg class="shield" viewBox="0 0 96 108" fill="none">
+      <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22d3ee"/><stop offset="1" stop-color="#10b981"/></linearGradient></defs>
+      <path d="M48 4 88 18v30c0 27-17 46-40 56C25 94 8 75 8 48V18L48 4Z" fill="rgba(34,211,238,.10)" stroke="url(#g)" stroke-width="4"/>
+      <path d="M30 55 43 68 68 40" stroke="url(#g)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div>
+      <div class="kicker" id="kicker"></div>
+      <div class="title" id="title"></div>
+      <div class="sub" id="sub"></div>
+    </div>
+  </div>
+  <div class="cards" id="cards"></div>
+  <div class="help"><b>🛟</b><span id="help"></span></div>
+</div>
+<script>
+window.draw = (t) => {
+  for (const k of ["kicker", "title", "sub", "help"]) document.getElementById(k).textContent = t[k];
+  const cards = document.getElementById("cards");
+  cards.innerHTML = "";
+  for (const [ic, h, p] of t.cards) {
+    const c = document.createElement("div"); c.className = "card";
+    c.innerHTML = `<div class="ic"></div><h3></h3><p></p>`;
+    c.querySelector(".ic").textContent = ic; c.querySelector("h3").textContent = h; c.querySelector("p").textContent = p;
+    cards.append(c);
+  }
+  document.getElementById("help").textContent = t.help.replace(/🛟\s*/gu, "");
+};
+</script></body></html>

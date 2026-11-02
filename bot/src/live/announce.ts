@@ -1,0 +1,163 @@
+import type { Guild } from "discord.js";
+import type { Lang } from "../config.js";
+import type { Db } from "../db/index.js";
+import { groupTargets } from "../lib/groupHooks.js";
+import { errInfo, log } from "../log.js";
+import { notifyRole } from "../notify.js";
+import { checkLive, PLATFORM_LABEL, PLATFORMS, youtubeChannelId, youtubeLongUploads, type WatchPlatform } from "./detect.js";
+
+/** Where go-live alerts go: every language's announcements channel. */
+export const LIVE_GROUP = "announcements";
+const WATCHES = "live:watches";
+const seenKey = (w: Watch) => `live:seen:${w.platform}:${w.channel.toLowerCase()}`;
+const lastKey = (who: string) => `live:last:${who.toLowerCase()}`;
+/** A stream that drops and comes back, or a manual alert followed by the watcher's, posts once. */
+const COOLDOWN_MS = 2 * 60 * 60_000;
+
+export interface Watch { who: string; platform: WatchPlatform; channel: string }
+export interface Stream { who: string; platform: string; url: string; title?: string; kind?: "live" | "video" }
+
+const channelIdKey = (handle: string) => `live:ytid:${handle.toLowerCase()}`;
+const videosKey = (channelId: string) => `live:videos:${channelId}`;
+/** A video older than this is history, not news: a feed that reshuffles never posts it. */
+const VIDEO_MAX_AGE_MS = 24 * 60 * 60_000;
+
+/** "LIVE NOW" and the words before the link, per language. Names, titles and platforms stay as they are. */
+export const LIVE_TEXT: Record<Lang, { live: string; join: string }> = {
+  en: { live: "LIVE NOW", join: "Join the stream:" },
+  zh: { live: "正在直播", join: "点击观看直播：" },
+  ko: { live: "지금 라이브", join: "라이브 보러 가기:" },
+  id: { live: "LIVE SEKARANG", join: "Tonton streamingnya:" },
+  vi: { live: "ĐANG LIVE", join: "Xem livestream:" },
+  es: { live: "EN VIVO AHORA", join: "Únete al directo:" },
+  pt: { live: "AO VIVO AGORA", join: "Entre na live:" },
+  tr: { live: "ŞU AN CANLI", join: "Yayına katıl:" },
+  ru: { live: "СЕЙЧАС В ЭФИРЕ", join: "Смотреть стрим:" },
+  ja: { live: "ライブ配信中", join: "配信はこちら：" },
+};
+
+/** "NEW VIDEO" and the words before the link, per language. */
+export const VIDEO_TEXT: Record<Lang, { video: string; watch: string }> = {
+  en: { video: "NEW VIDEO", watch: "Watch now:" },
+  zh: { video: "新视频", watch: "立即观看：" },
+  ko: { video: "새 영상", watch: "지금 보기:" },
+  id: { video: "VIDEO BARU", watch: "Tonton sekarang:" },
+  vi: { video: "VIDEO MỚI", watch: "Xem ngay:" },
+  es: { video: "NUEVO VIDEO", watch: "Míralo ya:" },
+  pt: { video: "VÍDEO NOVO", watch: "Assista agora:" },
+  tr: { video: "YENİ VİDEO", watch: "Hemen izle:" },
+  ru: { video: "НОВОЕ ВИДЕО", watch: "Смотреть:" },
+  ja: { video: "新着動画", watch: "今すぐ見る：" },
+};
+
+/** One language's alert. The link stays bare so Discord shows the player under it. */
+export function liveMessage(lang: Lang, s: Stream, roleId?: string): string {
+  const [icon, head, cta] = s.kind === "video"
+    ? ["🎬", (VIDEO_TEXT[lang] ?? VIDEO_TEXT.en).video, (VIDEO_TEXT[lang] ?? VIDEO_TEXT.en).watch]
+    : ["🔴", (LIVE_TEXT[lang] ?? LIVE_TEXT.en).live, (LIVE_TEXT[lang] ?? LIVE_TEXT.en).join];
+  const where = s.platform ? ` · ${s.platform}` : "";
+  const title = s.title?.trim() ? `\n> ${s.title.trim().replace(/\s+/g, " ").slice(0, 200)}` : "";
+  return `${roleId ? `<@&${roleId}> ` : ""}${icon} **${head}** · **${s.who}**${where}${title}\n${cta} ${s.url}`;
+}
+
+export class LiveAnnouncer {
+  private busy = false;
+
+  constructor(private guild: Guild, private db: Db) {}
+
+  /** Posts the alert in every language's announcements channel, pinging 🔔 Videos & Streams. Returns the channels. */
+  async announce(s: Stream): Promise<string[]> {
+    const role = await notifyRole(this.guild, this.db, "videos");
+    if (!role) log.warn("live alert without a role: no 🔔 Videos & Streams role");
+    const targets = await groupTargets(this.guild, this.db, LIVE_GROUP, "go-live alerts");
+    const avatarURL = this.guild.client.user?.displayAvatarURL({ extension: "png", size: 256 });
+    const posted: string[] = [];
+    for (const t of targets) {
+      try {
+        await t.hook.send({
+          content: liveMessage(t.lang, s, role?.id),
+          username: s.kind === "video" ? "BLKBöX Videos" : "BLKBöX Live",
+          avatarURL,
+          allowedMentions: { parse: [], roles: role ? [role.id] : [] },
+        });
+        posted.push(t.channelId);
+      } catch (e) {
+        log.warn("live alert failed", { channel: t.channelId, lang: t.lang, ...errInfo(e) });
+      }
+    }
+    if (s.kind !== "video") await this.db.setSetting(this.guild.id, lastKey(s.who), String(Date.now()));
+    log.info("live alert posted", { kind: s.kind ?? "live", who: s.who, platform: s.platform, url: s.url, channels: posted.length });
+    return posted;
+  }
+
+  async watches(): Promise<Watch[]> {
+    const raw = await this.db.getSetting(this.guild.id, WATCHES);
+    return raw ? (JSON.parse(raw) as Watch[]) : [];
+  }
+
+  async watch(w: Watch) {
+    const all = (await this.watches()).filter((x) => !(x.who.toLowerCase() === w.who.toLowerCase() && x.platform === w.platform));
+    all.push(w);
+    await this.db.setSetting(this.guild.id, WATCHES, JSON.stringify(all));
+  }
+
+  async unwatch(who: string, platform: WatchPlatform): Promise<boolean> {
+    const all = await this.watches();
+    const left = all.filter((x) => !(x.who.toLowerCase() === who.toLowerCase() && x.platform === platform));
+    await this.db.setSetting(this.guild.id, WATCHES, JSON.stringify(left));
+    return left.length !== all.length;
+  }
+
+  /** Looks at every watched channel once; a new broadcast gets one alert. */
+  async check() {
+    if (this.busy) return;
+    this.busy = true;
+    try {
+      for (const w of await this.watches()) {
+        if (!PLATFORMS.includes(w.platform)) continue;
+        const live = await checkLive(w.platform, w.channel).catch((e) => { log.warn("live check failed", { ...w, ...errInfo(e) }); return null; });
+        if (!live) continue;
+        if ((await this.db.getSetting(this.guild.id, seenKey(w))) === live.id) continue;
+        await this.db.setSetting(this.guild.id, seenKey(w), live.id);
+        const last = Number((await this.db.getSetting(this.guild.id, lastKey(w.who))) ?? 0);
+        if (Date.now() - last < COOLDOWN_MS) { log.info("live alert skipped: posted recently", { who: w.who, id: live.id }); continue; }
+        await this.announce({ who: w.who, platform: PLATFORM_LABEL[w.platform], url: live.url, title: live.title });
+      }
+      if (process.env.VIDEO_ALERTS !== "off") {
+        for (const w of (await this.watches()).filter((x) => x.platform === "youtube")) {
+          await this.checkVideos(w).catch((e) => log.warn("video check failed", { ...w, ...errInfo(e) }));
+        }
+      }
+    } finally {
+      this.busy = false;
+    }
+  }
+
+  /**
+   * New full-length uploads (never shorts) get a "new video" alert. The first
+   * look at a channel only records what is already there.
+   */
+  async checkVideos(w: Watch) {
+    let channelId = await this.db.getSetting(this.guild.id, channelIdKey(w.channel));
+    if (!channelId) {
+      channelId = await youtubeChannelId(w.channel);
+      await this.db.setSetting(this.guild.id, channelIdKey(w.channel), channelId);
+    }
+    const uploads = await youtubeLongUploads(channelId);
+    const raw = await this.db.getSetting(this.guild.id, videosKey(channelId));
+    const seen = new Set<string>(raw ? (JSON.parse(raw) as string[]) : []);
+    const fresh = raw === null ? [] : uploads.filter((u) => !seen.has(u.id) && Date.now() - Date.parse(u.published) < VIDEO_MAX_AGE_MS);
+    if (raw === null || fresh.length) {
+      const keep = [...new Set([...uploads.map((u) => u.id), ...seen])].slice(0, 50);
+      await this.db.setSetting(this.guild.id, videosKey(channelId), JSON.stringify(keep));
+    }
+    if (raw === null) { log.info("video watch baseline", { who: w.who, channelId, videos: uploads.length }); return; }
+    for (const u of fresh.reverse()) await this.announce({ who: w.who, platform: "YouTube", url: u.url, title: u.title, kind: "video" });
+  }
+
+  start(minutes = 2) {
+    const run = () => void this.check().catch((e) => log.warn("live watch failed", errInfo(e)));
+    run();
+    setInterval(run, minutes * 60_000).unref();
+  }
+}

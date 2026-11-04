@@ -1,3 +1,6 @@
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import Anthropic from "@anthropic-ai/sdk";
 import {
   MessageType,
@@ -28,6 +31,18 @@ import {
 } from "./format.js";
 
 export const BRIDGE_WEBHOOK_NAME = "AMX Telegram";
+/** assets/ sits two levels above both src/telegram and dist/telegram. */
+const AVATAR_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "assets", "telegram");
+
+/**
+ * A host's picture shipped with the bot: assets/telegram/<telegram username, lower case>.png.
+ * Webhook posts can only take an avatar by URL, so a host with a file gets a
+ * webhook of their own whose avatar is that picture.
+ */
+export function avatarFile(user: BridgeUser, dir = AVATAR_DIR): string | null {
+  const file = join(dir, `${user.telegram.toLowerCase()}.png`);
+  return existsSync(file) ? file : null;
+}
 /** Follow-ups from the same host within this window stay in the channel of their last post. */
 const STICKY_MS = 10 * 60_000;
 /** The "→ #bitcoin" note under a host's post removes itself after this. */
@@ -113,6 +128,7 @@ export class TelegramBridge {
   private sticky = new Map<string, { channel: ChannelKey; at: number }>();
   private sendChain: Promise<unknown> = Promise.resolve();
   private botId = 0;
+  private admins: { chat: number; at: number; users: BridgeUser[] } = { chat: 0, at: 0, users: [] };
   /** Discord avatars as small link-preview thumbnails on forwarded messages. Off by default (JT found the card too heavy). */
   private avatars = process.env.TELEGRAM_AVATARS?.trim() === "on";
 
@@ -153,6 +169,7 @@ export class TelegramBridge {
       const ch = this.channelOf(key);
       if (!ch) { log.warn("telegram bridge: no English channel for group", { key }); continue; }
       await this.hook(ch).catch((e) => log.warn("telegram bridge webhook failed", { key, ...errInfo(e) }));
+      for (const u of this.users) if (avatarFile(u)) await this.hook(ch, u).catch((e) => log.warn("telegram bridge webhook failed", { key, user: u.telegram, ...errInfo(e) }));
     }
     this.running = true;
     void this.poll();
@@ -164,19 +181,48 @@ export class TelegramBridge {
     this.abort.abort();
   }
 
-  private async hook(channelId: string): Promise<WebhookClient> {
-    const cached = this.hooks.get(channelId);
+  /** The channel's bridge webhook: the host's own one when they have a picture file, else the shared one. */
+  private async hook(channelId: string, user?: BridgeUser | null): Promise<WebhookClient> {
+    const file = user ? avatarFile(user) : null;
+    const name = file && user ? `${BRIDGE_WEBHOOK_NAME} · ${user.telegram}` : BRIDGE_WEBHOOK_NAME;
+    const cacheKey = `${channelId}:${name}`;
+    const cached = this.hooks.get(cacheKey);
     if (cached) return cached;
     const channel = await this.guild.channels.fetch(channelId);
     if (!channel || !("createWebhook" in channel)) throw new Error(`channel ${channelId} cannot host webhooks`);
     const ch = channel as TextChannel | NewsChannel;
-    const existing = (await ch.fetchWebhooks()).find((w) => w.name === BRIDGE_WEBHOOK_NAME && w.token);
-    const hook = existing ?? (await ch.createWebhook({ name: BRIDGE_WEBHOOK_NAME, reason: "Telegram bridge for The Daily High" }));
+    const existing = (await ch.fetchWebhooks()).find((w) => w.name === name && w.token);
+    const hook = existing ?? (await ch.createWebhook({ name, avatar: file ? readFileSync(file) : undefined, reason: "Telegram bridge for The Daily High" }));
     if (!hook.token) throw new Error(`webhook ${hook.id} has no token`);
     this.hookIds.add(hook.id);
     const client = new WebhookClient({ id: hook.id, token: hook.token });
-    this.hooks.set(channelId, client);
+    this.hooks.set(cacheKey, client);
     return client;
+  }
+
+  private owner(entry: TgEntry): BridgeUser | null {
+    return this.users.find((u) => u.telegram === entry.u) ?? this.admins.users.find((u) => u.telegram === entry.u) ?? null;
+  }
+
+  /**
+   * Who may post through: the listed hosts, plus the group's own Telegram
+   * admins (JT), who post under their Telegram name. TELEGRAM_BRIDGE_ADMINS=off
+   * limits it to the list.
+   */
+  private async userFor(from: TgUser | undefined, chatId: number): Promise<BridgeUser | null> {
+    const listed = matchUser(this.users, from);
+    if (listed || !from || from.is_bot || process.env.TELEGRAM_BRIDGE_ADMINS?.trim() === "off") return listed;
+    if (this.admins.chat !== chatId || Date.now() - this.admins.at > 10 * 60_000) {
+      const list = await this.api.getChatAdministrators(chatId).catch(() => null);
+      if (list) {
+        this.admins = {
+          chat: chatId,
+          at: Date.now(),
+          users: list.filter((m) => !m.user.is_bot).map((m) => ({ telegram: String(m.user.id), name: [m.user.first_name, m.user.last_name].filter(Boolean).join(" ") })),
+        };
+      }
+    }
+    return this.admins.chat === chatId ? this.admins.users.find((u) => u.telegram === String(from.id)) ?? null : null;
   }
 
   // ---------- storage ----------
@@ -391,7 +437,7 @@ export class TelegramBridge {
         return true;
       }
       const ch = this.channelOf(entry.c);
-      if (ch) await (await this.hook(ch)).deleteMessage(entry.d).catch((e) => log.warn("telegram /delete failed", errInfo(e)));
+      if (ch) await (await this.hook(ch, this.owner(entry))).deleteMessage(entry.d).catch((e) => log.warn("telegram /delete failed", errInfo(e)));
       await this.unlink(target.message_id, entry.d);
       await this.reply(msg, `🗑 Removed from ${CHANNEL_LABEL[entry.c]} on Discord.`);
       return true;
@@ -408,7 +454,7 @@ export class TelegramBridge {
   }
 
   async onTelegramMessage(msg: TgMessage) {
-    const user = matchUser(this.users, msg.from);
+    const user = await this.userFor(msg.from, msg.chat.id);
     if (await this.command(msg, user)) return;
     if (msg.chat.id !== this.chatId || !user || this.paused) return;
     const raw = msg.text ?? msg.caption ?? "";
@@ -437,7 +483,7 @@ export class TelegramBridge {
       const ch = this.channelOf(replyTo.c);
       const orig = ch ? await this.fetchDiscord(ch, replyTo.d) : null;
       if (ch) {
-        const name = replyTo.own ? this.displayName(this.users.find((u) => u.telegram === replyTo.u) ?? user) : orig?.member?.displayName ?? orig?.author.displayName ?? orig?.author.username ?? "…";
+        const name = replyTo.own ? this.displayName(this.owner(replyTo) ?? user) : orig?.member?.displayName ?? orig?.author.displayName ?? orig?.author.username ?? "…";
         const excerpt = replyTo.own ? replyTo.text ?? "" : splitReplyHeader(orig?.content ?? "").rest;
         header = discordReplyHeader(this.guild.id, ch, replyTo.d, name, excerpt);
       }
@@ -479,12 +525,13 @@ export class TelegramBridge {
     const ch = this.channelOf(key);
     if (!ch) throw new Error(`no English channel for ${key}`);
     if (user.discord && !this.guild.members.cache.has(user.discord)) await this.guild.members.fetch(user.discord).catch(() => null);
-    const hook = await this.hook(ch);
+    const hook = await this.hook(ch, user);
     const attachments = [];
     for (const f of files) attachments.push({ attachment: await this.api.download(f.id), name: f.name });
     const sent = await hook.send({
       username: sanitizeUsername(this.displayName(user)),
-      avatarURL: this.avatar(user),
+      // A host with a picture file posts through their own webhook, which already wears it.
+      avatarURL: avatarFile(user) ? undefined : this.avatar(user),
       content: fitDiscord(telegramToDiscord(text, header ?? null)),
       files: attachments,
       allowedMentions: { parse: [] },
@@ -494,30 +541,30 @@ export class TelegramBridge {
 
   async onTelegramEdit(msg: TgMessage) {
     if (msg.chat.id !== this.chatId || this.paused) return;
-    const user = matchUser(this.users, msg.from);
+    const user = await this.userFor(msg.from, msg.chat.id);
     const entry = user ? await this.getT(msg.message_id) : null;
     if (!user || !entry?.own) return;
     const raw = msg.text ?? msg.caption ?? "";
     const text = explicitTag(raw)?.text ?? raw;
     const ch = this.channelOf(entry.c);
     if (!ch) return;
-    await (await this.hook(ch)).editMessage(entry.d, { content: fitDiscord(telegramToDiscord(text, entry.h ?? null)), allowedMentions: { parse: [] } });
+    await (await this.hook(ch, this.owner(entry))).editMessage(entry.d, { content: fitDiscord(telegramToDiscord(text, entry.h ?? null)), allowedMentions: { parse: [] } });
     await this.db.setSetting(this.guild.id, this.tKey(msg.message_id), JSON.stringify({ ...entry, text }));
   }
 
   async onCallback(q: TgCallbackQuery) {
     const m = q.data?.match(/^mv:(\d+):(\w+)$/);
     if (!m || !isChannelKey(m[2])) return void this.api.answerCallbackQuery(q.id).catch(() => {});
-    const user = matchUser(this.users, q.from);
+    const user = q.message ? await this.userFor(q.from, q.message.chat.id) : matchUser(this.users, q.from);
     if (!user) return void this.api.answerCallbackQuery(q.id, "Only the hosts can move posts.").catch(() => {});
     const tgId = Number(m[1]);
     const to = m[2];
     const entry = await this.getT(tgId);
     if (!entry?.own) return void this.api.answerCallbackQuery(q.id, "That post is no longer on Discord.").catch(() => {});
     if (entry.c === to) return void this.api.answerCallbackQuery(q.id).catch(() => {});
-    const owner = this.users.find((u) => u.telegram === entry.u) ?? user;
+    const owner = this.owner(entry) ?? user;
     const oldCh = this.channelOf(entry.c);
-    if (oldCh) await (await this.hook(oldCh)).deleteMessage(entry.d).catch((e) => log.warn("telegram move: delete failed", errInfo(e)));
+    if (oldCh) await (await this.hook(oldCh, this.owner(entry))).deleteMessage(entry.d).catch((e) => log.warn("telegram move: delete failed", errInfo(e)));
     await this.db.deleteSetting(this.guild.id, `tg:d:${entry.d}`).catch(() => {});
     const posted = await this.postToDiscord(owner, to, entry.text ?? "", null, entry.f ?? []);
     await this.link(tgId, { ...entry, d: posted, c: to, h: null }, { t: tgId });

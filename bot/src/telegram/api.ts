@@ -137,6 +137,10 @@ export class TelegramApi {
     return this.call<true>("deleteMessage", { chat_id: chatId, message_id: messageId });
   }
 
+  getChatAdministrators(chatId: number) {
+    return this.call<{ user: TgUser; status: string }[]>("getChatAdministrators", { chat_id: chatId });
+  }
+
   answerCallbackQuery(id: string, text?: string) {
     return this.call<true>("answerCallbackQuery", { callback_query_id: id, text });
   }

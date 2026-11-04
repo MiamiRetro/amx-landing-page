@@ -92,3 +92,9 @@ test("previews: a URL becomes a small thumbnail, auto lets Telegram preview the 
   assert.deepEqual(previewOptions(null), { is_disabled: true });
   assert.equal(previewOptions("auto"), undefined);
 });
+
+test("Tone's picture ships with the bot and is found by his Telegram username", async () => {
+  const { avatarFile } = await import("../src/telegram/bridge.js");
+  assert.ok(avatarFile({ telegram: "ToneVays" })?.endsWith("tonevays.png"));
+  assert.equal(avatarFile({ telegram: "nobody_here" }), null);
+});

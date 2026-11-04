@@ -86,8 +86,9 @@ test("move buttons offer the other three channels", () => {
   assert.deepEqual(rows[0].map((b) => b.callback_data), ["mv:5:general", "mv:5:stocks", "mv:5:crypto"]);
 });
 
-test("an avatar becomes a small link-preview thumbnail; no avatar, no preview", async () => {
+test("previews: a URL becomes a small thumbnail, auto lets Telegram preview the text's link, nothing means none", async () => {
   const { previewOptions } = await import("../src/telegram/api.js");
   assert.deepEqual(previewOptions("https://cdn.discordapp.com/avatars/1/a.png?size=128"), { url: "https://cdn.discordapp.com/avatars/1/a.png?size=128", prefer_small_media: true, show_above_text: false });
   assert.deepEqual(previewOptions(null), { is_disabled: true });
+  assert.equal(previewOptions("auto"), undefined);
 });

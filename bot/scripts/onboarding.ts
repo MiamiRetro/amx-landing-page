@@ -823,7 +823,15 @@ const helpTeamRoleIds = (guild: Guild) => roleIdsNamed(guild, (process.env.HELP_
  */
 const modRoleIds = (guild: Guild) => roleIdsNamed(guild, ["Moderators"]);
 
-function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChannel, lang: Lang | "all", tier: Tier, readOnly: boolean): OverwriteResolvable[] {
+/**
+ * Emoji reactions are for verified members only (JT, 4 Nov): every community channel and every signal channel
+ * except 🤖 bot-alerts, where the BullBöX / SwingBöX / BangBöX bot signals post, plus 📢 announcements.
+ * 🟢🟢 alphanumetrix counts as a signal channel, not a bot one. Unverified members get none.
+ */
+const REACT = P.AddReactions | P.UseExternalEmojis;
+const REACT_SIGNALS: Kind[] = ["flagship", "signals"];
+
+function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChannel, lang: Lang | "all", tier: Tier, readOnly: boolean, kind?: Kind): OverwriteResolvable[] {
   const { guild } = ctx;
   const me = guild.members.me!;
   const langRoleIds = new Set(LANGS.flatMap((l) => [ctx.role(l, "base"), ctx.role(l, "member")]).filter((x): x is string => !!x));
@@ -854,7 +862,8 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
   const everyone = guild.roles.everyone.id;
 
   if (tier === "picker") {
-    set(everyone, OverwriteType.Role, P.ViewChannel | P.ReadMessageHistory, 0n);
+    // Denied outright: @everyone may have Add Reactions server-wide, and nobody here has verified yet.
+    set(everyone, OverwriteType.Role, P.ViewChannel | P.ReadMessageHistory, REACT);
     for (const id of langRoleIds) set(id, OverwriteType.Role, 0n, P.ViewChannel);
   } else {
     set(everyone, OverwriteType.Role, 0n, P.ViewChannel);
@@ -866,9 +875,11 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
         // An open channel allows Send outright, so a leftover @everyone deny can't mute it.
         // History allowed outright too, so an old @everyone history deny can't hide the backlog.
         const allow = (readOnly ? P.ViewChannel : P.ViewChannel | P.SendMessages | P.SendMessagesInThreads) | P.ReadMessageHistory;
-        base && set(base, OverwriteType.Role, allow, 0n);
-        member && set(member, OverwriteType.Role, allow, 0n);
+        base && set(base, OverwriteType.Role, allow, REACT);
+        member && set(member, OverwriteType.Role, allow | (!readOnly || kind === "announcements" ? REACT : 0n), 0n);
       }
+      // The 🔒 stand-ins and verify are only ever seen by unverified members: no reactions there either.
+      if (tier === "verify" || tier === "teaser") base && set(base, OverwriteType.Role, 0n, REACT);
       if (tier === "help") {
         // Members write only inside the private thread the Get help button opens for them, never in the channel.
         const inThread = P.ViewChannel | P.ReadMessageHistory | P.SendMessagesInThreads | P.EmbedLinks | P.AttachFiles | P.AddReactions | P.UseExternalEmojis;
@@ -882,7 +893,10 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
       }
       // Chat channels say "post" outright: a renamed old channel may deny Send to @everyone, which only the old member role used to undo.
       const chat = P.SendMessages | P.SendMessagesInThreads | P.AddReactions | P.EmbedLinks | P.AttachFiles | P.UseExternalEmojis;
-      if (tier === "member") member && set(member, OverwriteType.Role, P.ViewChannel | P.ReadMessageHistory | (readOnly ? 0n : chat), 0n);
+      const react = kind && REACT_SIGNALS.includes(kind) ? REACT : 0n;
+      // 🤖 bot-alerts denies them outright, so a server-wide @everyone Add Reactions can't leak through.
+      const noReact = kind === "daytrade" ? REACT : 0n;
+      if (tier === "member") member && set(member, OverwriteType.Role, P.ViewChannel | P.ReadMessageHistory | (readOnly ? react : chat), noReact);
     }
   }
   // Every member sees it, whatever their language, and so does someone who hasn't picked one yet.
@@ -909,7 +923,8 @@ function describe(guild: Guild, ows: OverwriteResolvable[]) {
       const v = a & P.ViewChannel ? "+view" : d & P.ViewChannel ? "-view" : "";
       const s = d & P.SendMessages ? " -send" : "";
       const h = a & P.ReadMessageHistory ? " +history" : d & P.ReadMessageHistory ? " -history" : "";
-      return v || s || h ? `${name}${v ? " " + v : ""}${s}${h}` : null;
+      const r = a & P.AddReactions ? " +react" : d & P.AddReactions ? " -react" : "";
+      return v || s || h || r ? `${name}${v ? " " + v : ""}${s}${h}${r}` : null;
     })
     .filter(Boolean)
     .join(", ");
@@ -928,7 +943,7 @@ async function stepPerms(ctx: Ctx) {
   for (const s of [...SPECS.slice(1), PICKER]) {
     const ch = findChannel(guild, s);
     if (!ch) { log(`  ! skip #${s.name} (missing)`); continue; }
-    const ows = overwritesFor(ctx, ch, s.lang, s.tier, !!s.readOnly);
+    const ows = overwritesFor(ctx, ch, s.lang, s.tier, !!s.readOnly, s.kind);
     // Certified Analysts post trade alerts in their own language; the mirror translates each one into the others.
     // Post only, no View: they see channels through their language and member roles like anyone else (JT, 1 Nov).
     if (s.kind === "signals") {

@@ -596,12 +596,13 @@ async function stepVip(ctx: Ctx) {
     }
   }
 
-  // Where the e-butler sends session requests for JT and Matt: the team only.
+  // Where the e-butler sends session requests for JT and Matt: the team only, not moderators (JT, 4 Nov).
   let bookings = vipText(VIP_BOOKINGS);
   await rename(bookings, VIP_BOOKINGS);
   const bookingsOws: OverwriteResolvable[] = [
     { id: guild.roles.everyone.id, deny: [P.ViewChannel] },
-    ...teamRoleIds.map((id) => ({ id, allow: [P.ViewChannel, P.ReadMessageHistory] })),
+    ...teamRoleIds.filter((id) => !modRoleIds(guild).includes(id)).map((id) => ({ id, allow: [P.ViewChannel, P.ReadMessageHistory] })),
+    ...modRoleIds(guild).map((id) => ({ id, deny: [P.ViewChannel] })),
     { id: me.id, type: OverwriteType.Member, allow: [P.ViewChannel, P.SendMessages, P.ReadMessageHistory, P.EmbedLinks] },
   ];
   if (!bookings) {
@@ -818,7 +819,8 @@ const roleIdsNamed = (guild: Guild, names: string[]) => {
 /** The team (HELP_TEAM_ROLES): English only, help requests reach it through English twin threads. */
 const helpTeamRoleIds = (guild: Guild) => roleIdsNamed(guild, (process.env.HELP_TEAM_ROLES ?? "Team - Will Not DM").split(","));
 /**
- * Moderators get their own grants only on #🛡️・mod-chat and the VIP folder (not #📊・vip-report);
+ * Moderators get their own grants only on #🛡️・mod-chat and the VIP folder (not #📊・vip-report or #📅・vip-bookings),
+ * plus View Audit Log on the role (JT, 4 Nov);
  * everywhere else they see what their language and member roles give them (JT, 1 Nov).
  */
 const modRoleIds = (guild: Guild) => roleIdsNamed(guild, ["Moderators"]);
@@ -932,6 +934,14 @@ function describe(guild: Guild, ows: OverwriteResolvable[]) {
 
 async function stepPerms(ctx: Ctx) {
   const { guild } = ctx;
+  // Moderators read the audit log (JT, 4 Nov). A server-wide role permission, not a channel overwrite.
+  for (const id of modRoleIds(guild)) {
+    const role = guild.roles.cache.get(id)!;
+    if (role.permissions.has(P.ViewAuditLog)) continue;
+    if (!role.editable) { log(`  ! can't edit role ${role.name} (above the bot): tick View Audit Log on it by hand`); continue; }
+    log(`  role ${role.name}: + View Audit Log`);
+    if (ctx.apply) await role.setPermissions(role.permissions.add(P.ViewAuditLog), "Moderators read the audit log");
+  }
   for (const c of CATEGORY_SPECS) {
     const cat = guild.channels.cache.find((x): x is CategoryChannel => x.type === ChannelType.GuildCategory && x.name === c.name);
     if (!cat) { log(`  ! missing category ${c.name}`); continue; }

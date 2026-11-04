@@ -472,7 +472,7 @@ export class TelegramBridge {
       "Everything from the Discord channels shows up here. What you write goes back:",
       "• a reply goes to the channel of the message you answer",
       "• start with /btc, /stocks, /crypto or /general to pick the channel",
-      "• otherwise the bot picks; tap a button under its note to move the post",
+      "• otherwise the bot picks the channel from what you wrote",
       "/delete (as a reply) removes your post from Discord · /pause · /resume",
     ].join("\n"), 0);
     return true;
@@ -496,7 +496,8 @@ export class TelegramBridge {
     this.sticky.set(user.telegram, { channel: route.channel, at: Date.now() });
     await this.link(msg.message_id, { d: posted, c: route.channel, own: true, text: route.text, h: route.header, f: files, u: user.telegram }, { t: msg.message_id });
     log.info("telegram → discord", { user: user.telegram, channel: route.channel, by: route.by });
-    await this.reply(msg, noteText(route.channel, route.by), NOTE_TTL_MS, moveButtons(msg.message_id, route.channel));
+    // The "→ #channel" note with move buttons is off unless TELEGRAM_BRIDGE_NOTES=on (JT, 4 Nov: keep the feed clean).
+    if (process.env.TELEGRAM_BRIDGE_NOTES?.trim() === "on") await this.reply(msg, noteText(route.channel, route.by), NOTE_TTL_MS, moveButtons(msg.message_id, route.channel));
   }
 
   private async route(msg: TgMessage, user: BridgeUser, raw: string): Promise<Route & { header: string | null }> {

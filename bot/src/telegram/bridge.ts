@@ -113,6 +113,8 @@ export class TelegramBridge {
   private sticky = new Map<string, { channel: ChannelKey; at: number }>();
   private sendChain: Promise<unknown> = Promise.resolve();
   private botId = 0;
+  /** Discord avatars as small link-preview thumbnails on forwarded messages (TELEGRAM_AVATARS=off to drop). */
+  private avatars = process.env.TELEGRAM_AVATARS?.trim() !== "off";
 
   constructor(opts: BridgeOptions) {
     this.api = new TelegramApi(opts.token);
@@ -274,7 +276,9 @@ export class TelegramBridge {
     ];
     if (extra.length) body = [body, ...extra].filter(Boolean).join("\n");
     const parentId = message.reference?.messageId ?? parent?.messageId ?? null;
-    return { html: telegramPost(key, author, body, lang), image: images[0]?.url ?? null, parentId, empty: !body && !images.length };
+    // Mirror copies carry the original author's avatar on the webhook message.
+    const avatar = this.avatars ? (message.member ?? message.author).displayAvatarURL({ extension: "png", size: 128 }) : null;
+    return { html: telegramPost(key, author, body, lang), image: images[0]?.url ?? null, avatar, parentId, empty: !body && !images.length };
   }
 
   onDiscordCreate(message: Message) {
@@ -287,7 +291,7 @@ export class TelegramBridge {
       const chat = this.chatId!;
       const sent = r.image
         ? await this.send(() => this.api.sendPhoto(chat, r.image!, fitTelegram(r.html, 1024), { replyTo }))
-        : await this.send(() => this.api.sendMessage(chat, fitTelegram(r.html, 4096), { replyTo }));
+        : await this.send(() => this.api.sendMessage(chat, fitTelegram(r.html, 4096), { replyTo, preview: r.avatar }));
       await this.link(sent.message_id, { d: message.id, c: key }, { t: sent.message_id, k: r.image ? "photo" : undefined });
     })().catch((e) => log.warn("telegram forward failed", { id: message.id, ...errInfo(e) }));
   }
@@ -303,7 +307,7 @@ export class TelegramBridge {
       const chat = this.chatId!;
       await this.send(() => entry.k === "photo"
         ? this.api.editMessageCaption(chat, entry.t, fitTelegram(r.html, 1024))
-        : this.api.editMessageText(chat, entry.t, fitTelegram(r.html, 4096)));
+        : this.api.editMessageText(chat, entry.t, fitTelegram(r.html, 4096), undefined, r.avatar));
     })().catch((e) => {
       if (e instanceof TelegramError && /not modified/i.test(e.description)) return;
       log.warn("telegram edit failed", { id: message.id, ...errInfo(e) });

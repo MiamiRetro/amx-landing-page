@@ -60,6 +60,8 @@ export interface BridgeUser {
   avatar?: string;
   /** Discord user id: their Discord name and avatar are used when name/avatar are not set. */
   discord?: string;
+  /** Numeric Telegram id, learned from their messages. */
+  tgId?: number;
 }
 
 /** The hosts of The Daily High. TELEGRAM_BRIDGE_USERS (a JSON list) replaces this. */
@@ -129,6 +131,7 @@ export class TelegramBridge {
   private sendChain: Promise<unknown> = Promise.resolve();
   private botId = 0;
   private admins: { chat: number; at: number; users: BridgeUser[] } = { chat: 0, at: 0, users: [] };
+  private photos = new Map<string, Buffer | null>();
   /** Discord avatars as small link-preview thumbnails on forwarded messages. Off by default (JT found the card too heavy). */
   private avatars = process.env.TELEGRAM_AVATARS?.trim() === "on";
 
@@ -181,18 +184,39 @@ export class TelegramBridge {
     this.abort.abort();
   }
 
-  /** The channel's bridge webhook: the host's own one when they have a picture file, else the shared one. */
+  /**
+   * The picture a poster's webhook wears: a file shipped with the bot
+   * (assets/telegram/), else their Telegram profile photo. Cached per user.
+   */
+  private async pictureFor(user: BridgeUser): Promise<Buffer | null> {
+    const file = avatarFile(user);
+    if (file) return readFileSync(file);
+    if (!user.tgId) return null;
+    if (!this.photos.has(user.telegram)) this.photos.set(user.telegram, await this.api.profilePhoto(user.tgId).catch(() => null));
+    return this.photos.get(user.telegram) ?? null;
+  }
+
+  /**
+   * The channel's bridge webhook. Webhook posts only take avatars by URL, so
+   * each poster gets a webhook of their own wearing their picture; without
+   * a picture (or a custom avatar URL) the shared one is used.
+   */
   private async hook(channelId: string, user?: BridgeUser | null): Promise<WebhookClient> {
-    const file = user ? avatarFile(user) : null;
-    const name = file && user ? `${BRIDGE_WEBHOOK_NAME} · ${user.telegram}` : BRIDGE_WEBHOOK_NAME;
+    const own = !!user && !user.avatar && !user.discord;
+    const name = own && user ? `${BRIDGE_WEBHOOK_NAME} · ${user.telegram}` : BRIDGE_WEBHOOK_NAME;
     const cacheKey = `${channelId}:${name}`;
     const cached = this.hooks.get(cacheKey);
     if (cached) return cached;
     const channel = await this.guild.channels.fetch(channelId);
     if (!channel || !("createWebhook" in channel)) throw new Error(`channel ${channelId} cannot host webhooks`);
     const ch = channel as TextChannel | NewsChannel;
-    const existing = (await ch.fetchWebhooks()).find((w) => w.name === name && w.token);
-    const hook = existing ?? (await ch.createWebhook({ name, avatar: file ? readFileSync(file) : undefined, reason: "Telegram bridge for The Daily High" }));
+    let existing = (await ch.fetchWebhooks()).find((w) => w.name === name && w.token);
+    if (!existing && own && user) {
+      const picture = await this.pictureFor(user);
+      if (!picture) return this.hook(channelId, null);
+      existing = await ch.createWebhook({ name, avatar: picture, reason: "Telegram bridge for The Daily High" });
+    }
+    const hook = existing ?? (await ch.createWebhook({ name, reason: "Telegram bridge for The Daily High" }));
     if (!hook.token) throw new Error(`webhook ${hook.id} has no token`);
     this.hookIds.add(hook.id);
     const client = new WebhookClient({ id: hook.id, token: hook.token });
@@ -211,6 +235,7 @@ export class TelegramBridge {
    */
   private async userFor(from: TgUser | undefined, chatId: number): Promise<BridgeUser | null> {
     const listed = matchUser(this.users, from);
+    if (listed && from) listed.tgId = from.id;
     if (listed || !from || from.is_bot || process.env.TELEGRAM_BRIDGE_ADMINS?.trim() === "off") return listed;
     if (this.admins.chat !== chatId || Date.now() - this.admins.at > 10 * 60_000) {
       const list = await this.api.getChatAdministrators(chatId).catch(() => null);
@@ -218,7 +243,7 @@ export class TelegramBridge {
         this.admins = {
           chat: chatId,
           at: Date.now(),
-          users: list.filter((m) => !m.user.is_bot).map((m) => ({ telegram: String(m.user.id), name: [m.user.first_name, m.user.last_name].filter(Boolean).join(" ") })),
+          users: list.filter((m) => !m.user.is_bot).map((m) => ({ telegram: String(m.user.id), tgId: m.user.id, name: [m.user.first_name, m.user.last_name].filter(Boolean).join(" ") })),
         };
       }
     }
@@ -530,8 +555,8 @@ export class TelegramBridge {
     for (const f of files) attachments.push({ attachment: await this.api.download(f.id), name: f.name });
     const sent = await hook.send({
       username: sanitizeUsername(this.displayName(user)),
-      // A host with a picture file posts through their own webhook, which already wears it.
-      avatarURL: avatarFile(user) ? undefined : this.avatar(user),
+      // Posters with their own webhook already wear their picture; the others pass a URL if they have one.
+      avatarURL: this.avatar(user),
       content: fitDiscord(telegramToDiscord(text, header ?? null)),
       files: attachments,
       allowedMentions: { parse: [] },

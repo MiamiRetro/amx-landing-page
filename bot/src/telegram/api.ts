@@ -137,6 +137,15 @@ export class TelegramApi {
     return this.call<true>("deleteMessage", { chat_id: chatId, message_id: messageId });
   }
 
+  /** The user's current Telegram profile picture, or null when they have none or hide it. */
+  async profilePhoto(userId: number): Promise<Buffer | null> {
+    const res = await this.call<{ photos: TgPhotoSize[][] }>("getUserProfilePhotos", { user_id: userId, limit: 1 });
+    const sizes = res.photos[0];
+    if (!sizes?.length) return null;
+    const pick = sizes.find((p) => p.width >= 256) ?? sizes[sizes.length - 1];
+    return this.download(pick.file_id);
+  }
+
   getChatAdministrators(chatId: number) {
     return this.call<{ user: TgUser; status: string }[]>("getChatAdministrators", { chat_id: chatId });
   }

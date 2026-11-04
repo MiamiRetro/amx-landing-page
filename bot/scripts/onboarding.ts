@@ -825,7 +825,8 @@ const modRoleIds = (guild: Guild) => roleIdsNamed(guild, ["Moderators"]);
 
 /**
  * Emoji reactions are for verified members only (JT, 4 Nov): every community channel and every signal channel
- * except 🤖 bot-alerts, where the BullBöX / SwingBöX / BangBöX bot signals post. Unverified members get none.
+ * except 🤖 bot-alerts, where the BullBöX / SwingBöX / BangBöX bot signals post, plus 📢 announcements.
+ * 🟢🟢 alphanumetrix counts as a signal channel, not a bot one. Unverified members get none.
  */
 const REACT = P.AddReactions | P.UseExternalEmojis;
 const REACT_SIGNALS: Kind[] = ["flagship", "signals"];
@@ -874,7 +875,7 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
         // History allowed outright too, so an old @everyone history deny can't hide the backlog.
         const allow = (readOnly ? P.ViewChannel : P.ViewChannel | P.SendMessages | P.SendMessagesInThreads) | P.ReadMessageHistory;
         base && set(base, OverwriteType.Role, allow, REACT);
-        member && set(member, OverwriteType.Role, allow | (readOnly ? 0n : REACT), 0n);
+        member && set(member, OverwriteType.Role, allow | (!readOnly || kind === "announcements" ? REACT : 0n), 0n);
       }
       // The 🔒 stand-ins and verify are only ever seen by unverified members: no reactions there either.
       if (tier === "verify" || tier === "teaser") base && set(base, OverwriteType.Role, 0n, REACT);

@@ -132,6 +132,8 @@ export class TelegramBridge {
   private botId = 0;
   private admins: { chat: number; at: number; users: BridgeUser[] } = { chat: 0, at: 0, users: [] };
   private photos = new Map<string, Buffer | null>();
+  /** Discord message ids the bridge deleted itself; their delete events are echoes. */
+  private selfDeleted = new Set<string>();
   /** Discord avatars as small link-preview thumbnails on forwarded messages. Off by default (JT found the card too heavy). */
   private avatars = process.env.TELEGRAM_AVATARS?.trim() === "on";
 
@@ -389,15 +391,16 @@ export class TelegramBridge {
   onDiscordDelete(message: Message | PartialMessage) {
     if (this.chatId == null || !this.keyOf(message.channelId)) return;
     void (async () => {
+      // Deletes the bridge made itself (a move, or /delete) are handled where they were made.
+      if (this.selfDeleted.delete(message.id)) return;
       const entry = await this.getD(message.id);
       if (!entry) return;
-      const own = await this.getT(entry.t);
-      // A host's own post deleted on Discord (by a mod, or a move) stays in Telegram; only the link goes.
-      if (own?.own) {
-        await this.unlink(entry.t, message.id);
-        return;
-      }
-      await this.send(() => this.api.deleteMessage(this.chatId!, entry.t)).catch(() => {});
+      // Deleted on Discord, so gone from Telegram too. For a host's own post this needs
+      // the bot to be a Telegram group admin with "Delete messages", and the post under 48 hours old.
+      const own = (await this.getT(entry.t))?.own;
+      await this.send(() => this.api.deleteMessage(this.chatId!, entry.t)).catch((e) => {
+        log.warn(own ? "telegram delete of a host post failed: make the bot a group admin with Delete messages" : "telegram delete failed", { tg: entry.t, ...errInfo(e) });
+      });
       await this.unlink(entry.t, message.id);
     })().catch((e) => log.warn("telegram delete failed", { id: message.id, ...errInfo(e) }));
   }
@@ -462,9 +465,13 @@ export class TelegramBridge {
         return true;
       }
       const ch = this.channelOf(entry.c);
+      this.selfDeleted.add(entry.d);
       if (ch) await (await this.hook(ch, this.owner(entry))).deleteMessage(entry.d).catch((e) => log.warn("telegram /delete failed", errInfo(e)));
       await this.unlink(target.message_id, entry.d);
-      await this.reply(msg, `🗑 Removed from ${CHANNEL_LABEL[entry.c]} on Discord.`);
+      // Gone from both sides: the post itself and the /delete command (needs the bot to be a group admin).
+      const both = await this.send(() => this.api.deleteMessage(msg.chat.id, target.message_id)).then(() => true, () => false);
+      await this.send(() => this.api.deleteMessage(msg.chat.id, msg.message_id)).catch(() => {});
+      if (!both) await this.reply(msg, `🗑 Removed from ${CHANNEL_LABEL[entry.c]} on Discord. Delete it here too.`);
       return true;
     }
     await this.reply(msg, [
@@ -473,7 +480,8 @@ export class TelegramBridge {
       "• a reply goes to the channel of the message you answer",
       "• start with /btc, /stocks, /crypto or /general to pick the channel",
       "• otherwise the bot picks the channel from what you wrote",
-      "/delete (as a reply) removes your post from Discord · /pause · /resume",
+      "Deleting a message here doesn't reach Discord (Telegram doesn't tell bots). Reply /delete to your post instead: it goes from both sides.",
+      "/pause · /resume",
     ].join("\n"), 0);
     return true;
   }
@@ -590,6 +598,7 @@ export class TelegramBridge {
     if (entry.c === to) return void this.api.answerCallbackQuery(q.id).catch(() => {});
     const owner = this.owner(entry) ?? user;
     const oldCh = this.channelOf(entry.c);
+    this.selfDeleted.add(entry.d);
     if (oldCh) await (await this.hook(oldCh, this.owner(entry))).deleteMessage(entry.d).catch((e) => log.warn("telegram move: delete failed", errInfo(e)));
     await this.db.deleteSetting(this.guild.id, `tg:d:${entry.d}`).catch(() => {});
     const posted = await this.postToDiscord(owner, to, entry.text ?? "", null, entry.f ?? []);

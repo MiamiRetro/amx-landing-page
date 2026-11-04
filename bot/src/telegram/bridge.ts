@@ -113,8 +113,8 @@ export class TelegramBridge {
   private sticky = new Map<string, { channel: ChannelKey; at: number }>();
   private sendChain: Promise<unknown> = Promise.resolve();
   private botId = 0;
-  /** Discord avatars as small link-preview thumbnails on forwarded messages (TELEGRAM_AVATARS=off to drop). */
-  private avatars = process.env.TELEGRAM_AVATARS?.trim() !== "off";
+  /** Discord avatars as small link-preview thumbnails on forwarded messages. Off by default (JT found the card too heavy). */
+  private avatars = process.env.TELEGRAM_AVATARS?.trim() === "on";
 
   constructor(opts: BridgeOptions) {
     this.api = new TelegramApi(opts.token);
@@ -277,7 +277,8 @@ export class TelegramBridge {
     if (extra.length) body = [body, ...extra].filter(Boolean).join("\n");
     const parentId = message.reference?.messageId ?? parent?.messageId ?? null;
     // Mirror copies carry the original author's avatar on the webhook message.
-    const avatar = this.avatars ? (message.member ?? message.author).displayAvatarURL({ extension: "png", size: 128 }) : null;
+    // Otherwise links in the text get Telegram's own preview (TradingView charts show the chart).
+    const avatar = this.avatars ? (message.member ?? message.author).displayAvatarURL({ extension: "png", size: 128 }) : "auto";
     return { html: telegramPost(key, author, body, lang), image: images[0]?.url ?? null, avatar, parentId, empty: !body && !images.length };
   }
 

@@ -51,12 +51,13 @@ export interface InlineButton {
 }
 
 /**
- * No preview by default. With a URL (a member's avatar), Telegram shows that
- * image as a small thumbnail beside the text: the closest a bot gets to
- * posting with someone else's picture.
+ * "auto": Telegram previews the first link in the text (a TradingView chart,
+ * say). A URL: that page or image is previewed as a small thumbnail.
+ * Anything else: no preview.
  */
-export function previewOptions(url?: string | null) {
-  return url ? { url, prefer_small_media: true, show_above_text: false } : { is_disabled: true };
+export function previewOptions(preview?: string | null) {
+  if (preview === "auto") return undefined;
+  return preview ? { url: preview, prefer_small_media: true, show_above_text: false } : { is_disabled: true };
 }
 
 export class TelegramError extends Error {

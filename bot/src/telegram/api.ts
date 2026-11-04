@@ -50,6 +50,15 @@ export interface InlineButton {
   callback_data: string;
 }
 
+/**
+ * No preview by default. With a URL (a member's avatar), Telegram shows that
+ * image as a small thumbnail beside the text: the closest a bot gets to
+ * posting with someone else's picture.
+ */
+export function previewOptions(url?: string | null) {
+  return url ? { url, prefer_small_media: true, show_above_text: false } : { is_disabled: true };
+}
+
 export class TelegramError extends Error {
   constructor(readonly method: string, readonly code: number, readonly description: string, readonly retryAfter?: number) {
     super(`telegram ${method} ${code}: ${description}`);
@@ -85,12 +94,12 @@ export class TelegramApi {
     return this.call<TgUpdate[]>("getUpdates", { offset, timeout: timeoutSec, allowed_updates: ["message", "edited_message", "callback_query"] }, signal);
   }
 
-  sendMessage(chatId: number, html: string, opts: { replyTo?: number; buttons?: InlineButton[][]; silent?: boolean } = {}) {
+  sendMessage(chatId: number, html: string, opts: { replyTo?: number; buttons?: InlineButton[][]; silent?: boolean; preview?: string | null } = {}) {
     return this.call<TgMessage>("sendMessage", {
       chat_id: chatId,
       text: html,
       parse_mode: "HTML",
-      link_preview_options: { is_disabled: true },
+      link_preview_options: previewOptions(opts.preview),
       disable_notification: opts.silent,
       reply_parameters: opts.replyTo ? { message_id: opts.replyTo, allow_sending_without_reply: true } : undefined,
       reply_markup: opts.buttons ? { inline_keyboard: opts.buttons } : undefined,
@@ -108,13 +117,13 @@ export class TelegramApi {
     });
   }
 
-  editMessageText(chatId: number, messageId: number, html: string, buttons?: InlineButton[][]) {
+  editMessageText(chatId: number, messageId: number, html: string, buttons?: InlineButton[][], preview?: string | null) {
     return this.call<TgMessage | true>("editMessageText", {
       chat_id: chatId,
       message_id: messageId,
       text: html,
       parse_mode: "HTML",
-      link_preview_options: { is_disabled: true },
+      link_preview_options: previewOptions(preview),
       reply_markup: buttons ? { inline_keyboard: buttons } : undefined,
     });
   }

@@ -29,6 +29,7 @@ import { Concierge, CONCIERGE_PREFIX } from "./support/concierge.js";
 import { SupportDesk, SUPPORT_PREFIX } from "./support/desk.js";
 import { SupportReview } from "./support/review.js";
 import { NotifyCenter, NOTIFY_OPEN, NOTIFY_SET } from "./notify.js";
+import { anthropicPicker, parseUsers, TelegramBridge } from "./telegram/bridge.js";
 
 async function main() {
   setLogLevel(config.logLevel());
@@ -68,6 +69,7 @@ async function main() {
   let concierge: Concierge | null = null;
   let review: SupportReview | null = null;
   let notify: NotifyCenter | null = null;
+  let telegram: TelegramBridge | null = null;
   let live: LiveAnnouncer | null = null;
   const funnel = new Funnel(db, guildId);
 
@@ -146,6 +148,19 @@ async function main() {
       const healthHours = Number(process.env.VERIFY_HEALTH_HOURS ?? 12);
       setInterval(() => void runHealth().catch((e) => log.warn("affiliate health check failed", errInfo(e))), healthHours * 3_600_000).unref();
 
+      // The Daily High: one Telegram group <-> the English general, bitcoin, stocks and crypto channels.
+      const tgToken = process.env.TELEGRAM_BRIDGE_TOKEN?.trim();
+      if (tgToken) {
+        const chat = process.env.TELEGRAM_BRIDGE_CHAT_ID?.trim();
+        telegram = new TelegramBridge({
+          guild, db, groups, token: tgToken,
+          users: parseUsers(process.env.TELEGRAM_BRIDGE_USERS),
+          chatId: chat ? Number(chat) : undefined,
+          model: process.env.ANTHROPIC_API_KEY && process.env.TELEGRAM_CLASSIFIER !== "off" ? anthropicPicker() : undefined,
+        });
+        await telegram.start().catch((e) => { log.error("telegram bridge failed to start", errInfo(e)); telegram = null; });
+      }
+
       await guild.commands.set(commandDefinitions);
       log.info("ready", { guild: guild.name, groups: groups.groups.length, provider: primary.id, fallbacks: fallbacks.map((f) => f.id) });
       await mirror.backfill(config.backfillLimit());
@@ -174,13 +189,14 @@ async function main() {
 
   client.on(Events.MessageCreate, (m) => {
     mirror?.onCreate(m);
+    telegram?.onDiscordCreate(m);
     void support?.onMessage(m).catch((e) => log.error("support message failed", errInfo(e)));
     void concierge?.onMessage(m).catch((e) => log.error("concierge message failed", errInfo(e)));
     void review?.onMessage(m).catch((e) => log.error("support review reply failed", errInfo(e)));
   });
-  client.on(Events.MessageUpdate, (_old, m) => mirror?.onUpdate(m));
-  client.on(Events.MessageDelete, (m) => mirror?.onDelete(m));
-  client.on(Events.MessageBulkDelete, (ms) => ms.forEach((m) => mirror?.onDelete(m)));
+  client.on(Events.MessageUpdate, (_old, m) => { mirror?.onUpdate(m); telegram?.onDiscordUpdate(m); });
+  client.on(Events.MessageDelete, (m) => { mirror?.onDelete(m); telegram?.onDiscordDelete(m); });
+  client.on(Events.MessageBulkDelete, (ms) => ms.forEach((m) => { mirror?.onDelete(m); telegram?.onDiscordDelete(m); }));
   client.on(Events.InteractionCreate, (i) => {
     // The bot sits in more than one server (a test server too); each running copy serves only its own.
     if (i.guildId !== guildId) return;

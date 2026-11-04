@@ -862,7 +862,8 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
   const everyone = guild.roles.everyone.id;
 
   if (tier === "picker") {
-    set(everyone, OverwriteType.Role, P.ViewChannel | P.ReadMessageHistory, 0n);
+    // Denied outright: @everyone may have Add Reactions server-wide, and nobody here has verified yet.
+    set(everyone, OverwriteType.Role, P.ViewChannel | P.ReadMessageHistory, REACT);
     for (const id of langRoleIds) set(id, OverwriteType.Role, 0n, P.ViewChannel);
   } else {
     set(everyone, OverwriteType.Role, 0n, P.ViewChannel);
@@ -893,7 +894,9 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
       // Chat channels say "post" outright: a renamed old channel may deny Send to @everyone, which only the old member role used to undo.
       const chat = P.SendMessages | P.SendMessagesInThreads | P.AddReactions | P.EmbedLinks | P.AttachFiles | P.UseExternalEmojis;
       const react = kind && REACT_SIGNALS.includes(kind) ? REACT : 0n;
-      if (tier === "member") member && set(member, OverwriteType.Role, P.ViewChannel | P.ReadMessageHistory | (readOnly ? react : chat), 0n);
+      // 🤖 bot-alerts denies them outright, so a server-wide @everyone Add Reactions can't leak through.
+      const noReact = kind === "daytrade" ? REACT : 0n;
+      if (tier === "member") member && set(member, OverwriteType.Role, P.ViewChannel | P.ReadMessageHistory | (readOnly ? react : chat), noReact);
     }
   }
   // Every member sees it, whatever their language, and so does someone who hasn't picked one yet.

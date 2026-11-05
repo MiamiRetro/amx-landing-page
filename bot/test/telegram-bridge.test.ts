@@ -115,3 +115,45 @@ test("reaction counts read most-first; Telegram reactions are matched without th
   assert.equal(telegramEmoji(":BLKglow:"), null);
   assert.equal(telegramEmoji("🚀"), null);
 });
+
+test("stories: first look only sets the starting point, then new ones post oldest first", async () => {
+  const { newStoryIds } = await import("../src/telegram/stories.js");
+  assert.deepEqual(newStoryIds([4, 7, 5], null), { post: [], last: 7 });
+  assert.deepEqual(newStoryIds([9, 7, 8], 7), { post: [8, 9], last: 9 });
+  assert.deepEqual(newStoryIds([], 7), { post: [], last: 7 });
+  assert.deepEqual(newStoryIds([], null), { post: [], last: 0 });
+  assert.deepEqual(newStoryIds([1], 0), { post: [1], last: 1 });
+  assert.deepEqual(newStoryIds([3], 7), { post: [], last: 7 });
+});
+
+test("stories: caption, label, link, and the video that fits Discord", async () => {
+  const { storyText, storyLink, pickVideo, STORY_LINE } = await import("../src/telegram/stories.js");
+  assert.equal(storyText(" gm "), `gm\n${STORY_LINE}`);
+  assert.equal(storyText(undefined), STORY_LINE);
+  assert.equal(storyLink("ToneVays", 12), "https://t.me/ToneVays/s/12");
+  const big = { size: 30_000_000, mimeType: "video/mp4" };
+  const mid = { size: 9_000_000, mimeType: "video/mp4" };
+  const small = { size: 2_000_000, mimeType: "video/mp4" };
+  assert.equal(pickVideo(big, [small, mid], 10_000_000), mid);
+  assert.equal(pickVideo(big, [], 10_000_000), null);
+  assert.equal(pickVideo({ size: BigInt(1), mimeType: "image/jpeg" }, [], 10), null);
+});
+
+test("stories: switched on only with all three settings", async () => {
+  const { storiesConfig } = await import("../src/telegram/stories.js");
+  assert.equal(storiesConfig({ TELEGRAM_STORIES_API_ID: "1", TELEGRAM_STORIES_API_HASH: "h" }), null);
+  const c = storiesConfig({ TELEGRAM_STORIES_API_ID: "1", TELEGRAM_STORIES_API_HASH: "h", TELEGRAM_STORIES_SESSION: "s" });
+  assert.deepEqual([c?.peers, c?.channel, c?.pollMs, c?.maxBytes], [["ToneVays"], "general", 300_000, 10 * 1024 * 1024]);
+  assert.equal(storiesConfig({ TELEGRAM_STORIES_API_ID: "1", TELEGRAM_STORIES_API_HASH: "h", TELEGRAM_STORIES_SESSION: "s", TELEGRAM_STORIES_FROM: "off" }), null);
+});
+
+test("a host reply opens with a grey reply bar: ping, excerpt, link back", async () => {
+  const { replyLine, mentionedUsers } = await import("../src/telegram/format.js");
+  const url = "https://discord.com/channels/9/22/33";
+  const line = replyLine("730", "gm **everyone**, BTC looks strong today <:BLKglow:1> https://x.com/a", url);
+  assert.equal(line, `-# ╭ <@730> [gm everyone, BTC looks strong today :BLKglow: 🔗](${url})`);
+  assert.equal(replyLine("730", "a".repeat(80), url), `-# ╭ <@730> [${"a".repeat(60)}…](${url})`);
+  assert.equal(replyLine("730", "", url), "-# ╭ <@730>");
+  assert.equal(telegramToDiscord("Me too mate!", line), `${line}\nMe too mate!\n${VIA_LINE}`);
+  assert.deepEqual(mentionedUsers(line), ["730"]);
+});

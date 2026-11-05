@@ -80,14 +80,35 @@ export function telegramPost(channel: ChannelKey, author: string, bodyHtml: stri
  */
 export function telegramToDiscord(text: string, replyHeader: string | null): string {
   const body = text.trim();
-  // A reply to a member opens with their @mention, on the same line, so they get pinged.
+  // Older posts stored a bare <@id> header; it opens the text on the same line.
   if (replyHeader && /^<@\d+>$/.test(replyHeader)) return [`${replyHeader} ${body}`.trim(), VIA_LINE].join("\n");
   return [replyHeader, body, VIA_LINE].filter(Boolean).join("\n");
 }
 
+/**
+ * Webhooks can't send Discord's native reply, so a host's reply opens with a
+ * small grey line that looks like one: `╭ @Member start of their message…`,
+ * the excerpt linking to it. The mention pings them; the mirror points the
+ * link at each language's own copy.
+ */
+export function replyLine(userId: string, content: string, url: string | null): string {
+  const clean = content
+    .replace(PENDING_LINE, "")
+    .replace(/^-# .*$/gm, "")
+    .replace(/<a?:(\w+):\d+>/g, ":$1:")
+    .replace(/<[@#][!&]?\d+>/g, "")
+    .replace(/https?:\/\/\S+/g, "🔗")
+    .replace(/[*_~`|>\[\]()\\]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const short = clean.length > 60 ? `${clean.slice(0, 60).trimEnd()}…` : clean;
+  const quote = short && url ? ` [${short}](${url})` : short ? ` ${short}` : "";
+  return `-# ╭ <@${userId}>${quote}`;
+}
+
 /** User ids a host post may ping: the member it replies to. */
 export function mentionedUsers(header: string | null | undefined): string[] {
-  const m = header?.match(/^<@(\d+)>$/);
+  const m = header?.match(/<@(\d+)>/);
   return m ? [m[1]] : [];
 }
 

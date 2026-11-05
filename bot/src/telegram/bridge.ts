@@ -695,6 +695,25 @@ export class TelegramBridge {
     return sent.id;
   }
 
+  /**
+   * A host's Telegram story, posted to one bridged channel (general by default)
+   * under their name and picture. The mirror carries it to the language twins.
+   */
+  async postStory(telegram: string, key: ChannelKey, content: string, files: { attachment: Buffer; name: string }[]): Promise<string> {
+    const ch = this.channelOf(key);
+    if (!ch) throw new Error(`no English channel for ${key}`);
+    const user = this.users.find((u) => u.telegram.toLowerCase() === telegram.toLowerCase()) ?? { telegram };
+    const hook = await this.hook(ch, user);
+    const sent = await hook.send({
+      username: sanitizeUsername(this.displayName(user)),
+      avatarURL: this.avatar(user),
+      content: fitDiscord(content),
+      files,
+      allowedMentions: { parse: [] },
+    });
+    return sent.id;
+  }
+
   async onTelegramEdit(msg: TgMessage) {
     if (msg.chat.id !== this.chatId || this.paused) return;
     const user = await this.userFor(msg.from, msg.chat.id);

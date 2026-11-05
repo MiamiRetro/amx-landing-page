@@ -30,6 +30,7 @@ import { SupportDesk, SUPPORT_PREFIX } from "./support/desk.js";
 import { SupportReview } from "./support/review.js";
 import { NotifyCenter, NOTIFY_OPEN, NOTIFY_SET } from "./notify.js";
 import { anthropicPicker, parseUsers, TelegramBridge } from "./telegram/bridge.js";
+import { StoryWatcher, storiesConfig } from "./telegram/stories.js";
 
 async function main() {
   setLogLevel(config.logLevel());
@@ -70,6 +71,7 @@ async function main() {
   let review: SupportReview | null = null;
   let notify: NotifyCenter | null = null;
   let telegram: TelegramBridge | null = null;
+  let stories: StoryWatcher | null = null;
   let live: LiveAnnouncer | null = null;
   const funnel = new Funnel(db, guildId);
 
@@ -159,6 +161,12 @@ async function main() {
           model: process.env.ANTHROPIC_API_KEY && process.env.TELEGRAM_CLASSIFIER !== "off" ? anthropicPicker() : undefined,
         });
         await telegram.start().catch((e) => { log.error("telegram bridge failed to start", errInfo(e)); telegram = null; });
+        // Tone's Telegram stories into general, through a plain Telegram account (bots can't see stories).
+        const sc = storiesConfig(process.env);
+        if (telegram && sc) {
+          stories = new StoryWatcher({ ...sc, bridge: telegram, db, guildId: guild.id });
+          await stories.start().catch((e) => { log.error("telegram stories failed to start", errInfo(e)); stories?.stop(); stories = null; });
+        }
       }
 
       await guild.commands.set(commandDefinitions);
@@ -278,6 +286,7 @@ async function main() {
 
   const shutdown = async (signal: string) => {
     log.info("shutting down", { signal });
+    stories?.stop();
     await client.destroy();
     process.exit(0);
   };

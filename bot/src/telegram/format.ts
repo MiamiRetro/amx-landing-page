@@ -80,7 +80,38 @@ export function telegramPost(channel: ChannelKey, author: string, bodyHtml: stri
  */
 export function telegramToDiscord(text: string, replyHeader: string | null): string {
   const body = text.trim();
+  // A reply to a member opens with their @mention, on the same line, so they get pinged.
+  if (replyHeader && /^<@\d+>$/.test(replyHeader)) return [`${replyHeader} ${body}`.trim(), VIA_LINE].join("\n");
   return [replyHeader, body, VIA_LINE].filter(Boolean).join("\n");
+}
+
+/** User ids a host post may ping: the member it replies to. */
+export function mentionedUsers(header: string | null | undefined): string[] {
+  const m = header?.match(/^<@(\d+)>$/);
+  return m ? [m[1]] : [];
+}
+
+/** Emoji Telegram lets a bot react with (standard reactions). */
+export const TELEGRAM_REACTIONS = new Set([
+  "👍", "👎", "❤", "🔥", "🥰", "👏", "😁", "🤔", "🤯", "😱", "🤬", "😢", "🎉", "🤩", "🤮", "💩", "🙏", "👌", "🕊", "🤡", "🥱", "🥴", "😍", "🐳",
+  "❤‍🔥", "🌚", "🌭", "💯", "🤣", "⚡", "🍌", "🏆", "💔", "🤨", "😐", "🍓", "🍾", "💋", "🖕", "😈", "😴", "😭", "🤓", "👻", "👨‍💻", "👀", "🎃",
+  "🙈", "😇", "😨", "🤝", "✍", "🤗", "🫡", "🎅", "🎄", "☃", "💅", "🤪", "🗿", "🆒", "💘", "🙉", "🦄", "😘", "💊", "🙊", "😎", "👾", "🤷‍♂",
+  "🤷", "🤷‍♀", "😡",
+]);
+
+/** Telegram writes some emoji without the variation selector (❤ not ❤️). */
+export function telegramEmoji(emoji: string): string | null {
+  const plain = emoji.replace(/\uFE0F/g, "");
+  return TELEGRAM_REACTIONS.has(plain) ? plain : null;
+}
+
+/** `❤️ 4 · 🔥 2` from Discord reaction counts, most first; custom emoji show as :name:. */
+export function reactionLine(counts: { emoji: string; count: number }[]): string {
+  return counts
+    .filter((c) => c.count > 0)
+    .sort((a, b) => b.count - a.count)
+    .map((c) => `${escapeHtml(c.emoji)} ${c.count}`)
+    .join(" · ");
 }
 
 /** Header for a Telegram reply that answers a Discord message, in the mirror's own format. */

@@ -38,8 +38,22 @@ export interface TgCallbackQuery {
   data?: string;
 }
 
+export interface TgReactionType {
+  type: string;
+  emoji?: string;
+}
+
+export interface TgMessageReaction {
+  chat: { id: number };
+  message_id: number;
+  user?: TgUser;
+  old_reaction: TgReactionType[];
+  new_reaction: TgReactionType[];
+}
+
 export interface TgUpdate {
   update_id: number;
+  message_reaction?: TgMessageReaction;
   message?: TgMessage;
   edited_message?: TgMessage;
   callback_query?: TgCallbackQuery;
@@ -92,7 +106,7 @@ export class TelegramApi {
   }
 
   getUpdates(offset: number, timeoutSec: number, signal?: AbortSignal) {
-    return this.call<TgUpdate[]>("getUpdates", { offset, timeout: timeoutSec, allowed_updates: ["message", "edited_message", "callback_query"] }, signal);
+    return this.call<TgUpdate[]>("getUpdates", { offset, timeout: timeoutSec, allowed_updates: ["message", "edited_message", "callback_query", "message_reaction"] }, signal);
   }
 
   sendMessage(chatId: number, html: string, opts: { replyTo?: number; buttons?: InlineButton[][]; silent?: boolean; preview?: string | null } = {}) {
@@ -148,6 +162,11 @@ export class TelegramApi {
 
   getChatAdministrators(chatId: number) {
     return this.call<{ user: TgUser; status: string }[]>("getChatAdministrators", { chat_id: chatId });
+  }
+
+  /** Bots may set one reaction per message; null clears it. */
+  setMessageReaction(chatId: number, messageId: number, emoji: string | null) {
+    return this.call<true>("setMessageReaction", { chat_id: chatId, message_id: messageId, reaction: emoji ? [{ type: "emoji", emoji }] : [] });
   }
 
   answerCallbackQuery(id: string, text?: string) {

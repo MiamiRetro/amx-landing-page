@@ -55,8 +55,8 @@ async function main() {
   if (infographics) log.info("infographic translation enabled");
 
   const client = new Client({
-    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildInvites],
-    partials: [Partials.Message, Partials.Channel],
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildInvites, GatewayIntentBits.GuildMessageReactions],
+    partials: [Partials.Message, Partials.Channel, Partials.Reaction, Partials.User],
   });
 
   let mirror: Mirror | null = null;
@@ -194,6 +194,8 @@ async function main() {
     void concierge?.onMessage(m).catch((e) => log.error("concierge message failed", errInfo(e)));
     void review?.onMessage(m).catch((e) => log.error("support review reply failed", errInfo(e)));
   });
+  client.on(Events.MessageReactionAdd, (r, u) => telegram?.onDiscordReaction(r, u));
+  client.on(Events.MessageReactionRemove, (r, u) => telegram?.onDiscordReaction(r, u));
   client.on(Events.MessageUpdate, (_old, m) => { mirror?.onUpdate(m); telegram?.onDiscordUpdate(m); });
   client.on(Events.MessageDelete, (m) => { mirror?.onDelete(m); telegram?.onDiscordDelete(m); });
   client.on(Events.MessageBulkDelete, (ms) => ms.forEach((m) => { mirror?.onDelete(m); telegram?.onDiscordDelete(m); }));

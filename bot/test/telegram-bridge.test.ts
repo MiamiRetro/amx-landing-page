@@ -98,3 +98,20 @@ test("Tone's picture ships with the bot and is found by his Telegram username", 
   assert.ok(avatarFile({ telegram: "ToneVays" })?.endsWith("tonevays.png"));
   assert.equal(avatarFile({ telegram: "nobody_here" }), null);
 });
+
+test("a reply to a member opens with their mention on the same line, and only they can be pinged", async () => {
+  const { mentionedUsers } = await import("../src/telegram/format.js");
+  assert.equal(telegramToDiscord("good question", "<@123>"), `<@123> good question\n${VIA_LINE}`);
+  assert.deepEqual(mentionedUsers("<@123>"), ["123"]);
+  assert.deepEqual(mentionedUsers(null), []);
+  assert.deepEqual(mentionedUsers("[↩](x) **A**: b"), []);
+});
+
+test("reaction counts read most-first; Telegram reactions are matched without the variation selector", async () => {
+  const { reactionLine, telegramEmoji } = await import("../src/telegram/format.js");
+  assert.equal(reactionLine([{ emoji: "🔥", count: 2 }, { emoji: "❤️", count: 4 }, { emoji: ":BLKglow:", count: 1 }, { emoji: "👀", count: 0 }]), "❤️ 4 · 🔥 2 · :BLKglow: 1");
+  assert.equal(telegramEmoji("❤️"), "❤");
+  assert.equal(telegramEmoji("🔥"), "🔥");
+  assert.equal(telegramEmoji(":BLKglow:"), null);
+  assert.equal(telegramEmoji("🚀"), null);
+});

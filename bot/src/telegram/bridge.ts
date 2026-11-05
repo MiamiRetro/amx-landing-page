@@ -119,10 +119,13 @@ export interface BridgeOptions {
   /** Fixed chat id. Without one, a host binds the group by sending /bind there. */
   chatId?: number;
   model?: ModelPick;
+  /** A host's reply that @mentions a Discord member was posted in `channel` (verify nudges hook in here). */
+  onHostReply?: (memberId: string, host: string, channel: ChannelKey) => void;
 }
 
 export class TelegramBridge {
   readonly api: TelegramApi;
+  private onHostReply?: BridgeOptions["onHostReply"];
   private guild: Guild;
   private db: Db;
   private groups: GroupIndex;
@@ -151,6 +154,7 @@ export class TelegramBridge {
     this.groups = opts.groups;
     this.users = opts.users;
     this.model = opts.model;
+    this.onHostReply = opts.onHostReply;
     this.chatId = opts.chatId ?? null;
   }
 
@@ -614,6 +618,8 @@ export class TelegramBridge {
     ];
     const posted = await this.postToDiscord(user, route.channel, route.text, route.header, files);
     this.sticky.set(user.telegram, { channel: route.channel, at: Date.now() });
+    const replied = mentionedUsers(route.header)[0];
+    if (replied) this.onHostReply?.(replied, this.displayName(user), route.channel);
     await this.link(msg.message_id, { d: posted, c: route.channel, own: true, text: route.text, h: route.header, f: files, u: user.telegram }, { t: msg.message_id });
     log.info("telegram → discord", { user: user.telegram, channel: route.channel, by: route.by });
     // The "→ #channel" note with move buttons is off unless TELEGRAM_BRIDGE_NOTES=on (JT, 4 Nov: keep the feed clean).

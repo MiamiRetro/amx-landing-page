@@ -224,6 +224,13 @@ const LOCKED: Record<Lang, string> = {
   ja: "**{topic}** は認証済みメンバー専用です。下でUIDを認証すると、このチャンネルとTrading Floorのすべてのロック中チャンネルが開きます。",
 };
 
+/** The Verify button on its own row, in the member's language: for nudges outside the verify panels. */
+export function verifyButtonRow(lang: Lang = "en") {
+  return new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder().setCustomId(VERIFY_BUTTON).setStyle(ButtonStyle.Primary).setLabel(PANEL[lang].button).setEmoji("🔑"),
+  );
+}
+
 /**
  * The message that carries the verify button. `bitcoin` and `locked` are the same
  * button behind a "verified members only" lead-in, for the lock channels;

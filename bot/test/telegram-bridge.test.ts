@@ -121,6 +121,8 @@ test("stories: first look only sets the starting point, then new ones post oldes
   assert.deepEqual(newStoryIds([4, 7, 5], null), { post: [], last: 7 });
   assert.deepEqual(newStoryIds([9, 7, 8], 7), { post: [8, 9], last: 9 });
   assert.deepEqual(newStoryIds([], 7), { post: [], last: 7 });
+  assert.deepEqual(newStoryIds([], null), { post: [], last: 0 });
+  assert.deepEqual(newStoryIds([1], 0), { post: [1], last: 1 });
   assert.deepEqual(newStoryIds([3], 7), { post: [], last: 7 });
 });
 

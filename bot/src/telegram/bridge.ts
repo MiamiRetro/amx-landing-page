@@ -8,7 +8,11 @@ import {
   type Guild,
   type Message,
   type NewsChannel,
+  type MessageReaction,
   type PartialMessage,
+  type PartialMessageReaction,
+  type PartialUser,
+  type User,
   type TextChannel,
 } from "discord.js";
 import type { Lang } from "../config.js";
@@ -16,7 +20,7 @@ import type { Db } from "../db/index.js";
 import { log, errInfo } from "../log.js";
 import type { GroupIndex } from "../mirror/groups.js";
 import { sanitizeUsername } from "../mirror/webhooks.js";
-import { TelegramApi, TelegramError, type InlineButton, type TgCallbackQuery, type TgMessage, type TgUser } from "./api.js";
+import { TelegramApi, TelegramError, type InlineButton, type TgCallbackQuery, type TgMessage, type TgMessageReaction, type TgUser } from "./api.js";
 import { CHANNELS, classify, explicitTag, isChannelKey, MODEL_PROMPT, parseModelPick, type ChannelKey, type ModelPick, type Route } from "./classify.js";
 import {
   CHANNEL_LABEL,
@@ -24,6 +28,9 @@ import {
   discordToTelegram,
   fitDiscord,
   fitTelegram,
+  mentionedUsers,
+  reactionLine,
+  telegramEmoji,
   splitReplyHeader,
   telegramPost,
   telegramToDiscord,
@@ -335,7 +342,7 @@ export class TelegramBridge {
     return null;
   }
 
-  private async render(message: Message, key: ChannelKey) {
+  private async render(message: Message, key: ChannelKey, withReactions = false) {
     const { parent, rest } = splitReplyHeader(message.content);
     const lang = await this.sourceLang(message);
     const author = message.member?.displayName ?? message.author.displayName ?? message.author.username;
@@ -352,7 +359,11 @@ export class TelegramBridge {
     // Mirror copies carry the original author's avatar on the webhook message.
     // Otherwise links in the text get Telegram's own preview (TradingView charts show the chart).
     const avatar = this.avatars ? (message.member ?? message.author).displayAvatarURL({ extension: "png", size: 128 }) : "auto";
-    return { html: telegramPost(key, author, body, lang), image: images[0]?.url ?? null, avatar, parentId, empty: !body && !images.length };
+    // A new message has no reactions yet; counting them means fetching every twin.
+    const counts = withReactions ? await this.reactionCounts(message) : [];
+    const line = reactionLine(counts);
+    const html = telegramPost(key, author, body, lang) + (line ? `\n<i>${line}</i>` : "");
+    return { html, image: images[0]?.url ?? null, avatar, parentId, counts, empty: !body && !images.length };
   }
 
   onDiscordCreate(message: Message) {
@@ -374,18 +385,118 @@ export class TelegramBridge {
     if (message.partial || !message.editedTimestamp) return;
     const key = this.forwardable(message);
     if (!key) return;
-    void (async () => {
-      const entry = await this.getD(message.id);
-      if (!entry) return;
-      const r = await this.render(message, key);
-      const chat = this.chatId!;
-      await this.send(() => entry.k === "photo"
-        ? this.api.editMessageCaption(chat, entry.t, fitTelegram(r.html, 1024))
-        : this.api.editMessageText(chat, entry.t, fitTelegram(r.html, 4096), undefined, r.avatar));
-    })().catch((e) => {
+    void this.refresh(message, key).catch((e) => {
       if (e instanceof TelegramError && /not modified/i.test(e.description)) return;
       log.warn("telegram edit failed", { id: message.id, ...errInfo(e) });
     });
+  }
+
+  /** Re-renders a forwarded message's Telegram copy (after an edit or a reaction). */
+  private async refresh(message: Message, key: ChannelKey) {
+    const entry = await this.getD(message.id);
+    if (!entry) return;
+    const chat = this.chatId!;
+    const own = (await this.getT(entry.t))?.own;
+    if (own) {
+      // A host's own Telegram message can't be edited by the bot; it gets the bot's one reaction instead.
+      const counts = await this.reactionCounts(message);
+      const top = counts.sort((a, b) => b.count - a.count).map((c) => telegramEmoji(c.emoji)).find(Boolean) ?? null;
+      await this.send(() => this.api.setMessageReaction(chat, entry.t, top));
+      return;
+    }
+    const r = await this.render(message, key, true);
+    await this.send(() => entry.k === "photo"
+      ? this.api.editMessageCaption(chat, entry.t, fitTelegram(r.html, 1024))
+      : this.api.editMessageText(chat, entry.t, fitTelegram(r.html, 4096), undefined, r.avatar));
+  }
+
+  // ---------- reactions ----------
+
+  /**
+   * All copies of a message across the language twins: the original plus
+   * every mirror. Reactions are counted over all of them.
+   */
+  private async twins(message: Message): Promise<{ channelId: string; id: string }[]> {
+    const row = await this.db.sourceOf(message.id).catch(() => null);
+    const source = row ? { channelId: row.source_channel_id, id: row.source_message_id } : { channelId: message.channelId, id: message.id };
+    const mirrors = await this.db.mirrorsOf(source.id).catch(() => []);
+    return [source, ...mirrors.map((m) => ({ channelId: m.target_channel_id, id: m.mirror_message_id }))];
+  }
+
+  /** Reaction counts summed over all twins, leaving out the bot's own (echoes of Telegram reactions). */
+  private async reactionCounts(message: Message): Promise<{ emoji: string; count: number }[]> {
+    const totals = new Map<string, number>();
+    for (const t of await this.twins(message)) {
+      const m = t.id === message.id ? message : await this.fetchDiscord(t.channelId, t.id);
+      for (const r of m?.reactions.cache.values() ?? []) {
+        const name = r.emoji.id ? `:${r.emoji.name}:` : r.emoji.name ?? "";
+        const n = r.count - (r.me ? 1 : 0);
+        if (name && n > 0) totals.set(name, (totals.get(name) ?? 0) + n);
+      }
+    }
+    return [...totals].map(([emoji, count]) => ({ emoji, count }));
+  }
+
+  private reactionTimers = new Map<string, NodeJS.Timeout>();
+
+  /** A member reacted (or un-reacted) in one of the bridged groups, in any language. */
+  onDiscordReaction(reaction: MessageReaction | PartialMessageReaction, user: User | PartialUser) {
+    if (this.paused || this.chatId == null || user.bot) return;
+    const hit = this.groups.lookup(reaction.message.channelId);
+    if (!hit || !isChannelKey(hit.group.name.toLowerCase())) return;
+    const key = hit.group.name.toLowerCase() as ChannelKey;
+    const english = this.channelOf(key);
+    if (!english) return;
+    const id = reaction.message.id;
+    clearTimeout(this.reactionTimers.get(id));
+    // Bursts of reactions become one Telegram edit.
+    this.reactionTimers.set(id, setTimeout(() => {
+      this.reactionTimers.delete(id);
+      void (async () => {
+        const msg = reaction.message.partial ? await reaction.message.fetch() : reaction.message;
+        // Find the English copy: the one the Telegram message is linked to.
+        const copy = (await this.twins(msg as Message)).find((t) => t.channelId === english);
+        if (!copy) return;
+        const target = copy.id === msg.id ? (msg as Message) : await this.fetchDiscord(english, copy.id);
+        if (target) await this.refresh(target, key);
+      })().catch((e) => {
+        if (e instanceof TelegramError && /not modified/i.test(e.description)) return;
+        log.warn("telegram reaction sync failed", { id, ...errInfo(e) });
+      });
+    }, 3_000));
+  }
+
+  /** Telegram users reacting, per Discord message and emoji, so the bot's echo goes when the last one un-reacts. */
+  private tgReactors = new Map<string, Set<number>>();
+
+  async onTelegramReaction(r: TgMessageReaction) {
+    if (r.chat.id !== this.chatId || this.paused || !r.user) return;
+    if (!(await this.userFor(r.user, r.chat.id))) return;
+    const entry = await this.getT(r.message_id);
+    const ch = entry ? this.channelOf(entry.c) : null;
+    if (!entry || !ch) return;
+    const before = new Set(r.old_reaction.filter((x) => x.type === "emoji").map((x) => x.emoji!));
+    const after = new Set(r.new_reaction.filter((x) => x.type === "emoji").map((x) => x.emoji!));
+    const msg = await this.fetchDiscord(ch, entry.d);
+    if (!msg) return;
+    for (const e of after) {
+      if (before.has(e)) continue;
+      const k = `${entry.d}:${e}`;
+      const set = this.tgReactors.get(k) ?? new Set<number>();
+      set.add(r.user.id);
+      this.tgReactors.set(k, set);
+      await msg.react(e).catch((err) => log.warn("discord react failed", { emoji: e, ...errInfo(err) }));
+    }
+    for (const e of before) {
+      if (after.has(e)) continue;
+      const k = `${entry.d}:${e}`;
+      const set = this.tgReactors.get(k);
+      set?.delete(r.user.id);
+      if (set && set.size) continue;
+      this.tgReactors.delete(k);
+      const mine = msg.reactions.cache.find((x) => x.emoji.name === e || x.emoji.name === e.replace(/\uFE0F/g, ""));
+      await mine?.users.remove(this.guild.client.user!.id).catch(() => {});
+    }
   }
 
   onDiscordDelete(message: Message | PartialMessage) {
@@ -416,6 +527,7 @@ export class TelegramBridge {
           offset = u.update_id + 1;
           try {
             if (u.message) await this.onTelegramMessage(u.message);
+            else if (u.message_reaction) await this.onTelegramReaction(u.message_reaction);
             else if (u.edited_message) await this.onTelegramEdit(u.edited_message);
             else if (u.callback_query) await this.onCallback(u.callback_query);
           } catch (e) {
@@ -512,15 +624,13 @@ export class TelegramBridge {
     const tagged = explicitTag(raw);
     // Replies to a bridged message: that message's channel, with a link back to it.
     const replyTo = msg.reply_to_message ? await this.getT(msg.reply_to_message.message_id) : null;
+    // Webhooks can't send native Discord replies, so a reply to a member opens
+    // with their @mention: they get the reply notification, in their own
+    // language channel too (the mirror carries the mention across).
     let header: string | null = null;
     if (replyTo) {
-      const ch = this.channelOf(replyTo.c);
-      const orig = ch ? await this.fetchDiscord(ch, replyTo.d) : null;
-      if (ch) {
-        const name = replyTo.own ? this.displayName(this.owner(replyTo) ?? user) : orig?.member?.displayName ?? orig?.author.displayName ?? orig?.author.username ?? "…";
-        const excerpt = replyTo.own ? replyTo.text ?? "" : splitReplyHeader(orig?.content ?? "").rest;
-        header = discordReplyHeader(this.guild.id, ch, replyTo.d, name, excerpt);
-      }
+      const author = await this.replyAuthor(replyTo);
+      header = author ? `<@${author}>` : null;
     }
     if (tagged) return { channel: tagged.channel, text: tagged.text, by: "tag", header: replyTo && replyTo.c === tagged.channel ? header : null };
     if (replyTo) return { channel: replyTo.c, text: raw, by: "reply", header };
@@ -532,6 +642,18 @@ export class TelegramBridge {
       return { channel: last.channel, text: raw, by: "sticky", header: null };
     }
     return { ...(await classify(raw, this.model)), header: null };
+  }
+
+  /** The Discord member who wrote the message a host is replying to (the original, for a translated copy). */
+  private async replyAuthor(entry: TgEntry): Promise<string | null> {
+    if (entry.own) return this.owner(entry)?.discord ?? null;
+    const ch = this.channelOf(entry.c);
+    const msg = ch ? await this.fetchDiscord(ch, entry.d) : null;
+    if (!msg) return null;
+    if (!msg.webhookId) return msg.author.bot ? null : msg.author.id;
+    const row = await this.db.sourceOf(msg.id).catch(() => null);
+    const src = row ? await this.fetchDiscord(row.source_channel_id, row.source_message_id) : null;
+    return src && !src.webhookId && !src.author.bot ? src.author.id : null;
   }
 
   private async fetchDiscord(channelId: string, id: string): Promise<Message | null> {
@@ -568,7 +690,7 @@ export class TelegramBridge {
       avatarURL: this.avatar(user),
       content: fitDiscord(telegramToDiscord(text, header ?? null)),
       files: attachments,
-      allowedMentions: { parse: [] },
+      allowedMentions: { parse: [], users: mentionedUsers(header) },
     });
     return sent.id;
   }
@@ -582,7 +704,7 @@ export class TelegramBridge {
     const text = explicitTag(raw)?.text ?? raw;
     const ch = this.channelOf(entry.c);
     if (!ch) return;
-    await (await this.hook(ch, this.owner(entry))).editMessage(entry.d, { content: fitDiscord(telegramToDiscord(text, entry.h ?? null)), allowedMentions: { parse: [] } });
+    await (await this.hook(ch, this.owner(entry))).editMessage(entry.d, { content: fitDiscord(telegramToDiscord(text, entry.h ?? null)), allowedMentions: { parse: [], users: mentionedUsers(entry.h) } });
     await this.db.setSetting(this.guild.id, this.tKey(msg.message_id), JSON.stringify({ ...entry, text }));
   }
 

@@ -10,6 +10,7 @@ import { remapForTarget } from "./mirror/render.js";
 import { Semaphore } from "./mirror/queue.js";
 import { Funnel, InviteTracker } from "./funnel.js";
 import { LanguageRoles } from "./roles.js";
+import { VerifyNudge } from "./nudge.js";
 import { handlePickerButton, PICKER_PREFIX } from "./picker.js";
 import { providerFromSpec, Translator } from "./translate/index.js";
 import { InfographicLocalizer, infographicsEnabled } from "./infographic/index.js";
@@ -63,6 +64,7 @@ async function main() {
   let mirror: Mirror | null = null;
   let groups: GroupIndex | null = null;
   let roles: LanguageRoles | null = null;
+  let nudge: VerifyNudge | null = null;
   let verify: VerifyService | null = null;
   let vip: VipTracker | null = null;
   let invites: InviteTracker | null = null;
@@ -87,6 +89,8 @@ async function main() {
 
       roles = new LanguageRoles(guild, db, funnel);
       await roles.load();
+      // Unverified members get steered to the Verify button in general (JT, 5 Nov). VERIFY_NUDGE=off turns it off.
+      if (process.env.VERIFY_NUDGE?.trim() !== "off") nudge = new VerifyNudge({ guild, db, groups, roles, funnel });
 
       // Help-desk threads. Without an Anthropic key every thread goes straight to a moderator.
       const assistant = process.env.ANTHROPIC_API_KEY && process.env.SUPPORT_ASSISTANT !== "off" ? new SupportAssistant() : null;
@@ -159,6 +163,7 @@ async function main() {
           users: parseUsers(process.env.TELEGRAM_BRIDGE_USERS),
           chatId: chat ? Number(chat) : undefined,
           model: process.env.ANTHROPIC_API_KEY && process.env.TELEGRAM_CLASSIFIER !== "off" ? anthropicPicker() : undefined,
+          onHostReply: (member, host, channel) => void nudge?.onHostReply(member, host, channel).catch((e) => log.warn("verify nudge failed", errInfo(e))),
         });
         await telegram.start().catch((e) => { log.error("telegram bridge failed to start", errInfo(e)); telegram = null; });
         // Tone's Telegram stories into general, through a plain Telegram account (bots can't see stories).
@@ -201,6 +206,7 @@ async function main() {
     void support?.onMessage(m).catch((e) => log.error("support message failed", errInfo(e)));
     void concierge?.onMessage(m).catch((e) => log.error("concierge message failed", errInfo(e)));
     void review?.onMessage(m).catch((e) => log.error("support review reply failed", errInfo(e)));
+    void nudge?.onMessage(m).catch((e) => log.warn("verify nudge failed", errInfo(e)));
   });
   client.on(Events.MessageReactionAdd, (r, u) => telegram?.onDiscordReaction(r, u));
   client.on(Events.MessageReactionRemove, (r, u) => telegram?.onDiscordReaction(r, u));

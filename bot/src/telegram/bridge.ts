@@ -29,6 +29,7 @@ import {
   fitDiscord,
   fitTelegram,
   mentionedUsers,
+  replyLine,
   reactionLine,
   telegramEmoji,
   splitReplyHeader,
@@ -635,8 +636,7 @@ export class TelegramBridge {
     // language channel too (the mirror carries the mention across).
     let header: string | null = null;
     if (replyTo) {
-      const author = await this.replyAuthor(replyTo);
-      header = author ? `<@${author}>` : null;
+      header = await this.replyHeader(replyTo);
     }
     if (tagged) return { channel: tagged.channel, text: tagged.text, by: "tag", header: replyTo && replyTo.c === tagged.channel ? header : null };
     if (replyTo) return { channel: replyTo.c, text: raw, by: "reply", header };
@@ -650,16 +650,27 @@ export class TelegramBridge {
     return { ...(await classify(raw, this.model)), header: null };
   }
 
-  /** The Discord member who wrote the message a host is replying to (the original, for a translated copy). */
-  private async replyAuthor(entry: TgEntry): Promise<string | null> {
-    if (entry.own) return this.owner(entry)?.discord ?? null;
+  /**
+   * The line over a host's reply to a Discord message, in the look of Discord's
+   * own reply bar: who wrote it (pinged) and the start of it, linking back.
+   * Null when the message isn't a member's (a bot, a host's own post).
+   */
+  private async replyHeader(entry: TgEntry): Promise<string | null> {
+    if (entry.own) {
+      const d = this.owner(entry)?.discord;
+      return d ? replyLine(d, entry.text ?? "", null) : null;
+    }
     const ch = this.channelOf(entry.c);
     const msg = ch ? await this.fetchDiscord(ch, entry.d) : null;
     if (!msg) return null;
-    if (!msg.webhookId) return msg.author.bot ? null : msg.author.id;
-    const row = await this.db.sourceOf(msg.id).catch(() => null);
-    const src = row ? await this.fetchDiscord(row.source_channel_id, row.source_message_id) : null;
-    return src && !src.webhookId && !src.author.bot ? src.author.id : null;
+    let author: Message | null = msg;
+    if (msg.webhookId) {
+      // A translated copy: ping the original author, quote the copy readers saw.
+      const row = await this.db.sourceOf(msg.id).catch(() => null);
+      author = row ? await this.fetchDiscord(row.source_channel_id, row.source_message_id) : null;
+    }
+    if (!author || author.webhookId || author.author.bot) return null;
+    return replyLine(author.author.id, msg.content || (msg.attachments.size ? "🖼 image" : ""), msg.url);
   }
 
   private async fetchDiscord(channelId: string, id: string): Promise<Message | null> {

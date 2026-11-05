@@ -146,3 +146,14 @@ test("stories: switched on only with all three settings", async () => {
   assert.deepEqual([c?.peers, c?.channel, c?.pollMs, c?.maxBytes], [["ToneVays"], "general", 300_000, 10 * 1024 * 1024]);
   assert.equal(storiesConfig({ TELEGRAM_STORIES_API_ID: "1", TELEGRAM_STORIES_API_HASH: "h", TELEGRAM_STORIES_SESSION: "s", TELEGRAM_STORIES_FROM: "off" }), null);
 });
+
+test("a host reply opens with a grey reply bar: ping, excerpt, link back", async () => {
+  const { replyLine, mentionedUsers } = await import("../src/telegram/format.js");
+  const url = "https://discord.com/channels/9/22/33";
+  const line = replyLine("730", "gm **everyone**, BTC looks strong today <:BLKglow:1> https://x.com/a", url);
+  assert.equal(line, `-# ╭ <@730> [gm everyone, BTC looks strong today :BLKglow: 🔗](${url})`);
+  assert.equal(replyLine("730", "a".repeat(80), url), `-# ╭ <@730> [${"a".repeat(60)}…](${url})`);
+  assert.equal(replyLine("730", "", url), "-# ╭ <@730>");
+  assert.equal(telegramToDiscord("Me too mate!", line), `${line}\nMe too mate!\n${VIA_LINE}`);
+  assert.deepEqual(mentionedUsers(line), ["730"]);
+});

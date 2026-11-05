@@ -62,9 +62,10 @@ export function storiesConfig(env: StoriesEnv) {
  * yet the current ones only set the starting point, so turning this on
  * doesn't dump a day of old stories into general.
  */
-export function newStoryIds(ids: number[], last: number | null): { post: number[]; last: number | null } {
+export function newStoryIds(ids: number[], last: number | null): { post: number[]; last: number } {
   const max = ids.length ? Math.max(...ids) : null;
-  if (last == null) return { post: [], last: max };
+  // No stories up yet still counts as a starting point (0), so the next one posts.
+  if (last == null) return { post: [], last: max ?? 0 };
   const post = ids.filter((id) => id > last).sort((a, b) => a - b);
   return { post, last: max != null && max > last ? max : last };
 }
@@ -146,7 +147,7 @@ export class StoryWatcher {
     const saved = await this.opts.db.getSetting(this.opts.guildId, this.key(peer));
     const { post, last } = newStoryIds(items.map((s) => s.id), saved ? Number(saved) : null);
     if (!post.length) {
-      if (last != null && String(last) !== saved) await this.opts.db.setSetting(this.opts.guildId, this.key(peer), String(last));
+      if (String(last) !== saved) await this.opts.db.setSetting(this.opts.guildId, this.key(peer), String(last));
       return;
     }
     // Lists can hold "skipped" stubs; fetch those in full.

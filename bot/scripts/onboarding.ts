@@ -831,6 +831,9 @@ const modRoleIds = (guild: Guild) => roleIdsNamed(guild, ["Moderators"]);
  * 🟢🟢 alphanumetrix counts as a signal channel, not a bot one. Unverified members get none.
  */
 const REACT = P.AddReactions | P.UseExternalEmojis;
+/** GIF/link previews and file uploads: granted once, server-wide, on the global Members role (JT, 8 Nov). */
+const MEDIA = P.EmbedLinks | P.AttachFiles;
+const MEMBERS_ROLE = "Members";
 const REACT_SIGNALS: Kind[] = ["flagship", "signals"];
 
 function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChannel, lang: Lang | "all", tier: Tier, readOnly: boolean, kind?: Kind): OverwriteResolvable[] {
@@ -849,6 +852,9 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
     if (replaced.has(o.id) || o.id === guild.roles.everyone.id) {
       allow &= ~P.ViewChannel;
       deny &= ~P.ViewChannel;
+      // Link previews and uploads come from the global Members role (stepPerms): an old channel deny on
+      // @everyone or Members would cancel it there. A mute's denies stay (JT, 8 Nov).
+      if (guild.roles.cache.get(o.id)?.name !== "Muted Member") deny &= ~MEDIA;
       if (allow === 0n && deny === 0n) continue;
     }
     out.set(o.id, { id: o.id, type: o.type, allow, deny });
@@ -869,10 +875,6 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
     for (const id of langRoleIds) set(id, OverwriteType.Role, 0n, P.ViewChannel);
   } else {
     set(everyone, OverwriteType.Role, 0n, P.ViewChannel);
-    // Link previews (Tenor/Giphy GIFs, YouTube, X...): the mirror's webhook copies unfurl links with @everyone's
-    // channel permissions, and an old @everyone Embed Links deny carried over would kill them. View stays denied,
-    // so nobody sees the channel through this (JT, 8 Nov).
-    set(everyone, OverwriteType.Role, P.EmbedLinks, 0n);
     for (const l of langs) {
       const base = role(l, "base"), member = role(l, "member");
       // History on, so the Verify panel posted before they arrived is there to read.
@@ -881,11 +883,8 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
         // An open channel allows Send outright, so a leftover @everyone deny can't mute it.
         // History allowed outright too, so an old @everyone history deny can't hide the backlog.
         const allow = (readOnly ? P.ViewChannel : P.ViewChannel | P.SendMessages | P.SendMessagesInThreads) | P.ReadMessageHistory;
-        // Verified members' GIFs and links show previews and they can upload files, as in the other chat channels (JT, 8 Nov).
-        // Unverified members' links stay plain text, so a drive-by spammer gets no preview card.
-        const media = readOnly ? 0n : P.EmbedLinks | P.AttachFiles;
-        base && set(base, OverwriteType.Role, allow, REACT | (readOnly ? 0n : P.EmbedLinks));
-        member && set(member, OverwriteType.Role, allow | media | (!readOnly || kind === "announcements" ? REACT : 0n), 0n);
+        base && set(base, OverwriteType.Role, allow, REACT);
+        member && set(member, OverwriteType.Role, allow | (!readOnly || kind === "announcements" ? REACT : 0n), 0n);
       }
       // The 🔒 stand-ins and verify are only ever seen by unverified members: no reactions there either.
       if (tier === "verify" || tier === "teaser") base && set(base, OverwriteType.Role, 0n, REACT);
@@ -948,6 +947,17 @@ async function stepPerms(ctx: Ctx) {
     if (!role.editable) { log(`  ! can't edit role ${role.name} (above the bot): tick View Audit Log on it by hand`); continue; }
     log(`  role ${role.name}: + View Audit Log`);
     if (ctx.apply) await role.setPermissions(role.permissions.add(P.ViewAuditLog), "Moderators read the audit log");
+  }
+  // Verified members' GIF and link previews and uploads: one server-wide grant on the global Members role,
+  // not an overwrite per language role (JT, 8 Nov). Unverified members keep whatever @everyone has.
+  const members = guild.roles.cache.find((r) => r.name === MEMBERS_ROLE);
+  if (!members) log(`  ! no ${MEMBERS_ROLE} role: Embed Links / Attach Files not granted`);
+  else if (!members.permissions.has(MEDIA)) {
+    if (!members.editable) log(`  ! can't edit role ${members.name} (above the bot): tick Embed Links + Attach Files on it by hand`);
+    else {
+      log(`  role ${members.name}: + Embed Links, + Attach Files`);
+      if (ctx.apply) await members.setPermissions(members.permissions.add(MEDIA), "Verified members get link previews and uploads");
+    }
   }
   for (const c of CATEGORY_SPECS) {
     const cat = guild.channels.cache.find((x): x is CategoryChannel => x.type === ChannelType.GuildCategory && x.name === c.name);

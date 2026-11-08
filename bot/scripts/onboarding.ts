@@ -869,6 +869,10 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
     for (const id of langRoleIds) set(id, OverwriteType.Role, 0n, P.ViewChannel);
   } else {
     set(everyone, OverwriteType.Role, 0n, P.ViewChannel);
+    // Link previews (Tenor/Giphy GIFs, YouTube, X...): the mirror's webhook copies unfurl links with @everyone's
+    // channel permissions, and an old @everyone Embed Links deny carried over would kill them. View stays denied,
+    // so nobody sees the channel through this (JT, 8 Nov).
+    set(everyone, OverwriteType.Role, P.EmbedLinks, 0n);
     for (const l of langs) {
       const base = role(l, "base"), member = role(l, "member");
       // History on, so the Verify panel posted before they arrived is there to read.
@@ -877,8 +881,11 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
         // An open channel allows Send outright, so a leftover @everyone deny can't mute it.
         // History allowed outright too, so an old @everyone history deny can't hide the backlog.
         const allow = (readOnly ? P.ViewChannel : P.ViewChannel | P.SendMessages | P.SendMessagesInThreads) | P.ReadMessageHistory;
-        base && set(base, OverwriteType.Role, allow, REACT);
-        member && set(member, OverwriteType.Role, allow | (!readOnly || kind === "announcements" ? REACT : 0n), 0n);
+        // Verified members' GIFs and links show previews and they can upload files, as in the other chat channels (JT, 8 Nov).
+        // Unverified members' links stay plain text, so a drive-by spammer gets no preview card.
+        const media = readOnly ? 0n : P.EmbedLinks | P.AttachFiles;
+        base && set(base, OverwriteType.Role, allow, REACT | (readOnly ? 0n : P.EmbedLinks));
+        member && set(member, OverwriteType.Role, allow | media | (!readOnly || kind === "announcements" ? REACT : 0n), 0n);
       }
       // The 🔒 stand-ins and verify are only ever seen by unverified members: no reactions there either.
       if (tier === "verify" || tier === "teaser") base && set(base, OverwriteType.Role, 0n, REACT);

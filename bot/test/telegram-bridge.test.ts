@@ -157,3 +157,10 @@ test("a host reply opens with a grey reply bar: ping, excerpt, link back", async
   assert.equal(telegramToDiscord("Me too mate!", line), `${line}\nMe too mate!\n${VIA_LINE}`);
   assert.deepEqual(mentionedUsers(line), ["730"]);
 });
+
+test("bot cards with buttons are never bridged", async () => {
+  const { isBotNotice } = await import("../src/telegram/bridge.js");
+  assert.equal(isBotNotice({ components: [{ type: 1 }] }), true);
+  assert.equal(isBotNotice({ components: [] }), false);
+  assert.equal(isBotNotice({}), false);
+});

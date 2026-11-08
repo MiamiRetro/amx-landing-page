@@ -41,6 +41,8 @@ export interface MirrorDeps {
   applicationId: string;
   /** Set when INFOGRAPHIC_TRANSLATION=1: re-renders tutorial infographics per language. */
   infographics?: InfographicLocalizer;
+  /** Holds a message back (an unverified member's picture under review); true when it was taken. */
+  hold?: (m: Message) => boolean;
 }
 
 export class Mirror {
@@ -63,13 +65,15 @@ export class Mirror {
   }
 
   /** Called on messageCreate. Decides whether the message is ours to mirror. */
-  onCreate(message: Message) {
+  /** `reviewed`: the image gate already passed it, so it isn't held again. */
+  onCreate(message: Message, reviewed = false) {
     // Our own mirrors still move the channel bookmark, so restarts do not re-scan them.
     if (message.webhookId && this.d.groups.isOurWebhook(message.webhookId) && this.d.groups.lookup(message.channelId)) {
       void this.d.db.setLastSeen(message.channelId, message.id).catch(() => {});
       return;
     }
     if (!this.accepts(message)) return;
+    if (!reviewed && this.d.hold?.(message)) return;
     void this.queue.run(message.channelId, async () => {
       if (await this.isOwnMirrorWebhook(message)) return;
       await this.mirrorNew(message).catch((e) => log.error("mirror failed", { id: message.id, ...errInfo(e) }));

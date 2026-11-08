@@ -879,6 +879,9 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
         const allow = (readOnly ? P.ViewChannel : P.ViewChannel | P.SendMessages | P.SendMessagesInThreads) | P.ReadMessageHistory;
         base && set(base, OverwriteType.Role, allow, REACT);
         member && set(member, OverwriteType.Role, allow | (!readOnly || kind === "announcements" ? REACT : 0n), 0n);
+        // Unverified members may attach pictures in general only: the bot reviews each one and keeps trading
+        // charts (src/image-gate.ts). No Embed Links, so pasted links still don't unfurl for them (JT, 8 Nov).
+        if (kind === "general") base && set(base, OverwriteType.Role, P.AttachFiles, 0n);
       }
       // The 🔒 stand-ins and verify are only ever seen by unverified members: no reactions there either.
       if (tier === "verify" || tier === "teaser") base && set(base, OverwriteType.Role, 0n, REACT);

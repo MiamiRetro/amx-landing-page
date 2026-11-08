@@ -11,6 +11,7 @@ import { Semaphore } from "./mirror/queue.js";
 import { Funnel, InviteTracker } from "./funnel.js";
 import { LanguageRoles } from "./roles.js";
 import { VerifyNudge } from "./nudge.js";
+import { ImageGate } from "./image-gate.js";
 import { handlePickerButton, PICKER_PREFIX } from "./picker.js";
 import { providerFromSpec, Translator } from "./translate/index.js";
 import { InfographicLocalizer, infographicsEnabled } from "./infographic/index.js";
@@ -65,6 +66,7 @@ async function main() {
   let groups: GroupIndex | null = null;
   let roles: LanguageRoles | null = null;
   let nudge: VerifyNudge | null = null;
+  let gate: ImageGate | null = null;
   let verify: VerifyService | null = null;
   let vip: VipTracker | null = null;
   let invites: InviteTracker | null = null;
@@ -84,13 +86,18 @@ async function main() {
       await guild.roles.fetch();
       groups = new GroupIndex(db, guildId);
       await groups.reload();
-      mirror = new Mirror({ guild, db, groups, translator, botUserId: c.user.id, applicationId: c.application.id, infographics });
+      mirror = new Mirror({ guild, db, groups, translator, botUserId: c.user.id, applicationId: c.application.id, infographics, hold: (m) => gate?.take(m) ?? false });
       mirror.paused = groups.groups.length > 0 && groups.groups.every((g) => g.paused);
 
       roles = new LanguageRoles(guild, db, funnel);
       await roles.load();
       // Unverified members get steered to the Verify button in general (JT, 5 Nov). VERIFY_NUDGE=off turns it off.
       if (process.env.VERIFY_NUDGE?.trim() !== "off") nudge = new VerifyNudge({ guild, db, groups, roles, funnel });
+      // Unverified members' pictures in general: trading charts stay, the rest goes; both get a Verify card (JT, 8 Nov).
+      if (process.env.ANTHROPIC_API_KEY && process.env.IMAGE_GATE?.trim() !== "off") {
+        const mm = mirror;
+        gate = new ImageGate({ guild, groups, roles, funnel, release: (m) => { mm.onCreate(m, true); telegram?.onDiscordCreate(m); } });
+      }
 
       // Help-desk threads. Without an Anthropic key every thread goes straight to a moderator.
       const assistant = process.env.ANTHROPIC_API_KEY && process.env.SUPPORT_ASSISTANT !== "off" ? new SupportAssistant() : null;
@@ -201,6 +208,8 @@ async function main() {
   });
 
   client.on(Events.MessageCreate, (m) => {
+    // An unverified member's picture waits for review before it is mirrored or bridged; the gate sends its own card.
+    if (gate?.take(m)) return;
     mirror?.onCreate(m);
     telegram?.onDiscordCreate(m);
     void support?.onMessage(m).catch((e) => log.error("support message failed", errInfo(e)));

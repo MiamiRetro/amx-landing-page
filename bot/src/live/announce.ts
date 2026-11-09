@@ -62,6 +62,7 @@ export function liveMessage(lang: Lang, s: Stream, roleId?: string): string {
 
 export class LiveAnnouncer {
   private busy = false;
+  private videoBusy = false;
 
   constructor(private guild: Guild, private db: Db) {}
 
@@ -109,27 +110,40 @@ export class LiveAnnouncer {
   }
 
   /** Looks at every watched channel once; a new broadcast gets one alert. */
+  /** Looks at every watched channel once, all at the same time; a new broadcast gets one alert. */
   async check() {
     if (this.busy) return;
     this.busy = true;
     try {
-      for (const w of await this.watches()) {
-        if (!PLATFORMS.includes(w.platform)) continue;
-        const live = await checkLive(w.platform, w.channel).catch((e) => { log.warn("live check failed", { ...w, ...errInfo(e) }); return null; });
-        if (!live) continue;
-        if ((await this.db.getSetting(this.guild.id, seenKey(w))) === live.id) continue;
-        await this.db.setSetting(this.guild.id, seenKey(w), live.id);
-        const last = Number((await this.db.getSetting(this.guild.id, lastKey(w.who))) ?? 0);
-        if (Date.now() - last < COOLDOWN_MS) { log.info("live alert skipped: posted recently", { who: w.who, id: live.id }); continue; }
-        await this.announce({ who: w.who, platform: PLATFORM_LABEL[w.platform], url: live.url, title: live.title });
-      }
-      if (process.env.VIDEO_ALERTS !== "off") {
-        for (const w of (await this.watches()).filter((x) => x.platform === "youtube")) {
-          await this.checkVideos(w).catch((e) => log.warn("video check failed", { ...w, ...errInfo(e) }));
-        }
-      }
+      const watches = (await this.watches()).filter((w) => PLATFORMS.includes(w.platform));
+      await Promise.all(watches.map((w) => this.checkOne(w).catch((e) => log.warn("live check failed", { ...w, ...errInfo(e) }))));
     } finally {
       this.busy = false;
+    }
+  }
+
+  private async checkOne(w: Watch) {
+    const live = await checkLive(w.platform, w.channel);
+    if (!live) return;
+    if ((await this.db.getSetting(this.guild.id, seenKey(w))) === live.id) return;
+    await this.db.setSetting(this.guild.id, seenKey(w), live.id);
+    // How long after the stream started we noticed it, to keep an eye on the delay.
+    const lagSec = live.startedAt ? Math.round((Date.now() - Date.parse(live.startedAt)) / 1000) : null;
+    log.info("live stream detected", { who: w.who, id: live.id, startedAt: live.startedAt, lagSec });
+    const last = Number((await this.db.getSetting(this.guild.id, lastKey(w.who))) ?? 0);
+    if (Date.now() - last < COOLDOWN_MS) { log.info("live alert skipped: posted recently", { who: w.who, id: live.id }); return; }
+    await this.announce({ who: w.who, platform: PLATFORM_LABEL[w.platform], url: live.url, title: live.title });
+  }
+
+  async checkAllVideos() {
+    if (this.videoBusy) return;
+    this.videoBusy = true;
+    try {
+      for (const w of (await this.watches()).filter((x) => x.platform === "youtube")) {
+        await this.checkVideos(w).catch((e) => log.warn("video check failed", { ...w, ...errInfo(e) }));
+      }
+    } finally {
+      this.videoBusy = false;
     }
   }
 
@@ -155,9 +169,22 @@ export class LiveAnnouncer {
     for (const u of fresh.reverse()) await this.announce({ who: w.who, platform: "YouTube", url: u.url, title: u.title, kind: "video" });
   }
 
-  start(minutes = 2) {
-    const run = () => void this.check().catch((e) => log.warn("live watch failed", errInfo(e)));
-    run();
-    setInterval(run, minutes * 60_000).unref();
+  /**
+   * Live checks run every LIVE_POLL_SEC seconds (default 30) so an alert lands
+   * within about half a minute of YouTube showing the stream; new-video checks
+   * are less urgent and run every 3 minutes.
+   */
+  start() {
+    const liveSec = Math.max(15, Number(process.env.LIVE_POLL_SEC ?? 30));
+    const live = () => void this.check().catch((e) => log.warn("live watch failed", errInfo(e)));
+    live();
+    setInterval(live, liveSec * 1000).unref();
+    if (process.env.VIDEO_ALERTS !== "off") {
+      const videos = () => void this.checkAllVideos().catch((e) => log.warn("video watch failed", errInfo(e)));
+      videos();
+      setInterval(videos, 3 * 60_000).unref();
+    }
+    log.info("live watch on", { liveSec });
   }
+
 }

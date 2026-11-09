@@ -9,7 +9,7 @@ const page = (live: boolean) => `<html><head><link rel="canonical" href="https:/
 <script>var ytInitialPlayerResponse = {"videoDetails":{"videoId":"dQw4w9WgXcQ"},"microformat":{"playerMicroformatRenderer":{"liveBroadcastDetails":{"isLiveNow":${live},"startTimestamp":"2026-11-02T10:00:00+00:00"}}}};</script></html>`;
 
 test("a YouTube /live page on air gives the broadcast, a scheduled or idle one gives nothing", () => {
-  assert.deepEqual(parseYoutubeLive(page(true)), { id: "dQw4w9WgXcQ", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", title: "BTC & alts: weekly outlook 'live'" });
+  assert.deepEqual(parseYoutubeLive(page(true)), { id: "dQw4w9WgXcQ", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", title: "BTC & alts: weekly outlook 'live'", startedAt: "2026-11-02T10:00:00+00:00" });
   assert.equal(parseYoutubeLive(page(false)), null);
   assert.equal(parseYoutubeLive(`<link rel="canonical" href="https://www.youtube.com/@someone">`), null);
 });
@@ -54,4 +54,12 @@ test("a new-video alert reads differently from a live one", () => {
     liveMessage("es", { who: "Tone", platform: "YouTube", url: "https://youtu.be/x", title: "Plan", kind: "video" }, "9"),
     "<@&9> 🎬 **NUEVO VIDEO** · **Tone** · YouTube\n> Plan\nMíralo ya: https://youtu.be/x",
   );
+});
+
+test("a stream the player marks live counts too, and its start time comes back for the delay log", () => {
+  const html = `<link rel="canonical" href="https://www.youtube.com/watch?v=dQw4w9WgXcQ"><script>{"videoDetails":{"videoId":"dQw4w9WgXcQ","thumbnail":{"thumbnails":[{"url":"x"}]},"isLive":true},"microformat":{"playerMicroformatRenderer":{"liveBroadcastDetails":{"startTimestamp":"2026-11-09T00:00:00+00:00"}}}}</script>`;
+  const live = parseYoutubeLive(html);
+  assert.equal(live?.id, "dQw4w9WgXcQ");
+  assert.equal(live?.startedAt, "2026-11-09T00:00:00+00:00");
+  assert.equal(parseYoutubeLive(page(true))?.startedAt, "2026-11-02T10:00:00+00:00");
 });

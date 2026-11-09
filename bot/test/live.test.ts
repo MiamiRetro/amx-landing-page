@@ -63,3 +63,15 @@ test("a stream the player marks live counts too, and its start time comes back f
   assert.equal(live?.startedAt, "2026-11-09T00:00:00+00:00");
   assert.equal(parseYoutubeLive(page(true))?.startedAt, "2026-11-02T10:00:00+00:00");
 });
+
+test("a page for a scheduled, a finished or a plain video says so, so the watcher knows what to recheck", async () => {
+  const { probeYoutubePage } = await import("../src/live/detect.js");
+  const upcoming = probeYoutubePage(`<link rel="canonical" href="https://www.youtube.com/live/AAAAAAAAAAA"><script>{"videoDetails":{"videoId":"AAAAAAAAAAA","isUpcoming":true},"liveBroadcastDetails":{"isLiveNow":false,"startTimestamp":"2026-11-10T00:00:00+00:00"}}</script>`);
+  assert.deepEqual([upcoming.videoId, upcoming.upcoming, upcoming.ended, upcoming.stream, upcoming.live], ["AAAAAAAAAAA", true, false, true, null]);
+  const ended = probeYoutubePage(`<script>{"videoDetails":{"videoId":"BBBBBBBBBBB"},"liveBroadcastDetails":{"isLiveNow":false,"startTimestamp":"2026-11-08T00:00:00+00:00","endTimestamp":"2026-11-08T02:00:00+00:00"}}</script>`);
+  assert.deepEqual([ended.videoId, ended.ended, ended.stream], ["BBBBBBBBBBB", true, true]);
+  const upload = probeYoutubePage(`<script>{"videoDetails":{"videoId":"CCCCCCCCCCC"}}</script>`);
+  assert.deepEqual([upload.stream, upload.player, upload.live], [false, true, null]);
+  const consent = probeYoutubePage(`<html>Before you continue to YouTube</html>`);
+  assert.equal(consent.player, false);
+});

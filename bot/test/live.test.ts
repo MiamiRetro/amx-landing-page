@@ -75,3 +75,15 @@ test("a page for a scheduled, a finished or a plain video says so, so the watche
   const consent = probeYoutubePage(`<html>Before you continue to YouTube</html>`);
   assert.equal(consent.player, false);
 });
+
+test("a scheduled stream's heads-up shows the start as a Discord timestamp in every language", async () => {
+  const { SOON_TEXT } = await import("../src/live/announce.js");
+  for (const l of LANGS) assert.ok(SOON_TEXT[l]?.soon && SOON_TEXT[l]?.starts, l);
+  assert.equal(
+    liveMessage("en", { who: "Finsum", platform: "YouTube", url: "https://youtu.be/x", title: "Daily High", kind: "soon", startsAt: "2026-11-09T12:00:00Z" }, "7"),
+    "<@&7> ⏰ **STARTING SOON** · **Finsum** · YouTube\n> Daily High\nStarts <t:1794225600:R> (<t:1794225600:t>): https://youtu.be/x",
+  );
+  const { probeYoutubePage } = await import("../src/live/detect.js");
+  const p = probeYoutubePage(`<script>{"videoDetails":{"videoId":"AAAAAAAAAAA","isUpcoming":true},"liveStreamOfflineSlateRenderer":{"scheduledStartTime":"1794225600"}}</script>`);
+  assert.equal(p.scheduledAt, "2026-11-09T12:00:00.000Z");
+});

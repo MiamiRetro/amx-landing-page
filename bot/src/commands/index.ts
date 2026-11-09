@@ -422,7 +422,7 @@ async function liveCommand(i: ChatInputCommandInteraction, d: CommandDeps): Prom
     const w = { who: i.options.getString("who", true).trim(), platform: i.options.getString("platform", true) as WatchPlatform, channel: i.options.getString("channel", true).trim() };
     await d.live.watch(w);
     const note = w.platform === "twitch" && !twitchConfigured() ? "\n⚠️ Twitch checks need TWITCH_CLIENT_ID and TWITCH_CLIENT_SECRET in the bot's variables; until then this watch does nothing." : "";
-    return `Watching ${w.who} on ${PLATFORM_LABEL[w.platform]} (\`${w.channel}\`). The bot checks every 2 minutes and posts once per stream${w.platform === "youtube" ? ", plus each new full-length video (never shorts)" : ""}.${note}`;
+    return `Watching ${w.who} on ${PLATFORM_LABEL[w.platform]} (\`${w.channel}\`). The bot checks every 30 seconds and posts once per stream${w.platform === "youtube" ? ", plus each new full-length video (never shorts)" : ""}.${note}`;
   }
   if (sub === "unwatch") {
     const ok = await d.live.unwatch(i.options.getString("who", true).trim(), i.options.getString("platform", true) as WatchPlatform);

@@ -4,7 +4,7 @@ import type { Db } from "../db/index.js";
 import { groupTargets } from "../lib/groupHooks.js";
 import { errInfo, log } from "../log.js";
 import { notifyRole } from "../notify.js";
-import { checkLive, PLATFORM_LABEL, PLATFORMS, youtubeApiLive, youtubeChannelId, youtubeLiveProbe, youtubeLongUploads, youtubeStreamCandidates, youtubeVideoProbe, type LiveNow, type WatchPlatform } from "./detect.js";
+import { checkLive, PLATFORM_LABEL, PLATFORMS, youtubeApiLive, youtubeChannelId, youtubeLiveProbe, youtubeLongUploads, youtubeStreamCandidates, youtubeVideoProbe, type LiveNow, type Upcoming, type WatchPlatform } from "./detect.js";
 
 /** Where go-live alerts go: every language's announcements channel. */
 export const LIVE_GROUP = "announcements";
@@ -15,7 +15,11 @@ const lastKey = (who: string) => `live:last:${who.toLowerCase()}`;
 const COOLDOWN_MS = 2 * 60 * 60_000;
 
 export interface Watch { who: string; platform: WatchPlatform; channel: string }
-export interface Stream { who: string; platform: string; url: string; title?: string; kind?: "live" | "video" }
+export interface Stream { who: string; platform: string; url: string; title?: string; kind?: "live" | "video" | "soon"; startsAt?: string }
+
+const soonKey = (id: string) => `live:soon:${id}`;
+/** A scheduled stream gets its heads-up this long before it starts. */
+const HEADS_UP_MS = 10 * 60_000;
 
 const channelIdKey = (handle: string) => `live:ytid:${handle.toLowerCase()}`;
 const videosKey = (channelId: string) => `live:videos:${channelId}`;
@@ -50,11 +54,28 @@ export const VIDEO_TEXT: Record<Lang, { video: string; watch: string }> = {
   ja: { video: "新着動画", watch: "今すぐ見る：" },
 };
 
+/** "STARTING SOON" and the words before the start time, per language. The time is a Discord timestamp, shown in each reader's own language and time zone. */
+export const SOON_TEXT: Record<Lang, { soon: string; starts: string }> = {
+  en: { soon: "STARTING SOON", starts: "Starts" },
+  zh: { soon: "即将开播", starts: "开播时间" },
+  ko: { soon: "곧 시작", starts: "시작" },
+  id: { soon: "SEGERA MULAI", starts: "Mulai" },
+  vi: { soon: "SẮP BẮT ĐẦU", starts: "Bắt đầu" },
+  es: { soon: "EMPIEZA PRONTO", starts: "Empieza" },
+  pt: { soon: "COMEÇA EM BREVE", starts: "Começa" },
+  tr: { soon: "BİRAZDAN BAŞLIYOR", starts: "Başlangıç" },
+  ru: { soon: "СКОРО НАЧАЛО", starts: "Начало" },
+  ja: { soon: "まもなく配信開始", starts: "開始" },
+};
+
 /** One language's alert. The link stays bare so Discord shows the player under it. */
 export function liveMessage(lang: Lang, s: Stream, roleId?: string): string {
+  const unix = s.startsAt ? Math.floor(Date.parse(s.startsAt) / 1000) : 0;
   const [icon, head, cta] = s.kind === "video"
     ? ["🎬", (VIDEO_TEXT[lang] ?? VIDEO_TEXT.en).video, (VIDEO_TEXT[lang] ?? VIDEO_TEXT.en).watch]
-    : ["🔴", (LIVE_TEXT[lang] ?? LIVE_TEXT.en).live, (LIVE_TEXT[lang] ?? LIVE_TEXT.en).join];
+    : s.kind === "soon"
+      ? ["⏰", (SOON_TEXT[lang] ?? SOON_TEXT.en).soon, `${(SOON_TEXT[lang] ?? SOON_TEXT.en).starts} <t:${unix}:R> (<t:${unix}:t>):`]
+      : ["🔴", (LIVE_TEXT[lang] ?? LIVE_TEXT.en).live, (LIVE_TEXT[lang] ?? LIVE_TEXT.en).join];
   const where = s.platform ? ` · ${s.platform}` : "";
   const title = s.title?.trim() ? `\n> ${s.title.trim().replace(/\s+/g, " ").slice(0, 200)}` : "";
   return `${roleId ? `<@&${roleId}> ` : ""}${icon} **${head}** · **${s.who}**${where}${title}\n${cta} ${s.url}`;
@@ -90,7 +111,7 @@ export class LiveAnnouncer {
         log.warn("live alert failed", { channel: t.channelId, lang: t.lang, ...errInfo(e) });
       }
     }
-    if (s.kind !== "video") await this.db.setSetting(this.guild.id, lastKey(s.who), String(Date.now()));
+    if (!s.kind || s.kind === "live") await this.db.setSetting(this.guild.id, lastKey(s.who), String(Date.now()));
     log.info("live alert posted", { kind: s.kind ?? "live", who: s.who, platform: s.platform, url: s.url, channels: posted.length });
     return posted;
   }
@@ -135,6 +156,9 @@ export class LiveAnnouncer {
     // 1. The channel's /live page: usually the stream on air.
     const probe = await youtubeLiveProbe(w.channel).catch((e) => { log.warn("live page check failed", { ...w, ...errInfo(e) }); return null; });
     if (probe?.live) return this.onAir(w, probe.live);
+    if (probe?.upcoming && probe.videoId && probe.scheduledAt) {
+      await this.headsUp(w, { id: probe.videoId, url: `https://www.youtube.com/watch?v=${probe.videoId}`, title: "", scheduledAt: probe.scheduledAt });
+    }
     const shows = probe ? `${probe.videoId ?? "-"}:${probe.player ? "" : "noplayer:"}${probe.upcoming ? "upcoming" : probe.ended ? "ended" : "idle"}` : "error";
     if (this.lastShown.get(w.channel) !== shows) { this.lastShown.set(w.channel, shows); log.info("live page shows no stream on air", { who: w.who, shows }); }
     // 2. The /live page can show a scheduled stream while another is on air: check the newest broadcasts one by one.
@@ -145,15 +169,30 @@ export class LiveAnnouncer {
     const api = await youtubeApiLive(ids).catch((e) => { log.warn("youtube api check failed", { ...w, ...errInfo(e) }); return null; });
     if (api) {
       api.done.forEach((id) => this.done.add(id));
+      for (const u of api.upcoming) await this.headsUp(w, u);
       if (api.live[0]) await this.onAir(w, api.live[0], "api");
       return;
     }
     for (const id of ids) {
       const p = await youtubeVideoProbe(id);
       if (p.live) return this.onAir(w, p.live, "watch page");
+      if (p.upcoming && p.scheduledAt) await this.headsUp(w, { id, url: `https://www.youtube.com/watch?v=${id}`, title: "", scheduledAt: p.scheduledAt });
       if (!p.player) { log.warn("youtube served no player data", { who: w.who, id }); return; }
       if (p.ended || !p.stream) this.done.add(id);
     }
+  }
+
+  /**
+   * A scheduled stream gets one "starting soon" alert once it is due within 10
+   * minutes. A stream that starts without a schedule only gets the live alert.
+   */
+  private async headsUp(w: Watch, u: Upcoming) {
+    const due = Date.parse(u.scheduledAt) - Date.now();
+    if (!(due > 0 && due <= HEADS_UP_MS)) return;
+    if (await this.db.getSetting(this.guild.id, soonKey(u.id))) return;
+    await this.db.setSetting(this.guild.id, soonKey(u.id), u.scheduledAt);
+    log.info("scheduled stream heads-up", { who: w.who, id: u.id, scheduledAt: u.scheduledAt });
+    await this.announce({ who: w.who, platform: PLATFORM_LABEL[w.platform], url: u.url, title: u.title, kind: "soon", startsAt: u.scheduledAt });
   }
 
   private async channelId(w: Watch): Promise<string> {

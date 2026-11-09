@@ -12,7 +12,7 @@
 export const PLATFORMS = ["youtube", "twitch"] as const;
 export type WatchPlatform = (typeof PLATFORMS)[number];
 
-export interface LiveNow { id: string; url: string; title: string }
+export interface LiveNow { id: string; url: string; title: string; startedAt?: string }
 
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36";
 
@@ -33,17 +33,21 @@ function decodeEntities(s: string): string {
 
 /** Reads a channel's /live page: the broadcast when one is on air, null otherwise. */
 export function parseYoutubeLive(html: string): LiveNow | null {
-  if (!/"isLiveNow":\s*true/.test(html)) return null;
+  // The player marks a running broadcast both ways; either is enough.
+  const details = html.indexOf('"videoDetails":{');
+  const playerLive = details >= 0 && /"isLive":\s*true/.test(html.slice(details, details + 8000));
+  if (!/"isLiveNow":\s*true/.test(html) && !playerLive) return null;
   const id = html.match(/<link rel="canonical" href="https:\/\/www\.youtube\.com\/watch\?v=([\w-]{11})"/)?.[1]
     ?? html.match(/"videoDetails":\{"videoId":"([\w-]{11})"/)?.[1];
   if (!id) return null;
   const title = html.match(/<meta name="title" content="([^"]*)"/)?.[1] ?? html.match(/<meta property="og:title" content="([^"]*)"/)?.[1] ?? "";
-  return { id, url: `https://www.youtube.com/watch?v=${id}`, title: decodeEntities(title) };
+  const startedAt = html.match(/"liveBroadcastDetails":\{[^}]*"startTimestamp":"([^"]+)"/)?.[1];
+  return { id, url: `https://www.youtube.com/watch?v=${id}`, title: decodeEntities(title), ...(startedAt ? { startedAt } : {}) };
 }
 
 export async function youtubeLive(channel: string): Promise<LiveNow | null> {
   const res = await fetch(youtubeLivePage(channel), {
-    headers: { "user-agent": UA, "accept-language": "en-US,en;q=0.9", cookie: "SOCS=CAI; CONSENT=YES+1" },
+    headers: { "user-agent": UA, "accept-language": "en-US,en;q=0.9", cookie: "SOCS=CAI; CONSENT=YES+1", "cache-control": "no-cache" },
     signal: AbortSignal.timeout(15_000),
   });
   if (res.status === 404) throw new Error(`YouTube channel not found: ${channel}`);

@@ -4,7 +4,7 @@ import type { Db } from "../db/index.js";
 import { groupTargets } from "../lib/groupHooks.js";
 import { errInfo, log } from "../log.js";
 import { notifyRole } from "../notify.js";
-import { checkLive, PLATFORM_LABEL, PLATFORMS, youtubeChannelId, youtubeLongUploads, type WatchPlatform } from "./detect.js";
+import { checkLive, PLATFORM_LABEL, PLATFORMS, youtubeApiLive, youtubeChannelId, youtubeLiveProbe, youtubeLongUploads, youtubeStreamCandidates, youtubeVideoProbe, type LiveNow, type WatchPlatform } from "./detect.js";
 
 /** Where go-live alerts go: every language's announcements channel. */
 export const LIVE_GROUP = "announcements";
@@ -63,6 +63,10 @@ export function liveMessage(lang: Lang, s: Stream, roleId?: string): string {
 export class LiveAnnouncer {
   private busy = false;
   private videoBusy = false;
+  /** Videos known not to be on air for good: finished streams, plain uploads, shorts. */
+  private done = new Set<string>();
+  /** What each channel's /live page showed last, so a change gets one log line. */
+  private lastShown = new Map<string, string>();
 
   constructor(private guild: Guild, private db: Db) {}
 
@@ -123,13 +127,51 @@ export class LiveAnnouncer {
   }
 
   private async checkOne(w: Watch) {
-    const live = await checkLive(w.platform, w.channel);
-    if (!live) return;
+    if (w.platform !== "youtube") {
+      const live = await checkLive(w.platform, w.channel);
+      if (live) await this.onAir(w, live);
+      return;
+    }
+    // 1. The channel's /live page: usually the stream on air.
+    const probe = await youtubeLiveProbe(w.channel).catch((e) => { log.warn("live page check failed", { ...w, ...errInfo(e) }); return null; });
+    if (probe?.live) return this.onAir(w, probe.live);
+    const shows = probe ? `${probe.videoId ?? "-"}:${probe.player ? "" : "noplayer:"}${probe.upcoming ? "upcoming" : probe.ended ? "ended" : "idle"}` : "error";
+    if (this.lastShown.get(w.channel) !== shows) { this.lastShown.set(w.channel, shows); log.info("live page shows no stream on air", { who: w.who, shows }); }
+    // 2. The /live page can show a scheduled stream while another is on air: check the newest broadcasts one by one.
+    const channelId = await this.channelId(w);
+    const seen = await this.db.getSetting(this.guild.id, seenKey(w));
+    const ids = (await youtubeStreamCandidates(channelId)).map((u) => u.id).filter((id) => id !== seen && !this.done.has(id));
+    if (!ids.length) return;
+    const api = await youtubeApiLive(ids).catch((e) => { log.warn("youtube api check failed", { ...w, ...errInfo(e) }); return null; });
+    if (api) {
+      api.done.forEach((id) => this.done.add(id));
+      if (api.live[0]) await this.onAir(w, api.live[0], "api");
+      return;
+    }
+    for (const id of ids) {
+      const p = await youtubeVideoProbe(id);
+      if (p.live) return this.onAir(w, p.live, "watch page");
+      if (!p.player) { log.warn("youtube served no player data", { who: w.who, id }); return; }
+      if (p.ended || !p.stream) this.done.add(id);
+    }
+  }
+
+  private async channelId(w: Watch): Promise<string> {
+    let id = await this.db.getSetting(this.guild.id, channelIdKey(w.channel));
+    if (!id) {
+      id = await youtubeChannelId(w.channel);
+      await this.db.setSetting(this.guild.id, channelIdKey(w.channel), id);
+    }
+    return id;
+  }
+
+  /** A broadcast is on air: one alert per broadcast, none within the cooldown. */
+  private async onAir(w: Watch, live: LiveNow, via = "live page") {
     if ((await this.db.getSetting(this.guild.id, seenKey(w))) === live.id) return;
     await this.db.setSetting(this.guild.id, seenKey(w), live.id);
     // How long after the stream started we noticed it, to keep an eye on the delay.
     const lagSec = live.startedAt ? Math.round((Date.now() - Date.parse(live.startedAt)) / 1000) : null;
-    log.info("live stream detected", { who: w.who, id: live.id, startedAt: live.startedAt, lagSec });
+    log.info("live stream detected", { who: w.who, id: live.id, via, startedAt: live.startedAt, lagSec });
     const last = Number((await this.db.getSetting(this.guild.id, lastKey(w.who))) ?? 0);
     if (Date.now() - last < COOLDOWN_MS) { log.info("live alert skipped: posted recently", { who: w.who, id: live.id }); return; }
     await this.announce({ who: w.who, platform: PLATFORM_LABEL[w.platform], url: live.url, title: live.title });
@@ -152,11 +194,7 @@ export class LiveAnnouncer {
    * look at a channel only records what is already there.
    */
   async checkVideos(w: Watch) {
-    let channelId = await this.db.getSetting(this.guild.id, channelIdKey(w.channel));
-    if (!channelId) {
-      channelId = await youtubeChannelId(w.channel);
-      await this.db.setSetting(this.guild.id, channelIdKey(w.channel), channelId);
-    }
+    const channelId = await this.channelId(w);
     const uploads = await youtubeLongUploads(channelId);
     const raw = await this.db.getSetting(this.guild.id, videosKey(channelId));
     const seen = new Set<string>(raw ? (JSON.parse(raw) as string[]) : []);

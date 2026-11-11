@@ -321,7 +321,11 @@ export class TelegramBridge {
     };
   }
 
-  /** Mirror copies are forwarded (they carry the other languages); other bots and our own posts are not. */
+  /**
+   * Mirror copies are forwarded (they carry the other languages); other bots and our own posts are not.
+   * Bot notices never go to Telegram (JT, 9 Nov): verify nudges, "host answered you" pings and image-gate
+   * cards are posted by the bot itself, carry a button, or are mirror copies of a bot's post.
+   */
   private forwardable(message: Message): ChannelKey | null {
     if (this.paused || this.chatId == null) return null;
     if (!message.inGuild() || message.guildId !== this.guild.id || message.channel.isThread()) return null;
@@ -331,25 +335,31 @@ export class TelegramBridge {
     if (message.webhookId) {
       if (this.hookIds.has(message.webhookId)) return null;
       if (!this.groups.isOurWebhook(message.webhookId)) return null;
-    } else if (message.author.bot) return null;
+    } else if (message.author.bot || message.system) return null;
+    if (isBotNotice(message)) return null;
     return key;
   }
 
-  /** Language the message was first written in: a mirror copy points back to its source. */
-  private async sourceLang(message: Message): Promise<Lang | null> {
-    if (!message.webhookId) return null;
+  /** Where a mirror copy came from: its language, and whether a bot wrote the original. */
+  private async source(message: Message): Promise<{ lang: Lang | null; bot: boolean }> {
+    if (!message.webhookId) return { lang: null, bot: false };
     // The mirror writes its map row just after the copy lands.
     for (let i = 0; i < 3; i++) {
       const row = await this.db.sourceOf(message.id).catch(() => null);
-      if (row) return this.groups.lookup(row.source_channel_id)?.member.lang ?? null;
+      if (row) {
+        const lang = this.groups.lookup(row.source_channel_id)?.member.lang ?? null;
+        const ch = this.guild.channels.cache.get(row.source_channel_id);
+        const orig = ch?.isTextBased() ? await ch.messages.fetch(row.source_message_id).catch(() => null) : null;
+        return { lang, bot: !!orig && (orig.author.bot && !orig.webhookId || orig.system || isBotNotice(orig)) };
+      }
       await sleep(1500);
     }
-    return null;
+    return { lang: null, bot: false };
   }
 
   private async render(message: Message, key: ChannelKey, withReactions = false) {
     const { parent, rest } = splitReplyHeader(message.content);
-    const lang = await this.sourceLang(message);
+    const { lang, bot } = await this.source(message);
     const author = message.member?.displayName ?? message.author.displayName ?? message.author.username;
     let body = discordToTelegram(rest, this.names());
     const images = [...message.attachments.values()].filter((a) => a.contentType?.startsWith("image/"));
@@ -368,7 +378,7 @@ export class TelegramBridge {
     const counts = withReactions ? await this.reactionCounts(message) : [];
     const line = reactionLine(counts);
     const html = telegramPost(key, author, body, lang) + (line ? `\n<i>${line}</i>` : "");
-    return { html, image: images[0]?.url ?? null, avatar, parentId, counts, empty: !body && !images.length };
+    return { html, image: images[0]?.url ?? null, avatar, parentId, counts, empty: !body && !images.length, bot };
   }
 
   onDiscordCreate(message: Message) {
@@ -376,7 +386,7 @@ export class TelegramBridge {
     if (!key) return;
     void (async () => {
       const r = await this.render(message, key);
-      if (r.empty) return;
+      if (r.empty || r.bot) return;
       const replyTo = r.parentId ? (await this.getD(r.parentId))?.t : undefined;
       const chat = this.chatId!;
       const sent = r.image
@@ -793,4 +803,9 @@ export function anthropicPicker(model = process.env.TELEGRAM_CLASSIFIER_MODEL?.t
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+/** A bot card (Verify button or any other buttons). Members' own messages never carry buttons. */
+export function isBotNotice(m: { components?: readonly unknown[] }): boolean {
+  return (m.components?.length ?? 0) > 0;
 }

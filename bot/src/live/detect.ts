@@ -12,7 +12,7 @@
 export const PLATFORMS = ["youtube", "twitch"] as const;
 export type WatchPlatform = (typeof PLATFORMS)[number];
 
-export interface LiveNow { id: string; url: string; title: string }
+export interface LiveNow { id: string; url: string; title: string; startedAt?: string }
 
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36";
 
@@ -31,24 +31,118 @@ function decodeEntities(s: string): string {
     .replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
 }
 
+export interface LiveProbe {
+  /** The broadcast when one is on air. */
+  live: LiveNow | null;
+  /** The video the page is about, live or not. */
+  videoId?: string;
+  /** The page is a broadcast that hasn't started yet. */
+  upcoming: boolean;
+  /** When a scheduled broadcast is due to start (ISO time). */
+  scheduledAt?: string;
+  /** The page is a broadcast that has finished. */
+  ended: boolean;
+  /** The page carries a stream's details at all (a plain upload or short doesn't). */
+  stream: boolean;
+  /** The page carries player data; without it YouTube served a consent or error page. */
+  player: boolean;
+}
+
+/** Reads a /live or watch page: what it shows, and the broadcast when one is on air. */
+export function probeYoutubePage(html: string): LiveProbe {
+  const details = html.indexOf('"videoDetails":{');
+  const player = details >= 0;
+  // The player marks a running broadcast both ways; either is enough.
+  const playerLive = player && /"isLive":\s*true/.test(html.slice(details, details + 8000));
+  const broadcast = html.match(/"liveBroadcastDetails":\{[^}]*\}/)?.[0] ?? "";
+  const videoId = html.match(/<link rel="canonical" href="https:\/\/www\.youtube\.com\/(?:watch\?v=|live\/)([\w-]{11})"/)?.[1]
+    ?? html.match(/"videoDetails":\{"videoId":"([\w-]{11})"/)?.[1];
+  const onAir = /"isLiveNow":\s*true/.test(html) || playerLive;
+  const scheduled = html.match(/"scheduledStartTime":"(\d+)"/)?.[1];
+  const probe: LiveProbe = {
+    live: null, videoId, player, stream: !!broadcast || playerLive,
+    ...(scheduled && !onAir ? { scheduledAt: new Date(Number(scheduled) * 1000).toISOString() } : {}),
+    upcoming: !onAir && (/"isUpcoming":\s*true/.test(html) || /"scheduledStartTime"/.test(html)),
+    ended: !onAir && /"endTimestamp"/.test(broadcast),
+  };
+  if (!onAir || !videoId) return probe;
+  const title = html.match(/<meta name="title" content="([^"]*)"/)?.[1] ?? html.match(/<meta property="og:title" content="([^"]*)"/)?.[1] ?? "";
+  const startedAt = broadcast.match(/"startTimestamp":"([^"]+)"/)?.[1];
+  probe.live = { id: videoId, url: `https://www.youtube.com/watch?v=${videoId}`, title: decodeEntities(title), ...(startedAt ? { startedAt } : {}) };
+  return probe;
+}
+
 /** Reads a channel's /live page: the broadcast when one is on air, null otherwise. */
 export function parseYoutubeLive(html: string): LiveNow | null {
-  if (!/"isLiveNow":\s*true/.test(html)) return null;
-  const id = html.match(/<link rel="canonical" href="https:\/\/www\.youtube\.com\/watch\?v=([\w-]{11})"/)?.[1]
-    ?? html.match(/"videoDetails":\{"videoId":"([\w-]{11})"/)?.[1];
-  if (!id) return null;
-  const title = html.match(/<meta name="title" content="([^"]*)"/)?.[1] ?? html.match(/<meta property="og:title" content="([^"]*)"/)?.[1] ?? "";
-  return { id, url: `https://www.youtube.com/watch?v=${id}`, title: decodeEntities(title) };
+  return probeYoutubePage(html).live;
+}
+
+async function fetchProbe(url: string): Promise<LiveProbe> {
+  const res = await fetch(url, {
+    headers: { "user-agent": UA, "accept-language": "en-US,en;q=0.9", cookie: "SOCS=CAI; CONSENT=YES+1", "cache-control": "no-cache" },
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (res.status === 404) throw new Error(`YouTube page not found: ${url}`);
+  if (!res.ok) throw new Error(`YouTube ${res.status} for ${url}`);
+  return probeYoutubePage(await res.text());
+}
+
+/** What the channel's /live page shows. */
+export function youtubeLiveProbe(channel: string): Promise<LiveProbe> {
+  return fetchProbe(youtubeLivePage(channel));
+}
+
+/** What one video's watch page shows. */
+export function youtubeVideoProbe(videoId: string): Promise<LiveProbe> {
+  return fetchProbe(`https://www.youtube.com/watch?v=${videoId}`);
 }
 
 export async function youtubeLive(channel: string): Promise<LiveNow | null> {
-  const res = await fetch(youtubeLivePage(channel), {
-    headers: { "user-agent": UA, "accept-language": "en-US,en;q=0.9", cookie: "SOCS=CAI; CONSENT=YES+1" },
-    signal: AbortSignal.timeout(15_000),
-  });
-  if (res.status === 404) throw new Error(`YouTube channel not found: ${channel}`);
-  if (!res.ok) throw new Error(`YouTube ${res.status}`);
-  return parseYoutubeLive(await res.text());
+  return (await youtubeLiveProbe(channel)).live;
+}
+
+/**
+ * The channel's newest broadcasts (UULV: live, upcoming and past streams) and
+ * newest uploads, for when the /live page shows a scheduled stream instead of
+ * the one on air. Newest first, no repeats.
+ */
+export async function youtubeStreamCandidates(channelId: string, perFeed = 3): Promise<Upload[]> {
+  const feeds = [
+    `https://www.youtube.com/feeds/videos.xml?playlist_id=UULV${channelId.slice(2)}`,
+    `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`,
+  ];
+  const lists = await Promise.all(feeds.map(async (url) => {
+    const res = await fetch(url, { headers: { "user-agent": UA, "cache-control": "no-cache" }, signal: AbortSignal.timeout(15_000) });
+    if (res.status === 404) return [];
+    if (!res.ok) throw new Error(`YouTube feed ${res.status}`);
+    return parseFeed(await res.text()).slice(0, perFeed);
+  }));
+  const seen = new Set<string>();
+  return lists.flat().filter((u) => !seen.has(u.id) && seen.add(u.id));
+}
+
+/**
+ * With YOUTUBE_API_KEY set, asks the YouTube Data API (1 quota unit per call)
+ * which of these videos is on air right now. Returns null without a key.
+ */
+export interface Upcoming { id: string; url: string; title: string; scheduledAt: string }
+
+export async function youtubeApiLive(videoIds: string[]): Promise<{ live: LiveNow[]; upcoming: Upcoming[]; done: string[] } | null> {
+  const key = process.env.YOUTUBE_API_KEY;
+  if (!key || !videoIds.length) return key ? { live: [], upcoming: [], done: [] } : null;
+  const q = new URLSearchParams({ part: "snippet,liveStreamingDetails", id: videoIds.join(","), key });
+  const res = await fetch(`https://www.googleapis.com/youtube/v3/videos?${q}`, { signal: AbortSignal.timeout(15_000) });
+  if (!res.ok) throw new Error(`YouTube API ${res.status}`);
+  const items = ((await res.json()) as { items: { id: string; snippet: { title: string; liveBroadcastContent: string }; liveStreamingDetails?: { actualStartTime?: string; actualEndTime?: string; scheduledStartTime?: string } }[] }).items;
+  const live: LiveNow[] = [], upcoming: Upcoming[] = [], done: string[] = [];
+  for (const v of items) {
+    const d = v.liveStreamingDetails;
+    const url = `https://www.youtube.com/watch?v=${v.id}`;
+    if (d?.actualStartTime && !d.actualEndTime) live.push({ id: v.id, url, title: v.snippet.title, startedAt: d.actualStartTime });
+    else if (d?.scheduledStartTime && !d.actualStartTime) upcoming.push({ id: v.id, url, title: v.snippet.title, scheduledAt: d.scheduledStartTime });
+    else if (!d || d.actualEndTime) done.push(v.id);
+  }
+  return { live, upcoming, done };
 }
 
 /** The Twitch login from "name", "@name" or a twitch.tv URL. */

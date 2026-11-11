@@ -9,7 +9,7 @@ const page = (live: boolean) => `<html><head><link rel="canonical" href="https:/
 <script>var ytInitialPlayerResponse = {"videoDetails":{"videoId":"dQw4w9WgXcQ"},"microformat":{"playerMicroformatRenderer":{"liveBroadcastDetails":{"isLiveNow":${live},"startTimestamp":"2026-11-02T10:00:00+00:00"}}}};</script></html>`;
 
 test("a YouTube /live page on air gives the broadcast, a scheduled or idle one gives nothing", () => {
-  assert.deepEqual(parseYoutubeLive(page(true)), { id: "dQw4w9WgXcQ", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", title: "BTC & alts: weekly outlook 'live'" });
+  assert.deepEqual(parseYoutubeLive(page(true)), { id: "dQw4w9WgXcQ", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", title: "BTC & alts: weekly outlook 'live'", startedAt: "2026-11-02T10:00:00+00:00" });
   assert.equal(parseYoutubeLive(page(false)), null);
   assert.equal(parseYoutubeLive(`<link rel="canonical" href="https://www.youtube.com/@someone">`), null);
 });
@@ -54,4 +54,36 @@ test("a new-video alert reads differently from a live one", () => {
     liveMessage("es", { who: "Tone", platform: "YouTube", url: "https://youtu.be/x", title: "Plan", kind: "video" }, "9"),
     "<@&9> 🎬 **NUEVO VIDEO** · **Tone** · YouTube\n> Plan\nMíralo ya: https://youtu.be/x",
   );
+});
+
+test("a stream the player marks live counts too, and its start time comes back for the delay log", () => {
+  const html = `<link rel="canonical" href="https://www.youtube.com/watch?v=dQw4w9WgXcQ"><script>{"videoDetails":{"videoId":"dQw4w9WgXcQ","thumbnail":{"thumbnails":[{"url":"x"}]},"isLive":true},"microformat":{"playerMicroformatRenderer":{"liveBroadcastDetails":{"startTimestamp":"2026-11-09T00:00:00+00:00"}}}}</script>`;
+  const live = parseYoutubeLive(html);
+  assert.equal(live?.id, "dQw4w9WgXcQ");
+  assert.equal(live?.startedAt, "2026-11-09T00:00:00+00:00");
+  assert.equal(parseYoutubeLive(page(true))?.startedAt, "2026-11-02T10:00:00+00:00");
+});
+
+test("a page for a scheduled, a finished or a plain video says so, so the watcher knows what to recheck", async () => {
+  const { probeYoutubePage } = await import("../src/live/detect.js");
+  const upcoming = probeYoutubePage(`<link rel="canonical" href="https://www.youtube.com/live/AAAAAAAAAAA"><script>{"videoDetails":{"videoId":"AAAAAAAAAAA","isUpcoming":true},"liveBroadcastDetails":{"isLiveNow":false,"startTimestamp":"2026-11-10T00:00:00+00:00"}}</script>`);
+  assert.deepEqual([upcoming.videoId, upcoming.upcoming, upcoming.ended, upcoming.stream, upcoming.live], ["AAAAAAAAAAA", true, false, true, null]);
+  const ended = probeYoutubePage(`<script>{"videoDetails":{"videoId":"BBBBBBBBBBB"},"liveBroadcastDetails":{"isLiveNow":false,"startTimestamp":"2026-11-08T00:00:00+00:00","endTimestamp":"2026-11-08T02:00:00+00:00"}}</script>`);
+  assert.deepEqual([ended.videoId, ended.ended, ended.stream], ["BBBBBBBBBBB", true, true]);
+  const upload = probeYoutubePage(`<script>{"videoDetails":{"videoId":"CCCCCCCCCCC"}}</script>`);
+  assert.deepEqual([upload.stream, upload.player, upload.live], [false, true, null]);
+  const consent = probeYoutubePage(`<html>Before you continue to YouTube</html>`);
+  assert.equal(consent.player, false);
+});
+
+test("a scheduled stream's heads-up shows the start as a Discord timestamp in every language", async () => {
+  const { SOON_TEXT } = await import("../src/live/announce.js");
+  for (const l of LANGS) assert.ok(SOON_TEXT[l]?.soon && SOON_TEXT[l]?.starts, l);
+  assert.equal(
+    liveMessage("en", { who: "Finsum", platform: "YouTube", url: "https://youtu.be/x", title: "Daily High", kind: "soon", startsAt: "2026-11-09T12:00:00Z" }, "7"),
+    "<@&7> ⏰ **STARTING SOON** · **Finsum** · YouTube\n> Daily High\nStarts <t:1794225600:R> (<t:1794225600:t>): https://youtu.be/x",
+  );
+  const { probeYoutubePage } = await import("../src/live/detect.js");
+  const p = probeYoutubePage(`<script>{"videoDetails":{"videoId":"AAAAAAAAAAA","isUpcoming":true},"liveStreamOfflineSlateRenderer":{"scheduledStartTime":"1794225600"}}</script>`);
+  assert.equal(p.scheduledAt, "2026-11-09T12:00:00.000Z");
 });

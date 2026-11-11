@@ -831,6 +831,9 @@ const modRoleIds = (guild: Guild) => roleIdsNamed(guild, ["Moderators"]);
  * 🟢🟢 alphanumetrix counts as a signal channel, not a bot one. Unverified members get none.
  */
 const REACT = P.AddReactions | P.UseExternalEmojis;
+/** GIF/link previews and file uploads: granted once, server-wide, on the global Members role (JT, 8 Nov). */
+const MEDIA = P.EmbedLinks | P.AttachFiles;
+const MEMBERS_ROLE = "Members";
 const REACT_SIGNALS: Kind[] = ["flagship", "signals"];
 
 function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChannel, lang: Lang | "all", tier: Tier, readOnly: boolean, kind?: Kind): OverwriteResolvable[] {
@@ -849,6 +852,9 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
     if (replaced.has(o.id) || o.id === guild.roles.everyone.id) {
       allow &= ~P.ViewChannel;
       deny &= ~P.ViewChannel;
+      // Link previews and uploads come from the global Members role (stepPerms): an old channel deny on
+      // @everyone or Members would cancel it there. A mute's denies stay (JT, 8 Nov).
+      if (guild.roles.cache.get(o.id)?.name !== "Muted Member") deny &= ~MEDIA;
       if (allow === 0n && deny === 0n) continue;
     }
     out.set(o.id, { id: o.id, type: o.type, allow, deny });
@@ -926,7 +932,8 @@ function describe(guild: Guild, ows: OverwriteResolvable[]) {
       const s = d & P.SendMessages ? " -send" : "";
       const h = a & P.ReadMessageHistory ? " +history" : d & P.ReadMessageHistory ? " -history" : "";
       const r = a & P.AddReactions ? " +react" : d & P.AddReactions ? " -react" : "";
-      return v || s || h || r ? `${name}${v ? " " + v : ""}${s}${h}${r}` : null;
+      const e = a & P.EmbedLinks ? " +embed" : d & P.EmbedLinks ? " -embed" : "";
+      return v || s || h || r || e ? `${name}${v ? " " + v : ""}${s}${h}${r}${e}` : null;
     })
     .filter(Boolean)
     .join(", ");
@@ -941,6 +948,25 @@ async function stepPerms(ctx: Ctx) {
     if (!role.editable) { log(`  ! can't edit role ${role.name} (above the bot): tick View Audit Log on it by hand`); continue; }
     log(`  role ${role.name}: + View Audit Log`);
     if (ctx.apply) await role.setPermissions(role.permissions.add(P.ViewAuditLog), "Moderators read the audit log");
+  }
+  // Verified members' GIF and link previews and uploads: one server-wide grant on the global Members role,
+  // not an overwrite per language role (JT, 8 Nov). Unverified members keep whatever @everyone has.
+  const members = guild.roles.cache.find((r) => r.name === MEMBERS_ROLE);
+  if (!members) log(`  ! no ${MEMBERS_ROLE} role: Embed Links / Attach Files not granted`);
+  else if (!members.permissions.has(MEDIA)) {
+    if (!members.editable) log(`  ! can't edit role ${members.name} (above the bot): tick Embed Links + Attach Files on it by hand`);
+    else {
+      log(`  role ${members.name}: + Embed Links, + Attach Files`);
+      if (ctx.apply) await members.setPermissions(members.permissions.add(MEDIA), "Verified members get link previews and uploads");
+    }
+  }
+  // VIP chat keeps its own overwrites, outside the language channels: drop any old link-preview deny there too (JT, 11 Nov).
+  const vipChat = guild.channels.cache.find((x): x is TextChannel => x.type === ChannelType.GuildText && (x.name === VIP_CHAT || x.name === VIP_OLD[VIP_CHAT]));
+  for (const id of [guild.roles.everyone.id, members?.id]) {
+    const ow = id && vipChat?.permissionOverwrites.cache.get(id);
+    if (!vipChat || !ow || !(ow.deny.bitfield & MEDIA)) continue;
+    log(`  #${vipChat.name}: ${id === guild.roles.everyone.id ? "@everyone" : MEMBERS_ROLE} no longer blocks Embed Links / Attach Files`);
+    if (ctx.apply) await vipChat.permissionOverwrites.edit(id, { EmbedLinks: null, AttachFiles: null }, { reason: "Verified members' links show previews" });
   }
   for (const c of CATEGORY_SPECS) {
     const cat = guild.channels.cache.find((x): x is CategoryChannel => x.type === ChannelType.GuildCategory && x.name === c.name);

@@ -560,7 +560,7 @@ async function stepVip(ctx: Ctx) {
   }
   if (chat && ctx.apply) {
     // Keep its own overwrites (muted and booster denies), add every VIP tier.
-    for (const id of vipRoleIds) await chat.permissionOverwrites.edit(id, { ViewChannel: true }, { reason: "VIP tiers" });
+    for (const id of vipRoleIds) await chat.permissionOverwrites.edit(id, { ViewChannel: true, EmbedLinks: true }, { reason: "VIP tiers" });
     await chat.permissionOverwrites.edit(guild.roles.everyone.id, { ViewChannel: false }, { reason: "VIP lounge" });
     await chat.permissionOverwrites.edit(me.id, { ViewChannel: true, SendMessages: true, ReadMessageHistory: true }, { reason: "VIP lounge" });
   }
@@ -878,7 +878,9 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
         // History allowed outright too, so an old @everyone history deny can't hide the backlog.
         const allow = (readOnly ? P.ViewChannel : P.ViewChannel | P.SendMessages | P.SendMessagesInThreads) | P.ReadMessageHistory;
         base && set(base, OverwriteType.Role, allow, REACT);
-        member && set(member, OverwriteType.Role, allow | (!readOnly || kind === "announcements" ? REACT : 0n), 0n);
+        // Verified members' links show a preview (TradingView charts): the language roles carry no server-wide
+        // Embed Links, so without this allow general and memes fell back to @everyone's, which is off (JT, 11 Nov).
+        member && set(member, OverwriteType.Role, allow | P.EmbedLinks | (!readOnly || kind === "announcements" ? REACT : 0n), 0n);
       }
       // The 🔒 stand-ins and verify are only ever seen by unverified members: no reactions there either.
       if (tier === "verify" || tier === "teaser") base && set(base, OverwriteType.Role, 0n, REACT);
@@ -926,7 +928,8 @@ function describe(guild: Guild, ows: OverwriteResolvable[]) {
       const s = d & P.SendMessages ? " -send" : "";
       const h = a & P.ReadMessageHistory ? " +history" : d & P.ReadMessageHistory ? " -history" : "";
       const r = a & P.AddReactions ? " +react" : d & P.AddReactions ? " -react" : "";
-      return v || s || h || r ? `${name}${v ? " " + v : ""}${s}${h}${r}` : null;
+      const e = a & P.EmbedLinks ? " +embed" : d & P.EmbedLinks ? " -embed" : "";
+      return v || s || h || r || e ? `${name}${v ? " " + v : ""}${s}${h}${r}${e}` : null;
     })
     .filter(Boolean)
     .join(", ");
@@ -934,6 +937,23 @@ function describe(guild: Guild, ows: OverwriteResolvable[]) {
 
 async function stepPerms(ctx: Ctx) {
   const { guild } = ctx;
+  // Every verified role embeds links server-wide, so a TradingView chart shows its preview in any channel or
+  // thread they can post in, VIP chat included (JT, 11 Nov). Unverified language roles stay as they are.
+  const verified = [...LANGS.map((l) => ctx.role(l, "member")), ...VIP_ROLES.map((n) => guild.roles.cache.find((r) => r.name === n)?.id)];
+  for (const id of verified) {
+    const role = id && guild.roles.cache.get(id);
+    if (!role || role.permissions.has(P.EmbedLinks)) continue;
+    if (!role.editable) { log(`  ! can't edit role ${role.name} (above the bot): tick Embed Links on it by hand`); continue; }
+    log(`  role ${role.name}: + Embed Links`);
+    if (ctx.apply) await role.setPermissions(role.permissions.add(P.EmbedLinks), "Verified members' links show previews");
+  }
+  // VIP chat keeps its own overwrites, so allow it there too in case an old @everyone deny sits on the channel.
+  const vipChat = guild.channels.cache.find((c): c is TextChannel => c.type === ChannelType.GuildText && (c.name === VIP_CHAT || c.name === VIP_OLD[VIP_CHAT]));
+  for (const id of VIP_ROLES.map((n) => guild.roles.cache.find((r) => r.name === n)?.id)) {
+    if (!vipChat || !id || vipChat.permissionOverwrites.cache.get(id)?.allow.has(P.EmbedLinks)) continue;
+    log(`  #${vipChat.name}: ${guild.roles.cache.get(id)!.name} + Embed Links`);
+    if (ctx.apply) await vipChat.permissionOverwrites.edit(id, { EmbedLinks: true }, { reason: "Verified members' links show previews" });
+  }
   // Moderators read the audit log (JT, 4 Nov). A server-wide role permission, not a channel overwrite.
   for (const id of modRoleIds(guild)) {
     const role = guild.roles.cache.get(id)!;

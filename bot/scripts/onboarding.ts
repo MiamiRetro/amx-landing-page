@@ -932,7 +932,8 @@ function describe(guild: Guild, ows: OverwriteResolvable[]) {
       const s = d & P.SendMessages ? " -send" : "";
       const h = a & P.ReadMessageHistory ? " +history" : d & P.ReadMessageHistory ? " -history" : "";
       const r = a & P.AddReactions ? " +react" : d & P.AddReactions ? " -react" : "";
-      return v || s || h || r ? `${name}${v ? " " + v : ""}${s}${h}${r}` : null;
+      const e = a & P.EmbedLinks ? " +embed" : d & P.EmbedLinks ? " -embed" : "";
+      return v || s || h || r || e ? `${name}${v ? " " + v : ""}${s}${h}${r}${e}` : null;
     })
     .filter(Boolean)
     .join(", ");
@@ -958,6 +959,14 @@ async function stepPerms(ctx: Ctx) {
       log(`  role ${members.name}: + Embed Links, + Attach Files`);
       if (ctx.apply) await members.setPermissions(members.permissions.add(MEDIA), "Verified members get link previews and uploads");
     }
+  }
+  // VIP chat keeps its own overwrites, outside the language channels: drop any old link-preview deny there too (JT, 11 Nov).
+  const vipChat = guild.channels.cache.find((x): x is TextChannel => x.type === ChannelType.GuildText && (x.name === VIP_CHAT || x.name === VIP_OLD[VIP_CHAT]));
+  for (const id of [guild.roles.everyone.id, members?.id]) {
+    const ow = id && vipChat?.permissionOverwrites.cache.get(id);
+    if (!vipChat || !ow || !(ow.deny.bitfield & MEDIA)) continue;
+    log(`  #${vipChat.name}: ${id === guild.roles.everyone.id ? "@everyone" : MEMBERS_ROLE} no longer blocks Embed Links / Attach Files`);
+    if (ctx.apply) await vipChat.permissionOverwrites.edit(id, { EmbedLinks: null, AttachFiles: null }, { reason: "Verified members' links show previews" });
   }
   for (const c of CATEGORY_SPECS) {
     const cat = guild.channels.cache.find((x): x is CategoryChannel => x.type === ChannelType.GuildCategory && x.name === c.name);

@@ -10,7 +10,7 @@ import { remapForTarget } from "./mirror/render.js";
 import { Semaphore } from "./mirror/queue.js";
 import { Funnel, InviteTracker } from "./funnel.js";
 import { LanguageRoles } from "./roles.js";
-import { VerifyNudge } from "./nudge.js";
+import { parseHosts, VerifyNudge } from "./nudge.js";
 import { ImageGate } from "./image-gate.js";
 import { handlePickerButton, PICKER_PREFIX } from "./picker.js";
 import { providerFromSpec, Translator } from "./translate/index.js";
@@ -92,7 +92,7 @@ async function main() {
       roles = new LanguageRoles(guild, db, funnel);
       await roles.load();
       // Unverified members get steered to the Verify button in general (JT, 5 Nov). VERIFY_NUDGE=off turns it off.
-      if (process.env.VERIFY_NUDGE?.trim() !== "off") nudge = new VerifyNudge({ guild, db, groups, roles, funnel });
+      if (process.env.VERIFY_NUDGE?.trim() !== "off") nudge = new VerifyNudge({ guild, db, groups, roles, funnel, hosts: parseHosts(process.env.VERIFY_NUDGE_HOSTS) });
       // Unverified members' pictures in general: trading charts stay, the rest goes; both get a Verify card (JT, 8 Nov).
       if (process.env.ANTHROPIC_API_KEY && process.env.IMAGE_GATE?.trim() !== "off") {
         const mm = mirror;

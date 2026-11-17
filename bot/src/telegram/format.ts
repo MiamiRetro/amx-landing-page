@@ -73,6 +73,16 @@ export function telegramPost(channel: ChannelKey, author: string, bodyHtml: stri
 }
 
 /**
+ * The note in the Telegram group under a story copy, so the host sees it
+ * reached Discord: who, where, a link to the Discord post, then the caption.
+ */
+export function storyNotice(author: string, channel: ChannelKey, discordUrl: string, caption?: string | null): string {
+  const c = caption?.trim();
+  const head = `📲 <b>${escapeHtml(author)}</b>'s story is now on Discord in <i>${CHANNEL_LABEL[channel]}</i> · <a href="${discordUrl}">open</a>`;
+  return c ? `${head}\n${escapeHtml(c)}` : head;
+}
+
+/**
  * Telegram text plus its formatting entities to Discord markdown would need
  * the entity list; the hosts mostly type plain text, so the plain text goes
  * through with Discord's own markdown characters left as typed. Mentions of

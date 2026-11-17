@@ -186,7 +186,7 @@ export class StoryWatcher {
     }
     // Too big to upload (or nothing to download): link to it instead.
     if (!files.length) text = `${story.caption?.trim() ? `${story.caption.trim()}\n` : ""}${storyLink(peer, story.id)}\n${STORY_LINE}`;
-    const id = await this.opts.bridge.postStory(peer, this.opts.channel, text, files);
+    const id = await this.opts.bridge.postStory(peer, this.opts.channel, text, files, story.caption);
     log.info("telegram story shared", { peer, story: story.id, discord: id, file: files[0]?.name ?? null });
   }
 }

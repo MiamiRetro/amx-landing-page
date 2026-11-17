@@ -35,6 +35,7 @@ import {
   splitReplyHeader,
   telegramPost,
   telegramToDiscord,
+  storyNotice,
   type DiscordNames,
 } from "./format.js";
 
@@ -726,7 +727,7 @@ export class TelegramBridge {
    * A host's Telegram story, posted to one bridged channel (general by default)
    * under their name and picture. The mirror carries it to the language twins.
    */
-  async postStory(telegram: string, key: ChannelKey, content: string, files: { attachment: Buffer; name: string }[]): Promise<string> {
+  async postStory(telegram: string, key: ChannelKey, content: string, files: { attachment: Buffer; name: string }[], caption?: string | null): Promise<string> {
     const ch = this.channelOf(key);
     if (!ch) throw new Error(`no English channel for ${key}`);
     const user = this.users.find((u) => u.telegram.toLowerCase() === telegram.toLowerCase()) ?? { telegram };
@@ -738,6 +739,17 @@ export class TelegramBridge {
       files,
       allowedMentions: { parse: [] },
     });
+    // A copy back into the Telegram group, so the host sees the story made it to Discord.
+    if (this.chatId != null && !this.paused && process.env.TELEGRAM_STORIES_ECHO !== "off") {
+      const chat = this.chatId;
+      const url = `https://discord.com/channels/${this.guild.id}/${ch}/${sent.id}`;
+      const html = fitTelegram(storyNotice(this.displayName(user), key, url, caption), 1024);
+      const file = sent.attachments[0];
+      await this.send(() => file?.content_type?.startsWith("image/") ? this.api.sendPhoto(chat, file.url, html)
+        : file?.content_type?.startsWith("video/") ? this.api.sendVideo(chat, file.url, html)
+        : this.api.sendMessage(chat, html, { preview: null }))
+        .catch((e) => log.warn("telegram story echo failed", { discord: sent.id, ...errInfo(e) }));
+    }
     return sent.id;
   }
 

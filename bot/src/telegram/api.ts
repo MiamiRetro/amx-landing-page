@@ -132,6 +132,11 @@ export class TelegramApi {
     });
   }
 
+  /** `video` is a public URL; Telegram fetches it itself (up to 20 MB). */
+  sendVideo(chatId: number, video: string, captionHtml: string) {
+    return this.call<TgMessage>("sendVideo", { chat_id: chatId, video, caption: captionHtml, parse_mode: "HTML", supports_streaming: true });
+  }
+
   editMessageText(chatId: number, messageId: number, html: string, buttons?: InlineButton[][], preview?: string | null) {
     return this.call<TgMessage | true>("editMessageText", {
       chat_id: chatId,

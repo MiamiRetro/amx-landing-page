@@ -164,3 +164,10 @@ test("bot cards with buttons are never bridged", async () => {
   assert.equal(isBotNotice({ components: [] }), false);
   assert.equal(isBotNotice({}), false);
 });
+
+test("story notice: who, where, link, caption", async () => {
+  const { storyNotice } = await import("../src/telegram/format.js");
+  assert.equal(storyNotice("Tone Vays", "general", "https://discord.com/channels/1/2/3"),
+    `📲 <b>Tone Vays</b>'s story is now on Discord in <i>💬 general</i> · <a href="https://discord.com/channels/1/2/3">open</a>`);
+  assert.match(storyNotice("A<b", "general", "u", " gm & <hi> "), /A&lt;b.*\ngm &amp; &lt;hi&gt;$/s);
+});

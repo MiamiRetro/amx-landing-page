@@ -16,6 +16,8 @@ export interface OpenAICompatibleOptions {
   /** Whether the endpoint accepts response_format json_object. Default true. */
   jsonMode?: boolean;
   extraHeaders?: Record<string, string>;
+  /** Extra request fields merged into the body, e.g. { reasoning_effort: "medium", max_tokens: 16384 }. */
+  extraBody?: Record<string, unknown>;
   fetchImpl?: typeof fetch;
 }
 
@@ -52,6 +54,7 @@ export class OpenAICompatibleProvider implements TranslationProvider {
       ],
     };
     if (this.opts.jsonMode !== false) body.response_format = { type: "json_object" };
+    Object.assign(body, this.opts.extraBody ?? {});
 
     const res = await this.f(`${this.opts.baseUrl.replace(/\/$/, "")}/chat/completions`, {
       method: "POST",

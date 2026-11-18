@@ -20,6 +20,7 @@ import { chooseFiles, InfographicLocalizer, pickCandidates, type FileLike } from
 import { log, errInfo } from "../src/log.js";
 import { Semaphore } from "../src/mirror/queue.js";
 import { providerFromSpec, Translator } from "../src/translate/index.js";
+import { OpenAICompatibleProvider } from "../src/translate/openai-compatible.js";
 
 const POLL_MS = 60_000;
 const LOOKBACK_MS = 3 * 86_400_000;
@@ -34,7 +35,29 @@ const translator = new Translator({
   limiter: (fn) => limiter.run(fn),
   timeoutMs: config.translationTimeoutSec() * 1000,
 });
-const localizer = new InfographicLocalizer({ translator });
+// Infographic text is technical, so with a local model it is translated with medium thinking on
+// the agent lane (:8080), not through the shared Discord queue, whose lane keeps thinking off for
+// chat messages. JSON mode is off because mlx-serve skips thinking under response_format; the
+// parser already pulls the JSON out of the reply. max_tokens 16384 leaves 8K for thinking and 8K for
+// the reply. The shared providers stay as fallbacks.
+const localUrl = process.env.INFOGRAPHIC_VLM_URL?.trim();
+const infographicTranslator = localUrl
+  ? new Translator({
+      primary: new OpenAICompatibleProvider({
+        vendor: "local-thinking",
+        model: process.env.INFOGRAPHIC_VLM_MODEL ?? "flashnext-q2",
+        baseUrl: localUrl,
+        apiKey: "local",
+        jsonMode: false,
+        extraBody: { reasoning_effort: "medium", max_tokens: 16384 },
+      }),
+      fallbacks: [providerFromSpec(config.translationProvider()), ...config.translationFallbacks().map(providerFromSpec)],
+      db,
+      limiter: (fn) => limiter.run(fn),
+      timeoutMs: 300_000,
+    })
+  : translator;
+const localizer = new InfographicLocalizer({ translator: infographicTranslator });
 
 interface Member { channel_id: string; group_id: string; lang: Lang; webhook_id: string | null; webhook_token: string | null }
 

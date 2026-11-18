@@ -74,7 +74,10 @@ async function extractLocal(baseUrl: string, image: Buffer, mime: ImageMime): Pr
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       model,
-      max_tokens: 2048,
+      // Medium thinking (8K) before transcribing; the proxy fits the thinking budget inside
+      // max_tokens (budget <= 3/4 of it), so 12288 leaves 4096 tokens for the JSON answer.
+      max_tokens: 12288,
+      reasoning_effort: "medium",
       temperature: 0,
       messages: [{
         role: "user",

@@ -183,10 +183,12 @@ export class LiveAnnouncer {
   }
 
   /**
-   * A scheduled stream gets one "starting soon" alert once it is due within 10
-   * minutes. A stream that starts without a schedule only gets the live alert.
+   * Off by default since 2026-11-22 (JT): Pam already posts the scheduled-show
+   * announcement, so only the LIVE NOW alert comes from here. LIVE_HEADS_UP=on
+   * brings back one "starting soon" alert when a scheduled stream is due within 10 minutes.
    */
   private async headsUp(w: Watch, u: Upcoming) {
+    if (process.env.LIVE_HEADS_UP !== "on") return;
     const due = Date.parse(u.scheduledAt) - Date.now();
     if (!(due > 0 && due <= HEADS_UP_MS)) return;
     if (await this.db.getSetting(this.guild.id, soonKey(u.id))) return;

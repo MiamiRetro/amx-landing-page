@@ -922,6 +922,13 @@ function overwritesFor(ctx: Ctx, ch: NonThreadGuildBasedChannel | CategoryChanne
   // Non-English help requests reach the team through an English twin thread (support/desk.ts), so outside
   // English the team gets no channels at all, help-desk included (JT, 1 Nov).
   if (lang !== "en" && lang !== "all") for (const id of helpTeamRoleIds(guild)) out.delete(id);
+  // The team always sees every help thread in the English help-desk, from the moment it opens, not only once
+  // the bot hands it over: Manage Threads is what shows a private thread to someone who isn't in it (JT, 23 Nov).
+  // Every English twin of a non-English request lands there too.
+  else if (tier === "help") {
+    const seeThreads = P.ViewChannel | P.ReadMessageHistory | P.SendMessagesInThreads | P.ManageThreads;
+    for (const id of helpTeamRoleIds(guild)) set(id, OverwriteType.Role, seeThreads, 0n);
+  }
   return [...out.values()].map((o) => ({ id: o.id, type: o.type, allow: o.allow, deny: o.deny }));
 }
 

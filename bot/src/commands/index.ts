@@ -88,7 +88,12 @@ export const commandDefinitions = [
         .addStringOption((o) => o.setName("exchange").setDescription("Exchange").addChoices(...EXCHANGES.map((e) => ({ name: EXCHANGE_LABELS[e], value: e }))).setRequired(true))
         .addStringOption((o) => o.setName("uid").setDescription("The UID to look up").setRequired(true)),
     )
-    .addSubcommand((s) => s.setName("status").setDescription("Which exchanges are verifying for real")),
+    .addSubcommand((s) => s.setName("status").setDescription("Which exchanges are verifying for real"))
+    .addSubcommand((s) =>
+      s.setName("member").setDescription("Every exchange UID a member has linked")
+        .addUserOption((o) => o.setName("member").setDescription("Member").setRequired(true)),
+    )
+    .addSubcommand((s) => s.setName("missing").setDescription("Verified members with no exchange UID on file (their trading counts for nothing)")),
   new SlashCommandBuilder()
     .setName("language")
     .setDescription("Move a member to another language (members pick once, in the picker)")
@@ -300,6 +305,28 @@ async function uidCommand(i: ChatInputCommandInteraction, d: CommandDeps): Promi
       return `${EXCHANGE_LABELS[e]}: ${!p ? "not offered" : p.live ? "live" : "stand-in, not checking"}`;
     });
     return ["**Verification status**", ...lines].join("\n");
+  }
+  if (i.options.getSubcommand() === "member") {
+    const user = i.options.getUser("member", true);
+    const uids = await d.db.uidsOf(d.guild.id, user.id);
+    if (!uids.length) return `<@${user.id}> has no exchange UID on file.`;
+    return [
+      `**UIDs linked to <@${user.id}>** (${uids.length})`,
+      ...uids.map((u) => `• ${EXCHANGE_LABELS[u.exchange]} \u0060${u.uid}\u0060 · added ${u.added_at.slice(0, 10)}`),
+    ].join("\n");
+  }
+  if (i.options.getSubcommand() === "missing") {
+    const [members, linked] = await Promise.all([d.guild.members.fetch(), d.db.usersWithUids(d.guild.id)]);
+    const verified = [...members.values()].filter((m) => !m.user.bot && d.roles.isVerified(m));
+    const missing = verified.filter((m) => !linked.has(m.id));
+    const shown = missing.slice(0, 60);
+    return [
+      `**${verified.length - missing.length} of ${verified.length}** verified members have a UID on file. **${missing.length}** have none.`,
+      "-# They are asked to add one when they press Verify. Until then their commission counts for nothing in VIP or competitions.",
+      "",
+      shown.map((m) => `<@${m.id}>`).join(" "),
+      missing.length > shown.length ? `-# …and ${missing.length - shown.length} more` : "",
+    ].join("\n");
   }
 
   const exchange = i.options.getString("exchange", true);

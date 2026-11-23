@@ -18,7 +18,7 @@ import { InfographicLocalizer, infographicsEnabled } from "./infographic/index.j
 import { buildProviders } from "./verify/providers/index.js";
 import { buildBackendVerifiers } from "./verify/providers/backend.js";
 import { VerifyService } from "./verify/service.js";
-import { handleVerifyButton, handleVerifySubmit, VERIFY_BUTTON, VERIFY_MODAL } from "./verify/panel.js";
+import { handleAddUidButton, handleAddUidSubmit, handleVerifyButton, handleVerifySubmit, VERIFY_ADD_BUTTON, VERIFY_ADD_MODAL, VERIFY_BUTTON, VERIFY_MODAL } from "./verify/panel.js";
 import { checkProviders, HealthWatch } from "./verify/health.js";
 import { VipTracker } from "./vip/tracker.js";
 import { FlagshipWatch } from "./flagship.js";
@@ -241,8 +241,15 @@ async function main() {
     }
     if (verify) {
       const v = verify, r = roles;
+      const uidsOf = (userId: string) => db.uidsOf(guildId, userId);
       if (i.isButton() && i.customId === VERIFY_BUTTON) {
-        return void handleVerifyButton(i, { verify: v, roles: r, funnel }).catch((e) => log.error("verify button failed", errInfo(e)));
+        return void handleVerifyButton(i, { verify: v, roles: r, funnel, uidsOf }).catch((e) => log.error("verify button failed", errInfo(e)));
+      }
+      if (i.isButton() && i.customId === VERIFY_ADD_BUTTON) {
+        return void handleAddUidButton(i, { verify: v, roles: r }).catch((e) => log.error("add uid button failed", errInfo(e)));
+      }
+      if (i.isModalSubmit() && i.customId === VERIFY_ADD_MODAL) {
+        return void handleAddUidSubmit(i, { verify: v, roles: r, memberRoleId: r.memberRoleId(), funnel, uidsOf, helpDeskId: (lang) => db.getSetting(guildId, `support_channel:${lang}`) }).catch((e) => log.error("add uid modal failed", errInfo(e)));
       }
       if (i.isModalSubmit() && i.customId === VERIFY_MODAL) {
         return void handleVerifySubmit(i, { verify: v, roles: r, memberRoleId: r.memberRoleId(), funnel, helpDeskId: (lang) => db.getSetting(guildId, `support_channel:${lang}`) }).catch((e) => log.error("verify modal failed", errInfo(e)));

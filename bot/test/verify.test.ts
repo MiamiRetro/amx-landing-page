@@ -224,3 +224,46 @@ test("when the app API owns UIDs, a row from another server sharing the table is
   assert.equal(res.outcome, "verified");
   assert.deepEqual(rows.map((r) => `${r.guild_id}:${r.discord_user_id}`), ["live:someone"]);
 });
+
+/** fakeDb plus the multi-UID calls addUid needs. */
+function multiDb(seed: Verification[] = []) {
+  const f = fakeDb(seed);
+  const extra: { guild_id: string; discord_user_id: string; exchange: ExchangeId; uid: string }[] = [];
+  const all = () => [...f.rows, ...extra];
+  Object.assign(f.db, {
+    async verificationByUid(exchange: ExchangeId, uid: string) {
+      const r = all().find((x) => x.exchange === exchange && x.uid === uid);
+      return r ? { ...r, detail: null, verified_at: "" } : null;
+    },
+    async uidsOf(g: string, userId: string) {
+      return all().filter((x) => x.guild_id === g && x.discord_user_id === userId).map((x) => ({ ...x, detail: null, added_at: "" }));
+    },
+    async addUid(v: { guild_id: string; discord_user_id: string; exchange: ExchangeId; uid: string }) {
+      extra.push(v);
+    },
+    async releaseUid() {},
+  });
+  return { ...f, extra };
+}
+
+test("a verified member can add a second uid on the same exchange", async () => {
+  const { db, extra } = multiDb([{ guild_id: GUILD, discord_user_id: "u1", exchange: "bybit", uid: "11112222", detail: null, verified_at: "" }]);
+  const res = await service(db, provider("bybit", "yes")).addUid({ userId: "u1", exchange: "bybit", uid: "33334444" });
+  assert.equal(res.outcome, "verified");
+  assert.equal(extra.length, 1);
+});
+
+test("adding a uid already linked to you, or to someone else, stores nothing", async () => {
+  const { db, extra } = multiDb([{ guild_id: GUILD, discord_user_id: "u1", exchange: "bybit", uid: "11112222", detail: null, verified_at: "" }]);
+  const s = service(db, provider("bybit", "yes"));
+  assert.equal((await s.addUid({ userId: "u1", exchange: "bybit", uid: "11112222" })).outcome, "already_yours");
+  assert.equal((await s.addUid({ userId: "u2", exchange: "bybit", uid: "11112222" })).outcome, "already_claimed");
+  assert.equal(extra.length, 0);
+});
+
+test("an added uid must still be referred through our links", async () => {
+  const { db, extra } = multiDb();
+  const res = await service(db, provider("blofin", "no")).addUid({ userId: "u1", exchange: "blofin", uid: "55556666" });
+  assert.equal(res.outcome, "not_referred");
+  assert.equal(extra.length, 0);
+});

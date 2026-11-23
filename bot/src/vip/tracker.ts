@@ -94,8 +94,8 @@ export class VipTracker {
     try {
       const thresholds = await this.thresholds();
       const vipRoles = await this.roles(thresholds.length, opts.apply);
-      const { data: links, error } = await this.db.sb.from("verifications").select("discord_user_id, exchange, uid").eq("guild_id", this.guild.id);
-      if (error) throw new Error(`load verifications: ${error.message}`);
+      const { data: links, error } = await this.db.sb.from("member_uids").select("discord_user_id, exchange, uid").eq("guild_id", this.guild.id);
+      if (error) throw new Error(`load linked uids: ${error.message}`);
       const prices = new Prices();
       const members = await this.guild.members.fetch();
       const byUser = new Map<string, VipRow>();

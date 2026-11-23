@@ -21,11 +21,15 @@ import type { Lang } from "../config.js";
 import type { Funnel } from "../funnel.js";
 import { log, errInfo } from "../log.js";
 import type { LanguageRoles } from "../roles.js";
-import type { VerifyService } from "./service.js";
+import type { MemberUid } from "../db/index.js";
+import { MAX_UIDS, type VerifyService } from "./service.js";
 import { EXCHANGE_SIGNUP, isExchange, type ExchangeId } from "./types.js";
 
 export const VERIFY_BUTTON = "verify:start";
 export const VERIFY_MODAL = "verify:submit";
+/** Already-verified members: link one more exchange UID. */
+export const VERIFY_ADD_BUTTON = "verify:add";
+export const VERIFY_ADD_MODAL = "verify:add-submit";
 const FIELD_EXCHANGE = "exchange";
 const GUIDE = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "assets", "verify", "uid-guide.png");
 
@@ -254,14 +258,14 @@ export async function postVerifyPanel(channel: TextChannel, lang: Lang = "en", v
   return channel.send(verifyPanel(lang, variant, topic));
 }
 
-/** The popup: exchange picker plus the UID field, in one modal. */
-function verifyModal(exchanges: ExchangeId[]) {
+/** The popup: exchange picker plus the UID field, in one modal. `add` is the same form for linking one more UID. */
+function verifyModal(exchanges: ExchangeId[], add = false) {
   const select = new StringSelectMenuBuilder().setCustomId(FIELD_EXCHANGE).setPlaceholder("Pick your exchange").addOptions(
     exchanges.map((id) => ({ label: id.charAt(0).toUpperCase() + id.slice(1), value: id })),
   );
   return new ModalBuilder()
-    .setCustomId(VERIFY_MODAL)
-    .setTitle("Verify your exchange UID")
+    .setCustomId(add ? VERIFY_ADD_MODAL : VERIFY_MODAL)
+    .setTitle(add ? "Add an exchange UID" : "Verify your exchange UID")
     .addLabelComponents(
       new LabelBuilder().setLabel("Exchange").setDescription("Where you opened the account").setStringSelectMenuComponent(select),
       new LabelBuilder()
@@ -273,19 +277,56 @@ function verifyModal(exchanges: ExchangeId[]) {
     );
 }
 
-export async function handleVerifyButton(i: ButtonInteraction, deps: { verify: VerifyService; roles: LanguageRoles; funnel?: Funnel }) {
+const label = (e: string) => e.charAt(0).toUpperCase() + e.slice(1);
+/** Enough of a UID for its owner to recognise it, not enough to copy from a screenshot. */
+export const maskUid = (uid: string) => (uid.length <= 4 ? uid : `${"•".repeat(Math.min(4, uid.length - 4))}${uid.slice(-4)}`);
+
+/** What a verified member sees on Verify: the UIDs on file, and a button to add another. */
+export function linkedUidsCard(uids: Pick<MemberUid, "exchange" | "uid">[], lead?: string) {
+  const full = uids.length >= MAX_UIDS;
+  const body = uids.length
+    ? [
+        lead ?? "## You're verified",
+        `UIDs linked to your account (${uids.length}):`,
+        ...uids.map((u) => `• **${label(u.exchange)}** ${maskUid(u.uid)}`),
+        "",
+        full
+          ? `That's the most one account can link (${MAX_UIDS}). Ask in help-desk if you need to swap one.`
+          : "Trade on more than one account? Add each UID, on any of our exchanges, so all of your trading counts toward VIP tiers and competitions.",
+      ]
+    : [
+        lead ?? "## You're verified",
+        "We don't have your exchange UID on file yet, so your trading isn't counting toward VIP tiers or competitions.",
+        "",
+        "Add your UID below. Got accounts on more than one exchange, or several on one? Add each of them.",
+      ];
+  return {
+    content: [...body, "", "-# Every UID has to be a main account opened through our links. Your UID is an account number, never a password or API key."].join("\n"),
+    components: full
+      ? []
+      : [
+          new ActionRowBuilder<ButtonBuilder>().addComponents(
+            new ButtonBuilder().setCustomId(VERIFY_ADD_BUTTON).setStyle(ButtonStyle.Primary).setLabel(uids.length ? "Add another UID" : "Add my UID").setEmoji("➕"),
+          ),
+        ],
+  };
+}
+
+export async function handleVerifyButton(i: ButtonInteraction, deps: { verify: VerifyService; roles: LanguageRoles; funnel?: Funnel; uidsOf?: (userId: string) => Promise<MemberUid[]> }) {
   if (!i.inCachedGuild()) return;
-  deps.funnel?.record(i.user.id, "verify_opened");
   const member = await i.guild.members.fetch(i.user.id);
-  // The popup is for people who are not in yet. Existing members get told so
-  // rather than being handed a form that would overwrite their record.
+  // Members who are already in get their UIDs on file and a way to add more,
+  // never the first-time form, which would overwrite their record.
   if (deps.roles.isVerified(member)) {
-    await i.reply({
-      content: "You are already verified, so there is nothing to do here. If your access looks wrong, ask in help-desk and a moderator will sort it out.",
-      flags: MessageFlags.Ephemeral,
+    deps.funnel?.record(i.user.id, "uids_opened");
+    const uids = await (deps.uidsOf?.(i.user.id) ?? Promise.resolve([])).catch((e) => {
+      log.warn("load member uids failed", errInfo(e));
+      return [] as MemberUid[];
     });
+    await i.reply({ ...linkedUidsCard(uids), flags: MessageFlags.Ephemeral });
     return;
   }
+  deps.funnel?.record(i.user.id, "verify_opened");
   const exchanges = deps.verify.exchanges;
   if (exchanges.length === 0) {
     await i.reply({ content: "Verification is offline for a moment. Try again shortly.", flags: MessageFlags.Ephemeral });
@@ -320,6 +361,70 @@ export async function handleVerifySubmit(i: ModalSubmitInteraction, deps: Submit
     await i.editReply(await reply(res, member, deps));
   } catch (e) {
     log.error("verify submit failed", errInfo(e));
+    await i.editReply("Something broke on our side. Try again in a minute, and tell us in help-desk if it keeps happening.").catch(() => {});
+  }
+}
+
+/** ➕ on the linked-UIDs card: the same popup, in add mode. */
+export async function handleAddUidButton(i: ButtonInteraction, deps: { verify: VerifyService; roles: LanguageRoles }) {
+  if (!i.inCachedGuild()) return;
+  const member = await i.guild.members.fetch(i.user.id);
+  if (!deps.roles.isVerified(member)) {
+    await i.reply({ content: "Verify first with the 🔑 Verify my UID button, then you can add more UIDs here.", flags: MessageFlags.Ephemeral });
+    return;
+  }
+  if (deps.verify.exchanges.length === 0) {
+    await i.reply({ content: "Verification is offline for a moment. Try again shortly.", flags: MessageFlags.Ephemeral });
+    return;
+  }
+  await i.showModal(verifyModal(deps.verify.exchanges, true));
+}
+
+export async function handleAddUidSubmit(i: ModalSubmitInteraction, deps: SubmitDeps & { uidsOf: (userId: string) => Promise<MemberUid[]> }) {
+  if (!i.inCachedGuild()) return;
+  await i.deferReply({ flags: MessageFlags.Ephemeral });
+  try {
+    const member = await i.guild.members.fetch(i.user.id);
+    if (!deps.roles.isVerified(member)) {
+      await i.editReply("Verify first with the 🔑 Verify my UID button, then you can add more UIDs.");
+      return;
+    }
+    const picked = i.fields.getStringSelectValues(FIELD_EXCHANGE)[0] ?? "";
+    if (!isExchange(picked)) {
+      await i.editReply("Pick one of the exchanges from the list and try again.");
+      return;
+    }
+    const res = await deps.verify.addUid({ userId: i.user.id, exchange: picked, uid: i.fields.getTextInputValue(FIELD_UID) });
+    deps.funnel?.record(i.user.id, "uid_added_result", { lang: deps.roles.langOf(member), detail: { outcome: res.outcome, exchange: res.exchange } });
+    const name = label(res.exchange);
+    if (res.outcome === "verified") {
+      const uids = await deps.uidsOf(i.user.id).catch(() => [] as MemberUid[]);
+      await i.editReply(linkedUidsCard(uids, `## Added\nYour ${name} UID checked out and now counts toward your VIP tier and competitions.\n`));
+      return;
+    }
+    if (res.outcome === "already_yours") {
+      await i.editReply(`That ${name} UID is already linked to you, so there's nothing to add.`);
+      return;
+    }
+    if (res.outcome === "too_many") {
+      await i.editReply(`You already have ${MAX_UIDS} UIDs linked, the most one account can hold. Ask in help-desk if you need to swap one.`);
+      return;
+    }
+    if (res.outcome === "app_one_per_exchange") {
+      log.warn("app refused a second uid on one exchange", { user: i.user.id, exchange: res.exchange });
+      await i.editReply({
+        content: [
+          `## Your BLKBöX app account already has a ${name} UID`,
+          "",
+          `The app links one ${name} account per person for now, so this one can't be added automatically yet. Tap 🛟 Get help in help-desk with the UID and the team will add it for you.`,
+        ].join("\n"),
+        components: await helpDeskRow(member, deps),
+      });
+      return;
+    }
+    await i.editReply(await reply(res, member, deps));
+  } catch (e) {
+    log.error("add uid submit failed", errInfo(e));
     await i.editReply("Something broke on our side. Try again in a minute, and tell us in help-desk if it keeps happening.").catch(() => {});
   }
 }

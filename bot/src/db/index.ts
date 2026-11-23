@@ -28,6 +28,16 @@ export interface Verification {
   verified_at: string;
 }
 
+/** One linked exchange UID. A member can hold several, across and within exchanges. */
+export interface MemberUid {
+  guild_id: string;
+  discord_user_id: string;
+  exchange: ExchangeId;
+  uid: string;
+  detail: Record<string, unknown> | null;
+  added_at: string;
+}
+
 export interface MapRow {
   source_message_id: string;
   source_channel_id: string;
@@ -182,11 +192,50 @@ export class Db {
     return (r.data as Verification | null) ?? null;
   }
 
-  /** Who, if anyone, already holds this UID. Used to refuse shared UIDs. */
+  /**
+   * Who, if anyone, already holds this UID. Used to refuse shared UIDs. Looks at
+   * every linked UID, not only the one each member verified with.
+   */
   async verificationByUid(exchange: ExchangeId, uid: string): Promise<Verification | null> {
-    const r = await this.sb.from("verifications").select("*").eq("exchange", exchange).eq("uid", uid).maybeSingle();
+    const r = await this.sb.from("member_uids").select("*").eq("exchange", exchange).eq("uid", uid).maybeSingle();
     if (r.error) throw new Error(`verification by uid: ${r.error.message}`);
-    return (r.data as Verification | null) ?? null;
+    const row = r.data as MemberUid | null;
+    return row ? { guild_id: row.guild_id, discord_user_id: row.discord_user_id, exchange: row.exchange, uid: row.uid, detail: row.detail, verified_at: row.added_at } : null;
+  }
+
+  /** Every UID a member has linked, oldest first. */
+  async uidsOf(guildId: string, userId: string): Promise<MemberUid[]> {
+    const r = await this.sb.from("member_uids").select("*").eq("guild_id", guildId).eq("discord_user_id", userId).order("added_at");
+    if (r.error) throw new Error(`uids of member: ${r.error.message}`);
+    return (r.data as MemberUid[] | null) ?? [];
+  }
+
+  /** Everyone in this guild with at least one UID on file. */
+  async usersWithUids(guildId: string): Promise<Set<string>> {
+    const out = new Set<string>();
+    for (let from = 0; ; from += 1000) {
+      const r = await this.sb.from("member_uids").select("discord_user_id").eq("guild_id", guildId).range(from, from + 999);
+      if (r.error) throw new Error(`users with uids: ${r.error.message}`);
+      for (const row of r.data ?? []) out.add((row as { discord_user_id: string }).discord_user_id);
+      if ((r.data ?? []).length < 1000) return out;
+    }
+  }
+
+  /**
+   * Links one more UID to a member. A member with no verification row yet (let
+   * in before the bot, or by hand) gets this one as their verification; the
+   * trigger copies it into member_uids.
+   */
+  async addUid(v: Omit<MemberUid, "added_at">) {
+    const primary = await this.getVerification(v.guild_id, v.discord_user_id);
+    if (!primary) return this.saveVerification({ guild_id: v.guild_id, discord_user_id: v.discord_user_id, exchange: v.exchange, uid: v.uid, detail: v.detail });
+    unwrap(await this.sb.from("member_uids").upsert({ ...v, added_at: new Date().toISOString() }, { onConflict: "exchange,uid" }), "add uid");
+  }
+
+  /** Takes a UID off whoever holds it, so the app's say-so can move it to someone else. */
+  async releaseUid(exchange: ExchangeId, uid: string) {
+    unwrap(await this.sb.from("verifications").delete().eq("exchange", exchange).eq("uid", uid), "release uid");
+    unwrap(await this.sb.from("member_uids").delete().eq("exchange", exchange).eq("uid", uid), "release uid");
   }
 
   async saveVerification(v: Omit<Verification, "verified_at">) {

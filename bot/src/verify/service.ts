@@ -11,7 +11,13 @@ export type Outcome =
   | "bad_uid"
   | "revoked"
   | "rate_limited"
-  | "provider_error";
+  | "provider_error"
+  /** Adding: the member already has this UID on file. */
+  | "already_yours"
+  /** Adding: the member holds the most UIDs one account may link. */
+  | "too_many"
+  /** Adding: the BLKBöX app refused a second account on this exchange for this member. */
+  | "app_one_per_exchange";
 
 export interface VerifyResult {
   outcome: Outcome;
@@ -27,6 +33,10 @@ export interface VerifyResult {
 
 const MAX_ATTEMPTS = Number(process.env.VERIFY_MAX_ATTEMPTS ?? 10);
 const WINDOW_MIN = Number(process.env.VERIFY_WINDOW_MIN ?? 15);
+/** How many UIDs one Discord account may link, across all exchanges. */
+export const MAX_UIDS = Number(process.env.VERIFY_MAX_UIDS ?? 10);
+/** App API codes that mean "this member already has an account on that exchange", not "someone else owns the UID". */
+const ONE_PER_EXCHANGE = new Set(["ACCOUNT_ALREADY_CONNECTED", "DIFFERENT_EXCHANGE_ACCOUNT"]);
 /** Exchange UIDs are short numeric or alphanumeric ids; anything else is a typo or a probe. */
 export const UID_RE = /^[A-Za-z0-9_-]{4,32}$/;
 
@@ -134,6 +144,96 @@ export class VerifyService {
       return { ...base, outcome: "verified", remaining };
     } catch (e) {
       // The app API keeps its own record of who holds which UID, across Discord and the app.
+      if (e instanceof UidClaimedError) {
+        await record("already_claimed", e.message);
+        return { ...base, outcome: "already_claimed", remaining };
+      }
+      if (e instanceof UidRevokedError) {
+        await record("revoked", e.message);
+        return { ...base, outcome: "revoked", remaining };
+      }
+      if (e instanceof UidInvalidError) {
+        await record("bad_uid", e.message);
+        return { ...base, outcome: "bad_uid", remaining };
+      }
+      const error = e instanceof ProviderError ? e.message : e instanceof Error ? e.message : String(e);
+      await record("provider_error", error);
+      return { ...base, outcome: "provider_error", error, remaining };
+    }
+  }
+  /**
+   * Links one more UID to a member who is already in, so commission on every
+   * account they trade on counts toward VIP tiers and competitions. Same checks
+   * as verifying (referred through our links, not held by anyone else, rate
+   * limit); it never grants or removes a role.
+   */
+  async addUid(args: { userId: string; exchange: ExchangeId; uid: string }): Promise<VerifyResult> {
+    const started = Date.now();
+    const uid = normaliseUid(args.uid);
+    const base = { exchange: args.exchange, uid };
+    const record = async (outcome: Outcome, error?: string) => {
+      await this.db
+        .logAttempt({ guild_id: this.guildId, discord_user_id: args.userId, exchange: args.exchange, uid, outcome: `add:${outcome}`, ms: Date.now() - started, error })
+        .catch(() => {});
+    };
+
+    if (!UID_RE.test(uid)) {
+      await record("bad_uid");
+      return { ...base, outcome: "bad_uid" };
+    }
+    const since = new Date(Date.now() - WINDOW_MIN * 60_000);
+    const used = await this.db.attemptsSince(this.guildId, args.userId, since);
+    if (used >= MAX_ATTEMPTS) {
+      await record("rate_limited");
+      return { ...base, outcome: "rate_limited" };
+    }
+    const remaining = Math.max(0, MAX_ATTEMPTS - used - 1);
+
+    const held = await this.db.verificationByUid(args.exchange, uid);
+    if (held && held.discord_user_id === args.userId) {
+      await record("already_yours");
+      return { ...base, outcome: "already_yours", remaining };
+    }
+    if (held && !this.providerOwnsUids) {
+      await record("already_claimed");
+      return { ...base, outcome: "already_claimed", claimedBy: held.discord_user_id, remaining };
+    }
+    const mine = await this.db.uidsOf(this.guildId, args.userId);
+    if (mine.length >= MAX_UIDS) {
+      await record("too_many");
+      return { ...base, outcome: "too_many", remaining };
+    }
+
+    const provider = this.providers.get(args.exchange);
+    if (provider && !provider.live) {
+      await record("not_configured");
+      return { ...base, outcome: "not_configured", remaining };
+    }
+    if (!provider) {
+      await record("provider_error", "no provider configured");
+      return { ...base, outcome: "provider_error", error: "no provider configured", remaining };
+    }
+
+    try {
+      const res = await provider.lookup(uid, { discordUserId: args.userId });
+      if (!res.referred) {
+        await record("not_referred");
+        return { ...base, outcome: "not_referred", remaining };
+      }
+      // The app API gave this UID to this member: a stale row for someone else in this server moves across.
+      if (held && held.guild_id !== this.guildId) {
+        await record("already_claimed", "held in another server");
+        return { ...base, outcome: "already_claimed", remaining };
+      }
+      if (held) await this.db.releaseUid(args.exchange, uid);
+      await this.db.addUid({ guild_id: this.guildId, discord_user_id: args.userId, exchange: args.exchange, uid, detail: res.detail ?? null });
+      await record("verified");
+      return { ...base, outcome: "verified", remaining };
+    } catch (e) {
+      if (e instanceof UidClaimedError && ONE_PER_EXCHANGE.has(e.code)) {
+        await record("app_one_per_exchange", e.message);
+        return { ...base, outcome: "app_one_per_exchange", remaining };
+      }
       if (e instanceof UidClaimedError) {
         await record("already_claimed", e.message);
         return { ...base, outcome: "already_claimed", remaining };

@@ -197,6 +197,9 @@ export class SupportDesk {
       reason: `support thread for ${i.user.id}`,
     });
     await thread.members.add(i.user.id);
+    // The team always has every English help thread in its channel list from the moment it opens, not only after
+    // a hand-off (JT, 23 Nov). Other languages reach them through the English twin, which already adds them.
+    if (channel.id === (await this.helpChannel("en", null))?.id) await this.addTeam(thread);
     await thread.send({ content: fill(t.intro, { user: `<@${i.user.id}>` }), components: threadButtons(lang), allowedMentions: { users: [i.user.id] } });
     this.threads.set(thread.id, { userId: i.user.id, lang, misses: 0, answers: 0, offered: false, handedOff: false, busy: false, langOffered: false });
     log.info("support thread opened", { thread: thread.id, user: i.user.id, lang });
@@ -240,6 +243,19 @@ export class SupportDesk {
    */
   private async relay(m: Message, state: ThreadState) {
     return relayTranslation(this.translator, m, state.userId, state.lang, this.localize);
+  }
+
+  /** Members of the HELP_TEAM_ROLES roles (default "Team - Will Not DM"); a private thread only shows to people in it. */
+  private async addTeam(thread: ThreadChannel) {
+    const names = (process.env.HELP_TEAM_ROLES ?? "Team - Will Not DM").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+    const roles = this.guild.roles.cache.filter((r) => names.includes(r.name.toLowerCase()));
+    if (!roles.size) return;
+    if (Date.now() - this.membersFetchedAt > 10 * 60_000) {
+      await this.guild.members.fetch().catch((e) => log.warn("member fetch failed", errInfo(e)));
+      this.membersFetchedAt = Date.now();
+    }
+    const team = new Set([...roles.values()].flatMap((r) => [...r.members.keys()]));
+    for (const id of [...team].slice(0, 25)) await thread.members.add(id).catch(() => {});
   }
 
   private async twinOf(memberThread: string): Promise<string | null> {

@@ -407,7 +407,10 @@ export class Mirror {
    * fine and saves translating every typo fix.
    */
   async syncForums(since: number): Promise<{ edited: number; deleted: number }> {
-    const rows = await this.d.db.forumRows();
+    // message_map is shared by the test and live bots. Only rows whose original sits in
+    // this guild's forums are ours: the other guild's threads can't be fetched from here,
+    // and treating them as deleted wiped every forum row on both servers.
+    const rows = (await this.d.db.forumRows()).filter((r) => this.d.groups.lookup(r.source_channel_id));
     const bySource = new Map<string, MapRow[]>();
     for (const r of rows) bySource.set(r.source_message_id, [...(bySource.get(r.source_message_id) ?? []), r]);
     let edited = 0, deleted = 0;
@@ -415,8 +418,12 @@ export class Mirror {
     for (const [sourceId, copies] of bySource) {
       const threadId = copies[0].source_thread_id!;
       const isPost = sourceId === threadId;
-      const thread = (await this.d.guild.channels.fetch(threadId).catch(() => null)) as ThreadChannel | null;
-      const original = thread ? await thread.messages.fetch(sourceId).catch(() => null) : null;
+      // Only Discord's own "unknown" answers mean deleted; any other failure is skipped until tomorrow.
+      let gone = false;
+      const unknown = (e: unknown) => { if (/Unknown (Message|Channel)/.test(String(e))) gone = true; return null; };
+      const thread = (await this.d.guild.channels.fetch(threadId).catch(unknown)) as ThreadChannel | null;
+      const original = thread ? await thread.messages.fetch(sourceId).catch(unknown) : null;
+      if (!original && !gone) continue;
 
       if (!original) {
         for (const c of copies) {

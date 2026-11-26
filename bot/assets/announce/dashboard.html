@@ -1,0 +1,71 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+@font-face{font-family:Sora;src:url(../../node_modules/@fontsource/sora/files/sora-latin-800-normal.woff2) format("woff2");font-weight:800}
+@font-face{font-family:Sora;src:url(../../node_modules/@fontsource/sora/files/sora-latin-700-normal.woff2) format("woff2");font-weight:700}
+@font-face{font-family:Sora;src:url(../../node_modules/@fontsource/sora/files/sora-latin-600-normal.woff2) format("woff2");font-weight:600}
+*{margin:0;box-sizing:border-box;word-break:keep-all;overflow-wrap:anywhere}
+body{width:1200px;height:675px;background:#050d14;overflow:hidden;font-family:Sora,"Noto Sans","Noto Sans CJK SC","PingFang SC","Hiragino Sans","Apple SD Gothic Neo","WenQuanYi Zen Hei",sans-serif;color:#fff;position:relative}
+.glow1{position:absolute;left:-10%;top:-40%;width:70%;height:160%;background:radial-gradient(48% 50% at 40% 45%,rgba(34,211,238,.22) 0%,rgba(34,211,238,.05) 55%,transparent 100%)}
+.glow2{position:absolute;right:-15%;bottom:-60%;width:80%;height:160%;background:radial-gradient(50% 50% at 60% 50%,rgba(16,185,129,.16) 0%,rgba(16,185,129,.04) 55%,transparent 100%)}
+.grid{position:absolute;inset:0;background-image:linear-gradient(rgba(34,211,238,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(34,211,238,.06) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(70% 80% at 50% 45%,#000 30%,transparent 100%);-webkit-mask-image:radial-gradient(70% 80% at 50% 45%,#000 30%,transparent 100%)}
+.line{position:absolute;left:0;right:0;bottom:0;height:4px;background:linear-gradient(90deg,#22d3ee,#10b981 55%,transparent)}
+.wrap{position:absolute;inset:46px 60px 42px 60px;display:flex;flex-direction:column}
+.top{display:flex;align-items:center;gap:28px}
+.mark{flex:none;width:100px;height:100px}
+.kicker{font-weight:700;font-size:15px;letter-spacing:.28em;color:#22d3ee;text-transform:uppercase;display:flex;align-items:center;gap:12px}
+.live{display:inline-flex;align-items:center;gap:8px;background:rgba(16,185,129,.16);border:1px solid rgba(16,185,129,.6);color:#34d399;border-radius:999px;padding:4px 12px;font-size:13px;letter-spacing:.18em}
+.live i{width:9px;height:9px;border-radius:50%;background:#34d399;box-shadow:0 0 10px #34d399}
+.title{font-weight:800;font-size:48px;line-height:1.08;letter-spacing:-.02em;margin-top:10px}
+.sub{font-weight:700;font-size:19px;color:#93a4b3;margin-top:10px;line-height:1.35}
+.compare{display:grid;grid-template-columns:1fr 64px 1.25fr;gap:0;margin-top:36px;align-items:stretch;min-height:150px}
+.box{border-radius:18px;padding:28px 30px;display:flex;flex-direction:column;justify-content:center}
+.old{background:rgba(255,255,255,.035);border:1px solid rgba(248,113,113,.35)}
+.new{background:linear-gradient(135deg,rgba(34,211,238,.14),rgba(16,185,129,.10));border:1.5px solid rgba(34,211,238,.6)}
+.tag{font-weight:700;font-size:15px;letter-spacing:.2em;text-transform:uppercase}
+.old .tag{color:#f87171}.new .tag{color:#22d3ee}
+.box h3{font-weight:800;font-size:31px;margin-top:12px;line-height:1.2}
+.old h3{color:#8a97a3;text-decoration:line-through;text-decoration-color:rgba(248,113,113,.8);text-decoration-thickness:3px}
+.arrow{display:flex;align-items:center;justify-content:center;font-size:34px;color:#22d3ee;font-weight:800}
+.chips{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:22px}
+.chip{display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.045);border:1px solid rgba(34,211,238,.2);border-radius:14px;padding:22px 20px;font-weight:700;font-size:21px;line-height:1.25}
+.chip b{flex:none;width:52px;height:52px;border-radius:12px;background:rgba(34,211,238,.12);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:400}
+.cta{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:16px;background:linear-gradient(90deg,#22d3ee,#10b981);border-radius:14px;padding:18px 26px;color:#050d14}
+.cta span{font-weight:800;font-size:22px}
+.cta b{font-weight:800;font-size:30px;letter-spacing:-.01em}
+</style></head><body>
+<div class="glow1"></div><div class="glow2"></div><div class="grid"></div><div class="line"></div>
+<div class="wrap">
+  <div class="top">
+    <svg class="mark" viewBox="0 0 100 100" fill="none">
+      <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22d3ee"/><stop offset="1" stop-color="#10b981"/></linearGradient></defs>
+      <rect x="4" y="4" width="92" height="92" rx="22" fill="rgba(34,211,238,.10)" stroke="url(#g)" stroke-width="4"/>
+      <path d="M20 66 36 50 48 60 66 36 80 46" stroke="url(#g)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="80" cy="46" r="6" fill="#34d399"/>
+      <path d="M22 80h56" stroke="rgba(34,211,238,.45)" stroke-width="4" stroke-linecap="round"/>
+    </svg>
+    <div>
+      <div class="kicker"><span id="kicker"></span><span class="live"><i></i><span id="live"></span></span></div>
+      <div class="title" id="title"></div>
+      <div class="sub" id="sub"></div>
+    </div>
+  </div>
+  <div class="compare">
+    <div class="box old"><div class="tag" id="beforeTag"></div><h3 id="before"></h3></div>
+    <div class="arrow">➜</div>
+    <div class="box new"><div class="tag" id="nowTag"></div><h3 id="now"></h3></div>
+  </div>
+  <div class="chips" id="chips"></div>
+  <div class="cta"><span id="cta"></span><b>dash.blkbox.pro</b></div>
+</div>
+<script>
+window.draw = (t) => {
+  for (const k of ["kicker", "live", "title", "sub", "beforeTag", "before", "nowTag", "now", "cta"]) document.getElementById(k).textContent = t[k];
+  const chips = document.getElementById("chips");
+  chips.innerHTML = "";
+  for (const [ic, label] of t.chips) {
+    const c = document.createElement("div"); c.className = "chip";
+    c.innerHTML = `<b></b><span></span>`;
+    c.querySelector("b").textContent = ic; c.querySelector("span").textContent = label;
+    chips.append(c);
+  }
+};
+</script></body></html>

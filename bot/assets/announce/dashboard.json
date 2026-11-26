@@ -1,0 +1,402 @@
+{
+ "en": {
+  "kicker": "BLKBöX Dashboard",
+  "live": "LIVE",
+  "title": "Unlock live data with your UID",
+  "sub": "The dashboard is now fully live with real-time data. No API connection needed.",
+  "beforeTag": "Before",
+  "before": "Connect an exchange API key",
+  "nowTag": "Now",
+  "now": "Verify your UID and you're in",
+  "chips": [
+   [
+    "📈",
+    "Real-time live data"
+   ],
+   [
+    "🆔",
+    "Unlock in seconds"
+   ],
+   [
+    "🔒",
+    "No API keys needed"
+   ]
+  ],
+  "cta": "Open your dashboard",
+  "text": [
+   "🚀 **The BLKBöX Dashboard is now fully live**",
+   "Live market data is here, and unlocking it just got a lot easier.",
+   "",
+   "🔑 **Before:** you had to connect an exchange API key to unlock the data.",
+   "✅ **Now:** just verify your **UID** and the full dashboard unlocks. No API connection needed.",
+   "",
+   "📈 Real-time live data",
+   "🆔 Unlock with your UID in seconds",
+   "🔒 No API keys required",
+   "",
+   "👉 **Open your dashboard:** https://dash.blkbox.pro",
+   "",
+   "Questions? Tap 🛟 **Get help** in {help} and the team will help you out. ⚡"
+  ]
+ },
+ "zh": {
+  "kicker": "BLKBöX 仪表盘",
+  "live": "已上线",
+  "title": "用 UID 解锁实时数据",
+  "sub": "仪表盘现已全面上线，数据实时更新。无需连接 API。",
+  "beforeTag": "以前",
+  "before": "需要连接交易所 API 密钥",
+  "nowTag": "现在",
+  "now": "验证 UID 即可进入",
+  "chips": [
+   [
+    "📈",
+    "实时数据"
+   ],
+   [
+    "🆔",
+    "几秒即可解锁"
+   ],
+   [
+    "🔒",
+    "无需 API 密钥"
+   ]
+  ],
+  "cta": "打开你的仪表盘",
+  "text": [
+   "🚀 **BLKBöX 仪表盘现已全面上线**",
+   "实时市场数据已经到来，而且解锁变得更简单了。",
+   "",
+   "🔑 **以前：** 需要连接交易所 API 密钥才能解锁数据。",
+   "✅ **现在：** 只需验证你的 **UID**，即可解锁完整仪表盘，无需连接 API。",
+   "",
+   "📈 实时数据",
+   "🆔 用 UID 几秒即可解锁",
+   "🔒 无需 API 密钥",
+   "",
+   "👉 **打开你的仪表盘：** https://dash.blkbox.pro",
+   "",
+   "有问题？在 {help} 点击 🛟 **获取帮助**，团队会为你解答。⚡"
+  ]
+ },
+ "ko": {
+  "kicker": "BLKBöX 대시보드",
+  "live": "라이브",
+  "title": "UID로 실시간 데이터를 여세요",
+  "sub": "대시보드가 실시간 데이터와 함께 정식 오픈했습니다. API 연결이 필요 없습니다.",
+  "beforeTag": "이전",
+  "before": "거래소 API 키 연결 필요",
+  "nowTag": "이제",
+  "now": "UID 인증만 하면 끝",
+  "chips": [
+   [
+    "📈",
+    "실시간 데이터"
+   ],
+   [
+    "🆔",
+    "몇 초 만에 잠금 해제"
+   ],
+   [
+    "🔒",
+    "API 키 불필요"
+   ]
+  ],
+  "cta": "대시보드 열기",
+  "text": [
+   "🚀 **BLKBöX 대시보드가 정식 오픈했습니다**",
+   "실시간 시장 데이터가 준비됐고, 잠금 해제도 훨씬 쉬워졌어요.",
+   "",
+   "🔑 **이전:** 데이터를 보려면 거래소 API 키를 연결해야 했습니다.",
+   "✅ **이제:** **UID**만 인증하면 대시보드 전체가 열립니다. API 연결은 필요 없어요.",
+   "",
+   "📈 실시간 데이터",
+   "🆔 UID로 몇 초 만에 잠금 해제",
+   "🔒 API 키 불필요",
+   "",
+   "👉 **대시보드 열기:** https://dash.blkbox.pro",
+   "",
+   "궁금한 점이 있으신가요? {help}에서 🛟 **도움 받기**를 누르시면 팀이 도와드립니다. ⚡"
+  ]
+ },
+ "id": {
+  "kicker": "BLKBöX Dashboard",
+  "live": "LIVE",
+  "title": "Buka data live dengan UID-mu",
+  "sub": "Dashboard kini sudah live sepenuhnya dengan data real-time. Tanpa koneksi API.",
+  "beforeTag": "Dulu",
+  "before": "Hubungkan API key exchange",
+  "nowTag": "Sekarang",
+  "now": "Verifikasi UID, langsung masuk",
+  "chips": [
+   [
+    "📈",
+    "Data live real-time"
+   ],
+   [
+    "🆔",
+    "Terbuka dalam hitungan detik"
+   ],
+   [
+    "🔒",
+    "Tanpa API key"
+   ]
+  ],
+  "cta": "Buka dashboard-mu",
+  "text": [
+   "🚀 **Dashboard BLKBöX kini sudah live sepenuhnya**",
+   "Data pasar live sudah hadir, dan membukanya kini jauh lebih mudah.",
+   "",
+   "🔑 **Dulu:** kamu harus menghubungkan API key exchange untuk membuka data.",
+   "✅ **Sekarang:** cukup verifikasi **UID**-mu dan seluruh dashboard langsung terbuka. Tanpa koneksi API.",
+   "",
+   "📈 Data live real-time",
+   "🆔 Buka dengan UID dalam hitungan detik",
+   "🔒 Tidak perlu API key",
+   "",
+   "👉 **Buka dashboard-mu:** https://dash.blkbox.pro",
+   "",
+   "Ada pertanyaan? Ketuk 🛟 **Minta bantuan** di {help} dan tim kami akan membantumu. ⚡"
+  ]
+ },
+ "vi": {
+  "kicker": "BLKBöX Dashboard",
+  "live": "LIVE",
+  "title": "Mở khóa dữ liệu trực tiếp bằng UID",
+  "sub": "Dashboard đã chính thức hoạt động với dữ liệu thời gian thực. Không cần kết nối API.",
+  "beforeTag": "Trước đây",
+  "before": "Kết nối API key của sàn",
+  "nowTag": "Bây giờ",
+  "now": "Xác minh UID là xong",
+  "chips": [
+   [
+    "📈",
+    "Dữ liệu thời gian thực"
+   ],
+   [
+    "🆔",
+    "Mở khóa trong vài giây"
+   ],
+   [
+    "🔒",
+    "Không cần API key"
+   ]
+  ],
+  "cta": "Mở dashboard của bạn",
+  "text": [
+   "🚀 **BLKBöX Dashboard đã chính thức hoạt động đầy đủ**",
+   "Dữ liệu thị trường trực tiếp đã có, và việc mở khóa giờ đơn giản hơn nhiều.",
+   "",
+   "🔑 **Trước đây:** bạn phải kết nối API key của sàn để mở khóa dữ liệu.",
+   "✅ **Bây giờ:** bạn chỉ cần xác minh **UID** là toàn bộ dashboard được mở khóa. Không cần kết nối API.",
+   "",
+   "📈 Dữ liệu trực tiếp theo thời gian thực",
+   "🆔 Mở khóa bằng UID chỉ trong vài giây",
+   "🔒 Không cần API key",
+   "",
+   "👉 **Mở dashboard của bạn:** https://dash.blkbox.pro",
+   "",
+   "Có thắc mắc? Bạn hãy nhấn 🛟 **Nhận hỗ trợ** trong {help}, đội ngũ sẽ giúp bạn. ⚡"
+  ]
+ },
+ "es": {
+  "kicker": "BLKBöX Dashboard",
+  "live": "EN VIVO",
+  "title": "Desbloquea los datos en vivo con tu UID",
+  "sub": "El dashboard ya está totalmente en marcha con datos en tiempo real. Sin conexión API.",
+  "beforeTag": "Antes",
+  "before": "Conectar una clave API del exchange",
+  "nowTag": "Ahora",
+  "now": "Verifica tu UID y listo",
+  "chips": [
+   [
+    "📈",
+    "Datos en tiempo real"
+   ],
+   [
+    "🆔",
+    "Desbloqueo en segundos"
+   ],
+   [
+    "🔒",
+    "Sin claves API"
+   ]
+  ],
+  "cta": "Abre tu dashboard",
+  "text": [
+   "🚀 **El Dashboard de BLKBöX ya está totalmente en marcha**",
+   "Los datos de mercado en vivo ya están aquí, y desbloquearlos ahora es mucho más fácil.",
+   "",
+   "🔑 **Antes:** tenías que conectar una clave API de tu exchange para desbloquear los datos.",
+   "✅ **Ahora:** solo verifica tu **UID** y se desbloquea todo el dashboard. Sin conexión API.",
+   "",
+   "📈 Datos en vivo en tiempo real",
+   "🆔 Desbloqueo con tu UID en segundos",
+   "🔒 No hacen falta claves API",
+   "",
+   "👉 **Abre tu dashboard:** https://dash.blkbox.pro",
+   "",
+   "¿Dudas? Toca 🛟 **Pedir ayuda** en {help} y el equipo te ayudará. ⚡"
+  ]
+ },
+ "pt": {
+  "kicker": "BLKBöX Dashboard",
+  "live": "AO VIVO",
+  "title": "Desbloqueie os dados ao vivo com seu UID",
+  "sub": "O dashboard está totalmente no ar com dados em tempo real. Sem conexão API.",
+  "beforeTag": "Antes",
+  "before": "Conectar uma chave API da corretora",
+  "nowTag": "Agora",
+  "now": "Verifique seu UID e pronto",
+  "chips": [
+   [
+    "📈",
+    "Dados em tempo real"
+   ],
+   [
+    "🆔",
+    "Desbloqueio em segundos"
+   ],
+   [
+    "🔒",
+    "Sem chaves API"
+   ]
+  ],
+  "cta": "Abra seu dashboard",
+  "text": [
+   "🚀 **O Dashboard da BLKBöX está totalmente no ar**",
+   "Os dados de mercado ao vivo chegaram, e desbloqueá-los ficou muito mais fácil.",
+   "",
+   "🔑 **Antes:** você precisava conectar uma chave API da corretora para desbloquear os dados.",
+   "✅ **Agora:** basta verificar seu **UID** e o dashboard inteiro é desbloqueado. Sem conexão API.",
+   "",
+   "📈 Dados ao vivo em tempo real",
+   "🆔 Desbloqueio com seu UID em segundos",
+   "🔒 Nenhuma chave API necessária",
+   "",
+   "👉 **Abra seu dashboard:** https://dash.blkbox.pro",
+   "",
+   "Dúvidas? Toque em 🛟 **Pedir ajuda** em {help} e a equipe vai te ajudar. ⚡"
+  ]
+ },
+ "tr": {
+  "kicker": "BLKBöX Dashboard",
+  "live": "CANLI",
+  "title": "Canlı verilerin kilidini UID ile aç",
+  "sub": "Dashboard artık gerçek zamanlı verilerle tamamen yayında. API bağlantısı gerekmez.",
+  "beforeTag": "Önce",
+  "before": "Borsa API anahtarı bağla",
+  "nowTag": "Şimdi",
+  "now": "UID'ni doğrula, hepsi bu",
+  "chips": [
+   [
+    "📈",
+    "Gerçek zamanlı veri"
+   ],
+   [
+    "🆔",
+    "Saniyeler içinde kilit açılır"
+   ],
+   [
+    "🔒",
+    "API anahtarı gerekmez"
+   ]
+  ],
+  "cta": "Dashboard'unu aç",
+  "text": [
+   "🚀 **BLKBöX Dashboard artık tamamen yayında**",
+   "Canlı piyasa verileri burada ve kilidini açmak artık çok daha kolay.",
+   "",
+   "🔑 **Önce:** verilerin kilidini açmak için borsa API anahtarını bağlaman gerekiyordu.",
+   "✅ **Şimdi:** sadece **UID**'ni doğrula, tüm dashboard'un kilidi açılsın. API bağlantısı gerekmez.",
+   "",
+   "📈 Gerçek zamanlı canlı veri",
+   "🆔 UID ile saniyeler içinde kilit açma",
+   "🔒 API anahtarı gerekmez",
+   "",
+   "👉 **Dashboard'unu aç:** https://dash.blkbox.pro",
+   "",
+   "Sorun mu var? {help} kanalında 🛟 **Yardım al**'a dokun, ekibimiz yardımcı olsun. ⚡"
+  ]
+ },
+ "ru": {
+  "kicker": "BLKBöX Dashboard",
+  "live": "LIVE",
+  "title": "Откройте живые данные по UID",
+  "sub": "Дашборд полностью запущен с данными в реальном времени. Подключение API не нужно.",
+  "beforeTag": "Раньше",
+  "before": "Подключить API-ключ биржи",
+  "nowTag": "Теперь",
+  "now": "Подтвердите UID, и всё готово",
+  "chips": [
+   [
+    "📈",
+    "Данные в реальном времени"
+   ],
+   [
+    "🆔",
+    "Доступ за секунды"
+   ],
+   [
+    "🔒",
+    "Без API-ключей"
+   ]
+  ],
+  "cta": "Откройте свой дашборд",
+  "text": [
+   "🚀 **Дашборд BLKBöX полностью запущен**",
+   "Живые рыночные данные уже здесь, а открыть их теперь гораздо проще.",
+   "",
+   "🔑 **Раньше:** чтобы открыть данные, нужно было подключить API-ключ биржи.",
+   "✅ **Теперь:** просто подтвердите свой **UID**, и весь дашборд откроется. Подключение API не нужно.",
+   "",
+   "📈 Живые данные в реальном времени",
+   "🆔 Доступ по UID за считанные секунды",
+   "🔒 API-ключи не нужны",
+   "",
+   "👉 **Откройте свой дашборд:** https://dash.blkbox.pro",
+   "",
+   "Есть вопросы? Нажмите 🛟 **Получить помощь** в {help}, и команда вам поможет. ⚡"
+  ]
+ },
+ "ja": {
+  "kicker": "BLKBöX ダッシュボード",
+  "live": "LIVE",
+  "title": "UIDでライブデータを解放",
+  "sub": "ダッシュボードがリアルタイムデータで本格稼働しました。API接続は不要です。",
+  "beforeTag": "これまで",
+  "before": "取引所のAPIキー接続が必要",
+  "nowTag": "これから",
+  "now": "UIDを認証するだけ",
+  "chips": [
+   [
+    "📈",
+    "リアルタイムデータ"
+   ],
+   [
+    "🆔",
+    "数秒でロック解除"
+   ],
+   [
+    "🔒",
+    "APIキー不要"
+   ]
+  ],
+  "cta": "ダッシュボードを開く",
+  "text": [
+   "🚀 **BLKBöX ダッシュボードが本格稼働しました**",
+   "ライブの市場データが利用可能になり、ロック解除もずっと簡単になりました。",
+   "",
+   "🔑 **これまで：** データを見るには取引所のAPIキーを接続する必要がありました。",
+   "✅ **これから：** **UID** を認証するだけで、ダッシュボードのすべてが使えます。API接続は不要です。",
+   "",
+   "📈 リアルタイムのライブデータ",
+   "🆔 UIDで数秒でロック解除",
+   "🔒 APIキーは不要です",
+   "",
+   "👉 **ダッシュボードを開く：** https://dash.blkbox.pro",
+   "",
+   "ご不明な点は {help} で 🛟 **ヘルプを依頼** を押してください。チームがサポートします。⚡"
+  ]
+ }
+}

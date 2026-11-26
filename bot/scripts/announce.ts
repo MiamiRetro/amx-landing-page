@@ -10,6 +10,8 @@
  *                                                          # infographic (assets/announce), in the languages it has
  *   npx tsx scripts/announce.ts --post safety --apply      # "stay safe, we never DM first" (@everyone), with its
  *                                                          # infographic; {help} becomes a link to that language's help-desk
+ *   npx tsx scripts/announce.ts --post dashboard --apply   # "dashboard is fully live, unlock with your UID", with its
+ *                                                          # infographic; pings 🔔 Announcements (no @everyone)
  *
  * Each person only sees their own language's announcements channel, so the
  * @everyone in "live" pings everyone once. The bot is given Mention @everyone
@@ -22,6 +24,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { LANGS, type Lang } from "../src/config.js";
 import { connect } from "../src/lib/client.js";
+import { NOTIFY_ROLES, type NotifyTopic } from "../src/notify.js";
 
 /** Each language's announcements channel, as the onboarding script names it (a ┣ may come in front). */
 const CHANNEL: Record<Lang, string> = {
@@ -142,6 +145,8 @@ const MESS = JSON.parse(readFileSync(join(ANNOUNCE, "mess.json"), "utf8")) as Pa
 const CHANNELS_TIP = JSON.parse(readFileSync(join(ANNOUNCE, "channels.json"), "utf8")) as Record<Lang, { tip: string }>;
 /** "Stay safe": the server is open to everyone, so scam-safety advice with its infographic (safety-<lang>.png). */
 const SAFETY = JSON.parse(readFileSync(join(ANNOUNCE, "safety.json"), "utf8")) as Record<Lang, { text: string[] }>;
+/** "Dashboard is fully live": unlock the data with a UID instead of an API key (dashboard-<lang>.png). */
+const DASHBOARD = JSON.parse(readFileSync(join(ANNOUNCE, "dashboard.json"), "utf8")) as Record<Lang, { text: string[] }>;
 
 /** Each language's server guide (where the 🔔 notification picker lives), linked from {guide}. */
 const GUIDE: Record<Lang, string> = {
@@ -154,7 +159,8 @@ const HELP: Record<Lang, string> = {
   es: "☎️・ayuda", pt: "☎️・ajuda", tr: "☎️・yardım", ru: "☎️・помощь", ja: "☎️・ヘルプ",
 };
 
-type Post = { ping: boolean; text: (l: Lang) => string | null; file?: (l: Lang) => string };
+/** ping: @everyone. role: a 🔔 notification role to ping instead, written as {role} in the text. */
+type Post = { ping: boolean; role?: NotifyTopic; text: (l: Lang) => string | null; file?: (l: Lang) => string };
 const POSTS: Record<string, Post> = {
   progress: { ping: false, text: (l) => PROGRESS[l] },
   live: {
@@ -164,6 +170,7 @@ const POSTS: Record<string, Post> = {
   },
   mess: { ping: false, text: (l) => MESS[l]?.text.join("\n") ?? null, file: (l) => join(ANNOUNCE, `mess-${l}.png`) },
   safety: { ping: true, text: (l) => ["@everyone", "", ...SAFETY[l].text].join("\n"), file: (l) => join(ANNOUNCE, `safety-${l}.png`) },
+  dashboard: { ping: false, role: "announcements", text: (l) => ["{role}", "", ...DASHBOARD[l].text].join("\n"), file: (l) => join(ANNOUNCE, `dashboard-${l}.png`) },
 };
 
 function arg(name: string): string | undefined {
@@ -182,6 +189,8 @@ async function main() {
     console.log(`${apply ? "POSTING" : "DRY RUN (add --apply to post)"} "${which}" on ${guild.name}`);
     const me = guild.members.me ?? (await guild.members.fetchMe());
     let missing = 0;
+    const role = post.role ? guild.roles.cache.find((r) => r.name === NOTIFY_ROLES[post.role!].name) : undefined;
+    if (post.role) console.log(role ? `  pings @${role.name}` : `  ! no ${NOTIFY_ROLES[post.role].name} role: posting without a ping`);
     for (const lang of LANGS) {
       const ch = guild.channels.cache.find(
         (c): c is TextChannel | NewsChannel =>
@@ -191,23 +200,25 @@ async function main() {
       const help = guild.channels.cache.find((c) => c.name.replace(/^[┣┗]/u, "") === HELP[lang]);
       const guide = guild.channels.cache.find((c) => c.name.replace(/^[┣┗]/u, "") === GUIDE[lang]);
       const text = post.text(lang)?.replaceAll("{help}", help ? `<#${help.id}>` : `**${HELP[lang]}**`)
-        .replaceAll("{guide}", guide ? `<#${guide.id}>` : `**${GUIDE[lang]}**`) ?? null;
+        .replaceAll("{guide}", guide ? `<#${guide.id}>` : `**${GUIDE[lang]}**`)
+        .replace(/^\{role\}\n\n?/u, role ? `<@&${role.id}>\n\n` : "") ?? null;
       if (text === null) { console.log(`  ${lang}: no text for "${which}" (skipped)`); continue; }
       // Already posted: the bot's own message with the same headline in the last day.
-      const headline = text.split("\n").find((l) => l && l !== "@everyone")!;
+      const headline = text.split("\n").find((l) => l && l !== "@everyone" && !l.startsWith("<@&"))!;
       if (text.length > 2000) { console.log(`  ${lang}: text is ${text.length} characters, over Discord's 2000 (skipped)`); continue; }
       const recent = await ch.messages.fetch({ limit: 30 }).catch(() => null);
       if (recent?.some((m) => m.author.id === me.id && m.content.includes(headline) && Date.now() - m.createdTimestamp < 86_400_000)) {
         console.log(`  ${lang}: already posted in #${ch.name}`);
         continue;
       }
+      const pings = post.ping || (role !== undefined && !role.mentionable);
       const canPing = ch.permissionsFor(me).has(P.MentionEveryone);
-      console.log(`  ${lang}: post in #${ch.name}${help ? "" : ` (no #${HELP[lang]} found, named in bold)`}${guide ? "" : ` (no #${GUIDE[lang]} found, named in bold)`}${post.ping && !canPing ? " (first allows the bot to @everyone in this channel)" : ""}`);
+      console.log(`  ${lang}: post in #${ch.name}${help ? "" : ` (no #${HELP[lang]} found, named in bold)`}${guide ? "" : ` (no #${GUIDE[lang]} found, named in bold)`}${pings && !canPing ? " (first allows the bot to @everyone in this channel)" : ""}`);
       if (!apply) continue;
-      if (post.ping && !canPing) {
+      if (pings && !canPing) {
         await ch.permissionOverwrites.edit(me.id, { MentionEveryone: true }, { type: OverwriteType.Member, reason: `${which} announcement` });
       }
-      await ch.send({ content: text, files: post.file ? [{ attachment: post.file(lang), name: `${which}-${lang}.png` }] : [], allowedMentions: { parse: post.ping ? ["everyone"] : [] } });
+      await ch.send({ content: text, files: post.file ? [{ attachment: post.file(lang), name: `${which}-${lang}.png` }] : [], allowedMentions: { parse: post.ping ? ["everyone"] : [], roles: role ? [role.id] : [] } });
     }
     if (missing) console.log(`\n! ${missing} language(s) had no announcements channel: has the migration's channels step run?`);
   } finally {

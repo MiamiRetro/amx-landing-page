@@ -11,7 +11,8 @@
  *   npx tsx scripts/announce.ts --post safety --apply      # "stay safe, we never DM first" (@everyone), with its
  *                                                          # infographic; {help} becomes a link to that language's help-desk
  *   npx tsx scripts/announce.ts --post dashboard --apply   # "dashboard is fully live, unlock with your UID", with its
- *                                                          # infographic; pings 🔔 Announcements (no @everyone)
+ *                                                          # infographic; pings 🔔 Announcements (no @everyone);
+ *                                                          # add --no-ping to show the role tag without notifying
  *
  * Each person only sees their own language's announcements channel, so the
  * @everyone in "live" pings everyone once. The bot is given Mention @everyone
@@ -189,6 +190,8 @@ async function main() {
     console.log(`${apply ? "POSTING" : "DRY RUN (add --apply to post)"} "${which}" on ${guild.name}`);
     const me = guild.members.me ?? (await guild.members.fetchMe());
     let missing = 0;
+    // --no-ping: show the 🔔 role but notify nobody, for channels where the bot may not ping it.
+    const noPing = process.argv.includes("--no-ping");
     const role = post.role ? guild.roles.cache.find((r) => r.name === NOTIFY_ROLES[post.role!].name) : undefined;
     if (post.role) console.log(role ? `  pings @${role.name}` : `  ! no ${NOTIFY_ROLES[post.role].name} role: posting without a ping`);
     for (const lang of LANGS) {
@@ -211,14 +214,14 @@ async function main() {
         console.log(`  ${lang}: already posted in #${ch.name}`);
         continue;
       }
-      const pings = post.ping || (role !== undefined && !role.mentionable);
+      const pings = !noPing && (post.ping || (role !== undefined && !role.mentionable));
       const canPing = ch.permissionsFor(me).has(P.MentionEveryone);
       console.log(`  ${lang}: post in #${ch.name}${help ? "" : ` (no #${HELP[lang]} found, named in bold)`}${guide ? "" : ` (no #${GUIDE[lang]} found, named in bold)`}${pings && !canPing ? " (first allows the bot to @everyone in this channel)" : ""}`);
       if (!apply) continue;
       if (pings && !canPing) {
         await ch.permissionOverwrites.edit(me.id, { MentionEveryone: true }, { type: OverwriteType.Member, reason: `${which} announcement` });
       }
-      await ch.send({ content: text, files: post.file ? [{ attachment: post.file(lang), name: `${which}-${lang}.png` }] : [], allowedMentions: { parse: post.ping ? ["everyone"] : [], roles: role ? [role.id] : [] } });
+      await ch.send({ content: text, files: post.file ? [{ attachment: post.file(lang), name: `${which}-${lang}.png` }] : [], allowedMentions: noPing ? { parse: [] } : { parse: post.ping ? ["everyone"] : [], roles: role ? [role.id] : [] } });
     }
     if (missing) console.log(`\n! ${missing} language(s) had no announcements channel: has the migration's channels step run?`);
   } finally {
